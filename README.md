@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# Welcome to your this Giglant project
 
-TODO: Document your project here
+Maybe this is the prototype or final but this is gonna edited with Dyad

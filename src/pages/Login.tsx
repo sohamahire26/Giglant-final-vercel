@@ -27,6 +27,7 @@ const Login = () => {
             </div>
             <Auth
               supabaseClient={supabase}
+              redirectTo={window.location.origin}
               appearance={{
                 theme: ThemeSupa,
                 variables: {

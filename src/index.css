@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "@fontsource/plus-jakarta-sans/400.css";
+@import "@fontsource/plus-jakarta-sans/500.css";
+@import "@fontsource/plus-jakarta-sans/600.css";
+@import "@fontsource/plus-jakarta-sans/700.css";
+@import "@fontsource/plus-jakarta-sans/800.css";
+@import "@fontsource/space-grotesk/400.css";
+@import "@fontsource/space-grotesk/500.css";
+@import "@fontsource/space-grotesk/600.css";
+@import "@fontsource/space-grotesk/700.css";
+
+@layer base {
+  :root {
+    --background: 30 25% 97%;
+    --foreground: 220 20% 12%;
+
+    --card: 30 20% 99%;
+    --card-foreground: 220 20% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 12%;
+
+    --primary: 0 78% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 30 15% 93%;
+    --secondary-foreground: 220 20% 12%;
+
+    --muted: 30 12% 94%;
+    --muted-foreground: 220 10% 46%;
+
+    --accent: 0 78% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 30 15% 90%;
+    --input: 30 15% 90%;
+    --ring: 0 78% 55%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 0 78% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 30 15% 95%;
+    --sidebar-accent-foreground: 220 20% 12%;
+    --sidebar-border: 30 15% 90%;
+    --sidebar-ring: 0 78% 55%;
+
+    /* Custom tokens */
+    --hero-gradient: linear-gradient(135deg, hsl(30 25% 97%) 0%, hsl(0 30% 96%) 50%, hsl(30 25% 97%) 100%);
+    --card-shadow: 0 1px 3px hsl(220 20% 12% / 0.04), 0 4px 16px hsl(220 20% 12% / 0.06);
+    --card-shadow-hover: 0 4px 12px hsl(220 20% 12% / 0.08), 0 8px 32px hsl(220 20% 12% / 0.1);
+    --tool-card-bg: 30 20% 99%;
+    --warm-surface: 30 30% 95%;
+    --warm-surface-hover: 30 30% 92%;
+  }
+
+  .dark {
+    --background: 220 20% 8%;
+    --foreground: 30 15% 95%;
+    --card: 220 20% 10%;
+    --card-foreground: 30 15% 95%;
+    --popover: 220 20% 10%;
+    --popover-foreground: 30 15% 95%;
+    --primary: 0 78% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 15%;
+    --secondary-foreground: 30 15% 95%;
+    --muted: 220 15% 15%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 0 78% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 220 15% 18%;
+    --input: 220 15% 18%;
+    --ring: 0 78% 55%;
+    --sidebar-background: 220 20% 8%;
+    --sidebar-foreground: 30 15% 95%;
+    --sidebar-primary: 0 78% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 15%;
+    --sidebar-accent-foreground: 30 15% 95%;
+    --sidebar-border: 220 15% 18%;
+    --sidebar-ring: 0 78% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Space Grotesk", system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .hero-bg {
+    background: var(--hero-gradient);
+  }
+
+  .card-shadow {
+    box-shadow: var(--card-shadow);
+  }
+
+  .card-shadow-hover {
+    box-shadow: var(--card-shadow-hover);
+  }
+
+  .warm-surface {
+    background-color: hsl(var(--warm-surface));
+  }
+
+  .section-padding {
+    @apply px-4 py-16 md:px-8 md:py-24 lg:px-16;
+  }
+
+  .container-tight {
+    @apply mx-auto max-w-6xl;
+  }
+
+  .pattern-dots {
+    background-image: radial-gradient(circle, hsl(var(--primary) / 0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+}

@@ -6,7 +6,7 @@ import logo from "@/assets/logo.png";
 const aboutFAQ = [
   { question: "Who built Giglant?", answer: "Giglant is built by creators for creators. We understand the daily challenges in video editing workflow and freelancer workflow because we've been there." },
   { question: "Is Giglant a company?", answer: "Giglant is a growing platform of free tools built for post production workflow, content workflow, and file management. We're focused on building useful utilities before anything else." },
-  { question: "How can I suggest a tool?", answer: "Visit our Contact page and share your idea! We build tools based on real freelancer workflow needs — from editing pipeline tools to client delivery workflow solutions." },
+  { question: "How can I suggest a tool?", answer: "Visit our Contact page or email feedback@giglant.com! We build tools based on real freelancer workflow needs — from editing pipeline tools to client delivery workflow solutions." },
   { question: "What workflows does Giglant support?", answer: "Giglant supports video editing workflow, freelancer workflow, file management workflow, post production workflow, client delivery workflow, video export workflow, editing pipeline management, and content workflow optimization." },
 ];
 
@@ -36,6 +36,7 @@ const AboutPage = () => (
             <li><strong className="text-foreground">Real Workflows</strong> — Every tool solves a real <strong>post production workflow</strong> problem.</li>
             <li><strong className="text-foreground">Creator-Focused</strong> — Built by and for the creative community's <strong>content workflow</strong>.</li>
           </ul>
+          <p className="pt-4">Have questions or suggestions? Reach out to us at <a href="mailto:hello@giglant.com" className="text-primary hover:underline">hello@giglant.com</a>.</p>
         </div>
       </div>
     </section>

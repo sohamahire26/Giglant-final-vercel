@@ -1,13 +1,17 @@
+"use client";
+
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { Loader2, FolderPlus } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/components/AuthProvider";
 
 const CreateProject = () => {
+  const { user, session, loading: authLoading } = useAuth();
   const [name, setName] = useState("");
   const [clientName, setClientName] = useState("");
   const [description, setDescription] = useState("");
@@ -16,6 +20,9 @@ const CreateProject = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  if (authLoading) return <Layout><div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
+  if (!session) return <Navigate to="/login" replace />;
+
   const handleCreate = async () => {
     if (!name.trim()) {
       toast({ title: "Project name is required", variant: "destructive" });
@@ -23,13 +30,14 @@ const CreateProject = () => {
     }
     setLoading(true);
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("projects")
         .insert({
           name: name.trim(),
           client_name: clientName.trim() || null,
           description: description.trim() || null,
           work_type: workType,
+          user_id: user?.id,
         })
         .select()
         .single();
@@ -52,7 +60,7 @@ const CreateProject = () => {
             <p className="mt-2 text-muted-foreground">Set up a workspace for your freelance project</p>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+          <div className="rounded-2xl border border-border bg-card p-6 space-y-4 shadow-sm">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-foreground">Project Name *</label>
               <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g., Brand Video for Acme Corp"
@@ -83,16 +91,6 @@ const CreateProject = () => {
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Create Project
             </Button>
-          </div>
-
-          <div className="mt-8 rounded-2xl border border-border bg-card p-6">
-            <h2 className="font-display text-sm font-semibold text-foreground mb-3">What happens next?</h2>
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <p>1. You'll get a <strong className="text-foreground">project workspace</strong> with tabs for files, feedback, delivery & invoices</p>
-              <p>2. Add your files from <strong className="text-foreground">Google Drive</strong> — videos, images, PDFs</p>
-              <p>3. Share a <strong className="text-foreground">client access link</strong> — they can view & leave feedback without signup</p>
-              <p>4. Generate professional <strong className="text-foreground">delivery messages & invoices</strong> when done</p>
-            </div>
           </div>
         </div>
       </section>

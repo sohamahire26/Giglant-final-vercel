@@ -1,7 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, User as UserIcon } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { useAuth } from "./AuthProvider";
 
 const tools = [
   { name: "File Renamer", href: "/tools/file-renamer" },
@@ -16,15 +17,13 @@ const navLinks = [
   { name: "Projects", href: "/projects/new" },
   { name: "Tools", href: "/tools", children: tools },
   { name: "Blog", href: "/blog" },
-  { name: "About", href: "/about" },
-  { name: "Contact", href: "/contact" },
-  { name: "FAQ", href: "/faq" },
 ];
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const location = useLocation();
+  const { session } = useAuth();
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-lg">
@@ -67,6 +66,19 @@ const Navbar = () => {
               </Link>
             )
           )}
+          
+          <div className="ml-4 flex items-center gap-2 border-l border-border pl-4">
+            {session ? (
+              <Link to="/profile" className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary/80">
+                <UserIcon size={16} />
+                Profile
+              </Link>
+            ) : (
+              <Link to="/login" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
+                Sign In
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Mobile toggle */}
@@ -118,6 +130,26 @@ const Navbar = () => {
               </Link>
             )
           )}
+          <div className="mt-4 border-t border-border pt-4">
+            {session ? (
+              <Link
+                to="/profile"
+                onClick={() => setMobileOpen(false)}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 py-2.5 text-sm font-medium text-foreground"
+              >
+                <UserIcon size={16} />
+                Profile
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                onClick={() => setMobileOpen(false)}
+                className="flex w-full items-center justify-center rounded-lg bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground"
+              >
+                Sign In
+              </Link>
+            )}
+          </div>
         </div>
       )}
     </nav>

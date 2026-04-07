@@ -12,7 +12,7 @@ const Login = () => {
   const { session } = useAuth();
 
   if (session) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (
@@ -27,7 +27,7 @@ const Login = () => {
             </div>
             <Auth
               supabaseClient={supabase}
-              redirectTo={window.location.origin}
+              redirectTo={`${window.location.origin}/dashboard`}
               appearance={{
                 theme: ThemeSupa,
                 variables: {
@@ -39,8 +39,9 @@ const Login = () => {
                   },
                 },
               }}
-              providers={[]}
+              providers={['google']}
               theme="light"
+              showLinks={true}
             />
           </div>
         </div>

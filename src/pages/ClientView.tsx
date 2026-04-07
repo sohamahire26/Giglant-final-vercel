@@ -1,10 +1,12 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Loader2, MessageSquare, Plus, Info } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import TutorialOverlay from "@/components/workspace/TutorialOverlay";
+import TutorialTour, { TourStep } from "@/components/workspace/TutorialTour";
 import { fmtTs } from "@/components/workspace/types";
 import type { ProjectFile, FileComment } from "@/components/workspace/types";
 
@@ -12,10 +14,11 @@ interface Project { id: string; name: string; client_name: string | null; }
 
 const db = supabase as any;
 
-const clientTutorialSteps = [
+const clientSteps: TourStep[] = [
   { title: "Welcome! 👋", desc: "You've been invited to review files for this project. No signup needed — just browse and leave your feedback." },
-  { title: "Select a File", desc: "Click any file from the list to preview it. Videos, images, and documents are all supported." },
-  { title: "Leave Feedback", desc: "For videos: pause, note the timestamp, and type your comment. For other files: just type your feedback directly." },
+  { targetId: "client-file-list", title: "Select a File", desc: "Click any file from this list to preview it. We support videos, images, and documents." },
+  { targetId: "client-preview-area", title: "Review the Work", desc: "Watch the video or view the document here. For videos, pause exactly where you want a change." },
+  { targetId: "client-feedback-form", title: "Leave Feedback", desc: "Enter the timestamp (for videos) and your comment here. Your freelancer will see it instantly." },
 ];
 
 const ClientView = () => {
@@ -99,7 +102,15 @@ const ClientView = () => {
     <div className="min-h-screen bg-background">
       <SEOHead title={`Review: ${project?.name || "Project"}`} description="Review files and leave feedback." />
 
-      {showTutorial && <TutorialOverlay steps={clientTutorialSteps} currentStep={tutorialStep} setCurrentStep={setTutorialStep} onDismiss={dismissTutorial} />}
+      {showTutorial && (
+        <TutorialTour 
+          steps={clientSteps} 
+          currentStep={tutorialStep} 
+          onNext={() => setTutorialStep(s => s + 1)}
+          onBack={() => setTutorialStep(s => s - 1)}
+          onDismiss={dismissTutorial} 
+        />
+      )}
 
       {/* Header — no navbar, clean viewer */}
       <div className="border-b border-border bg-card px-4 py-4">
@@ -113,7 +124,7 @@ const ClientView = () => {
         <div className="grid gap-6 lg:grid-cols-4">
           {/* File list */}
           <div className="lg:col-span-1">
-            <div className="rounded-xl border border-border bg-card p-4">
+            <div id="client-file-list" className="rounded-xl border border-border bg-card p-4">
               <h2 className="font-display text-sm font-semibold text-foreground mb-3">Files ({files.length})</h2>
               {files.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No files uploaded yet.</p>
@@ -136,7 +147,7 @@ const ClientView = () => {
             {selectedFile ? (
               <>
                 {selectedFile.drive_file_id && (
-                  <div className="rounded-xl border border-border bg-card p-4">
+                  <div id="client-preview-area" className="rounded-xl border border-border bg-card p-4">
                     <h3 className="font-display text-sm font-semibold text-foreground mb-3">{selectedFile.filename}</h3>
                     <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-background">
                       <iframe src={`https://drive.google.com/file/d/${selectedFile.drive_file_id}/preview`} className="h-full w-full" allow="autoplay" allowFullScreen />
@@ -156,7 +167,7 @@ const ClientView = () => {
                   )}
                 </div>
 
-                <div className="rounded-xl border border-border bg-card p-4">
+                <div id="client-feedback-form" className="rounded-xl border border-border bg-card p-4">
                   <div className="flex gap-2 items-end flex-wrap">
                     {selectedFile.file_type === "video" && (
                       <div className="w-20">

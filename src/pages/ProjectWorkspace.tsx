@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt } from "lucide-react";
@@ -12,15 +14,16 @@ import FilesTab from "@/components/workspace/FilesTab";
 import RevisionsTab from "@/components/workspace/RevisionsTab";
 import DeliveryTab from "@/components/workspace/DeliveryTab";
 import InvoiceTab from "@/components/workspace/InvoiceTab";
-import TutorialOverlay from "@/components/workspace/TutorialOverlay";
+import TutorialTour, { TourStep } from "@/components/workspace/TutorialTour";
 
 const db = supabase as any;
 
-const tutorialSteps = [
-  { title: "Welcome to Your Project! 🎉", desc: "This is your project workspace. Manage files, collect feedback, generate delivery messages, and create invoices — all in one place." },
-  { title: "Add Files from Google Drive", desc: "Go to 'Files & Feedback' tab → paste Google Drive links. Videos, images, and PDFs will be previewed here." },
-  { title: "Share with Clients", desc: "Copy the Client Access Link from Overview. Your client can view files and leave feedback without signing up." },
-  { title: "Generate Messages", desc: "Use Delivery and Invoice tabs to create professional messages with one click. Psychology-backed templates included." },
+const freelancerSteps: TourStep[] = [
+  { title: "Welcome to Your Project! 🎉", desc: "This is your private workspace. Let's take a quick tour of how to manage your client workflow." },
+  { targetId: "ws-tabs", title: "Navigation Hub", desc: "Switch between overview, files, revisions, and message generators here." },
+  { targetId: "ws-share-card", title: "Client Access", desc: "Copy this unique link and send it to your client. They can view files and leave feedback without an account." },
+  { targetId: "ws-files-tab-btn", title: "Add Your Work", desc: "Go here to paste Google Drive links. We'll automatically generate previews for your client." },
+  { targetId: "ws-delivery-tab-btn", title: "Professional Delivery", desc: "When you're ready, use this to generate psychology-backed delivery messages for your client." },
 ];
 
 const tabs = [
@@ -76,7 +79,7 @@ const ProjectWorkspace = () => {
   const handleDeleteProject = async () => {
     if (!project || !confirm("Delete this project and all its data? This cannot be undone.")) return;
     await db.from("projects").delete().eq("id", project.id);
-    window.location.href = "/projects/new";
+    window.location.href = "/dashboard";
   };
 
   const dismissTutorial = () => { setShowTutorial(false); localStorage.setItem("giglant_tutorial_seen", "true"); };
@@ -94,7 +97,15 @@ const ProjectWorkspace = () => {
     <Layout>
       <SEOHead title={`${project.name} — Giglant`} description="Project workspace for managing files, feedback, delivery, and invoices." />
 
-      {showTutorial && <TutorialOverlay steps={tutorialSteps} currentStep={tutorialStep} setCurrentStep={setTutorialStep} onDismiss={dismissTutorial} />}
+      {showTutorial && (
+        <TutorialTour 
+          steps={freelancerSteps} 
+          currentStep={tutorialStep} 
+          onNext={() => setTutorialStep(s => s + 1)}
+          onBack={() => setTutorialStep(s => s - 1)}
+          onDismiss={dismissTutorial} 
+        />
+      )}
 
       <section className="section-padding">
         <div className="container-tight">
@@ -110,20 +121,26 @@ const ProjectWorkspace = () => {
           </div>
 
           {/* Tabs */}
-          <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-border bg-card p-1">
+          <div id="ws-tabs" className="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-border bg-card p-1">
             {tabs.map(tab => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors ${activeTab === tab.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}>
+              <button 
+                key={tab.id} 
+                id={`ws-${tab.id}-tab-btn`}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors ${activeTab === tab.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}
+              >
                 <tab.icon className="h-4 w-4" /> {tab.label}
               </button>
             ))}
           </div>
 
-          {activeTab === "overview" && <OverviewTab project={project} files={files} comments={comments} />}
-          {activeTab === "files" && <FilesTab project={project} files={files} setFiles={setFiles} comments={comments} setComments={setComments} selectedFile={selectedFile} setSelectedFile={setSelectedFile} />}
-          {activeTab === "revisions" && <RevisionsTab files={files} comments={comments} setComments={setComments} />}
-          {activeTab === "delivery" && <DeliveryTab project={project} />}
-          {activeTab === "invoice" && <InvoiceTab project={project} />}
+          <div className="min-h-[400px]">
+            {activeTab === "overview" && <OverviewTab project={project} files={files} comments={comments} />}
+            {activeTab === "files" && <FilesTab project={project} files={files} setFiles={setFiles} comments={comments} setComments={setComments} selectedFile={selectedFile} setSelectedFile={setSelectedFile} />}
+            {activeTab === "revisions" && <RevisionsTab files={files} comments={comments} setComments={setComments} />}
+            {activeTab === "delivery" && <DeliveryTab project={project} />}
+            {activeTab === "invoice" && <InvoiceTab project={project} />}
+          </div>
         </div>
       </section>
     </Layout>

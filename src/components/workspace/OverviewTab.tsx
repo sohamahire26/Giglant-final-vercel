@@ -32,7 +32,7 @@ const OverviewTab = ({ project, files, comments }: Props) => {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div id="ws-share-card" className="rounded-2xl border border-border bg-card p-6">
         <h2 className="font-display text-lg font-semibold text-foreground mb-2">Client Access Link</h2>
         <p className="text-sm text-muted-foreground mb-4">Share this with your client. They can view files and leave feedback — no signup needed.</p>
         <div className="flex items-center gap-2 rounded-xl border border-border bg-background p-3">

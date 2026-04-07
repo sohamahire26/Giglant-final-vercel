@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
@@ -37,6 +37,7 @@ const tabs = [
 
 const ProjectWorkspace = () => {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const [project, setProject] = useState<Project | null>(null);
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [comments, setComments] = useState<FileComment[]>([]);
@@ -48,10 +49,16 @@ const ProjectWorkspace = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (localStorage.getItem("giglant_tutorial_dismissed") !== "true") {
+    // Only show tutorial if it's a newly created project or manual re-trigger from dashboard
+    const isNew = location.state?.isNew;
+    const forceTutorial = localStorage.getItem("giglant_force_tutorial") === "true";
+    
+    if (isNew || forceTutorial) {
       setShowTutorial(true);
+      // Clear the forced flag once shown
+      localStorage.removeItem("giglant_force_tutorial");
     }
-  }, []);
+  }, [location.state]);
 
   useEffect(() => {
     if (!id) return;
@@ -85,11 +92,8 @@ const ProjectWorkspace = () => {
     window.location.href = "/dashboard";
   };
 
-  const dismissTutorial = (neverShow: boolean) => { 
+  const dismissTutorial = () => { 
     setShowTutorial(false); 
-    if (neverShow) {
-      localStorage.setItem("giglant_tutorial_dismissed", "true");
-    }
   };
 
   if (loading) return <Layout><div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;

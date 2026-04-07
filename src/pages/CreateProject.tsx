@@ -42,7 +42,8 @@ const CreateProject = () => {
         .select()
         .single();
       if (error) throw error;
-      navigate(`/project/${data.id}`);
+      // Navigate with state to trigger the tutorial once
+      navigate(`/project/${data.id}`, { state: { isNew: true } });
     } catch (err: any) {
       toast({ title: "Failed to create project", description: err.message, variant: "destructive" });
     }

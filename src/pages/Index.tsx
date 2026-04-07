@@ -15,13 +15,6 @@ const tools = [
   { name: "Timestamp Feedback Tool", description: "Upload videos, share with clients, get timestamped feedback for your video editing workflow.", icon: Clock, href: "/tools/timestamp-feedback-tool", color: "bg-purple-500/10 text-purple-600" },
 ];
 
-const features = [
-  { icon: Zap, title: "Built for Speed", description: "No signups. No downloads. Tools that respect your time and fit your editing pipeline." },
-  { icon: Shield, title: "Privacy First", description: "Your files stay on your device. Nothing is uploaded — critical for client delivery workflow privacy." },
-  { icon: Sparkles, title: "Smart Defaults", description: "Designed around real freelancer workflow needs — not generic utility tools." },
-  { icon: Users, title: "For Creators", description: "Made specifically for video editors, designers, and freelancers in post production workflow." },
-];
-
 const homeFAQ = [
   { question: "Is Giglant free to use?", answer: "Yes! All tools on Giglant are completely free. We build smart tools for video editing workflow, freelancer workflow, and content workflow — no hidden costs." },
   { question: "Are my files safe?", answer: "Absolutely. Your files are processed directly in your browser. We don't upload, store, or access any of your files — essential for secure client delivery workflow." },
@@ -59,7 +52,7 @@ const Index = () => {
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-8 flex flex-wrap gap-4">
             {session ? (
-              <Button variant="hero" asChild><Link to="/projects/new">Go to Workspace</Link></Button>
+              <Button variant="hero" asChild><Link to="/dashboard">Go to Dashboard</Link></Button>
             ) : (
               <Button variant="hero" asChild><Link to="/login">Get Started for Free</Link></Button>
             )}
@@ -100,7 +93,7 @@ const Index = () => {
             <p className="mt-4 text-lg text-background/70">Start using Giglant's free tools for video editing workflow, post production, and client delivery.</p>
             <div className="mt-8">
               {session ? (
-                <Button variant="hero" asChild><Link to="/projects/new">Create a Project</Link></Button>
+                <Button variant="hero" asChild><Link to="/dashboard">Go to Dashboard</Link></Button>
               ) : (
                 <Button variant="hero" asChild><Link to="/login">Sign Up Now — It's Free</Link></Button>
               )}

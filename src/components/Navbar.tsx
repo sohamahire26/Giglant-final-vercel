@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { Menu, X, ChevronDown, User as UserIcon } from "lucide-react";
+import { Menu, X, ChevronDown, User as UserIcon, LayoutDashboard } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "./AuthProvider";
 
@@ -12,18 +12,18 @@ const tools = [
   { name: "Timestamp Feedback Tool", href: "/tools/timestamp-feedback-tool" },
 ];
 
-const navLinks = [
-  { name: "Home", href: "/" },
-  { name: "Projects", href: "/projects/new" },
-  { name: "Tools", href: "/tools", children: tools },
-  { name: "Blog", href: "/blog" },
-];
-
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const location = useLocation();
   const { session } = useAuth();
+
+  const navLinks = [
+    { name: "Home", href: "/" },
+    { name: session ? "Dashboard" : "Projects", href: session ? "/dashboard" : "/projects/new" },
+    { name: "Tools", href: "/tools", children: tools },
+    { name: "Blog", href: "/blog" },
+  ];
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-lg">

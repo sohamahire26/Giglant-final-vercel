@@ -28,6 +28,8 @@ import ProjectWorkspace from "./pages/ProjectWorkspace";
 import ClientView from "./pages/ClientView";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
+import ResetPassword from "./pages/ResetPassword";
+import Dashboard from "./pages/Dashboard";
 import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
@@ -44,6 +46,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/tools" element={<ToolsPage />} />
             <Route path="/tools/file-renamer" element={<FileRenamer />} />
             <Route path="/tools/revision-notes-formatter" element={<RevisionNotesFormatter />} />

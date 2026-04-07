@@ -19,11 +19,12 @@ import TutorialTour, { TourStep } from "@/components/workspace/TutorialTour";
 const db = supabase as any;
 
 const freelancerSteps: TourStep[] = [
-  { title: "Welcome to Your Project! 🎉", desc: "This is your private workspace. Let's take a quick tour of how to manage your client workflow." },
-  { targetId: "ws-tabs", title: "Navigation Hub", desc: "Switch between overview, files, revisions, and message generators here." },
-  { targetId: "ws-share-card", title: "Client Access", desc: "Copy this unique link and send it to your client. They can view files and leave feedback without an account." },
-  { targetId: "ws-files-tab-btn", title: "Add Your Work", desc: "Go here to paste Google Drive links. We'll automatically generate previews for your client." },
-  { targetId: "ws-delivery-tab-btn", title: "Professional Delivery", desc: "When you're ready, use this to generate psychology-backed delivery messages for your client." },
+  { title: "Welcome to Your Workspace! 🚀", desc: "This is where you manage your entire client project. Let's walk through the tools that will save you hours of work." },
+  { targetId: "ws-share-card", title: "The Magic Link 🔗", desc: "This is your most important tool. Copy this link and send it to your client. They can view files and leave feedback instantly—no login required for them!" },
+  { targetId: "ws-files-tab-btn", title: "Files & Feedback 📁", desc: "Upload your work here by pasting Google Drive links. We'll generate a professional preview for your client to watch and comment on." },
+  { targetId: "ws-revisions-tab-btn", title: "Revision Checklist ✅", desc: "Once your client leaves feedback, it all appears here as an organized checklist. Mark items as resolved as you work through them." },
+  { targetId: "ws-delivery-tab-btn", title: "Smart Delivery ✉️", desc: "Ready to send a draft or final version? Use this to generate professional, psychology-backed messages that make you look like a pro." },
+  { targetId: "ws-invoice-tab-btn", title: "Get Paid Faster 💰", desc: "Generate polite but firm invoice messages and payment reminders. No more awkward 'where is my money' emails." },
 ];
 
 const tabs = [
@@ -47,7 +48,6 @@ const ProjectWorkspace = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Show tutorial every time unless "never show again" is set
     if (localStorage.getItem("giglant_tutorial_dismissed") !== "true") {
       setShowTutorial(true);
     }
@@ -117,7 +117,6 @@ const ProjectWorkspace = () => {
 
       <section className="section-padding">
         <div className="container-tight">
-          {/* Header */}
           <div className="mb-6 flex items-center justify-between flex-wrap gap-2">
             <div>
               <h1 className="font-display text-2xl font-bold text-foreground">{project.name}</h1>
@@ -128,7 +127,6 @@ const ProjectWorkspace = () => {
             </Button>
           </div>
 
-          {/* Tabs */}
           <div id="ws-tabs" className="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-border bg-card p-1">
             {tabs.map(tab => (
               <button 

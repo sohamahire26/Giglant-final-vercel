@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect } from "react";
+import { useState, useLayoutEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, ChevronLeft, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export interface TourStep {
-  targetId?: string; // CSS ID to point to
+  targetId?: string;
   title: string;
   desc: string;
   position?: "top" | "bottom" | "left" | "right";
@@ -17,14 +18,14 @@ interface Props {
   currentStep: number;
   onNext: () => void;
   onBack: () => void;
-  onDismiss: () => void;
+  onDismiss: (neverShowAgain: boolean) => void;
 }
 
 const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) => {
   const [coords, setCoords] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+  const [neverShowAgain, setNeverShowAgain] = useState(false);
   const step = steps[currentStep];
 
-  // Update spotlight position based on target element
   const updateCoords = () => {
     if (!step.targetId) {
       setCoords(null);
@@ -56,7 +57,6 @@ const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) 
 
   return (
     <div className="fixed inset-0 z-[100] pointer-events-none">
-      {/* Spotlight Overlay */}
       <AnimatePresence>
         <motion.div 
           initial={{ opacity: 0 }}
@@ -68,11 +68,10 @@ const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) 
               ? `polygon(0% 0%, 0% 100%, ${coords.left}px 100%, ${coords.left}px ${coords.top}px, ${coords.left + coords.width}px ${coords.top}px, ${coords.left + coords.width}px ${coords.top + coords.height}px, ${coords.left}px ${coords.top + coords.height}px, ${coords.left}px 100%, 100% 100%, 100% 0%)`
               : "none"
           }}
-          onClick={onDismiss}
+          onClick={() => onDismiss(neverShowAgain)}
         />
       </AnimatePresence>
 
-      {/* Tooltip Card */}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentStep}
@@ -89,7 +88,7 @@ const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) 
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           className="absolute pointer-events-auto w-[320px] rounded-2xl border border-border bg-card p-6 shadow-2xl"
         >
-          <button onClick={onDismiss} className="absolute right-4 top-4 text-muted-foreground hover:text-foreground">
+          <button onClick={() => onDismiss(neverShowAgain)} className="absolute right-4 top-4 text-muted-foreground hover:text-foreground">
             <X size={16} />
           </button>
           
@@ -103,10 +102,15 @@ const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) 
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{step.desc}</p>
           
           <div className="mt-6 flex items-center justify-between">
-            <div className="flex gap-1">
-              {steps.map((_, i) => (
-                <div key={i} className={`h-1 w-4 rounded-full transition-colors ${i === currentStep ? "bg-primary" : "bg-border"}`} />
-              ))}
+            <div className="flex items-center gap-2">
+              <Checkbox 
+                id="never-show" 
+                checked={neverShowAgain} 
+                onCheckedChange={(checked) => setNeverShowAgain(!!checked)} 
+              />
+              <label htmlFor="never-show" className="text-[10px] font-medium text-muted-foreground cursor-pointer">
+                Don't show again
+              </label>
             </div>
             
             <div className="flex gap-2">
@@ -115,7 +119,7 @@ const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) 
                   <ChevronLeft size={16} />
                 </Button>
               )}
-              <Button size="sm" onClick={currentStep === steps.length - 1 ? onDismiss : onNext} className="h-8">
+              <Button size="sm" onClick={currentStep === steps.length - 1 ? () => onDismiss(neverShowAgain) : onNext} className="h-8">
                 {currentStep === steps.length - 1 ? "Finish" : "Next"}
                 {currentStep < steps.length - 1 && <ChevronRight size={16} className="ml-1" />}
               </Button>

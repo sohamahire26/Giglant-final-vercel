@@ -47,7 +47,10 @@ const ProjectWorkspace = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!localStorage.getItem("giglant_tutorial_seen")) setShowTutorial(true);
+    // Show tutorial every time unless "never show again" is set
+    if (localStorage.getItem("giglant_tutorial_dismissed") !== "true") {
+      setShowTutorial(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -82,7 +85,12 @@ const ProjectWorkspace = () => {
     window.location.href = "/dashboard";
   };
 
-  const dismissTutorial = () => { setShowTutorial(false); localStorage.setItem("giglant_tutorial_seen", "true"); };
+  const dismissTutorial = (neverShow: boolean) => { 
+    setShowTutorial(false); 
+    if (neverShow) {
+      localStorage.setItem("giglant_tutorial_dismissed", "true");
+    }
+  };
 
   if (loading) return <Layout><div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
 

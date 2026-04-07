@@ -36,7 +36,10 @@ const ClientView = () => {
   const [tutorialStep, setTutorialStep] = useState(0);
 
   useEffect(() => {
-    if (!localStorage.getItem("giglant_client_tutorial")) setShowTutorial(true);
+    // Show tutorial every time unless "never show again" is set
+    if (localStorage.getItem("giglant_client_tutorial_dismissed") !== "true") {
+      setShowTutorial(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -79,7 +82,12 @@ const ClientView = () => {
     setNewTimestamp("");
   };
 
-  const dismissTutorial = () => { setShowTutorial(false); localStorage.setItem("giglant_client_tutorial", "true"); };
+  const dismissTutorial = (neverShow: boolean) => { 
+    setShowTutorial(false); 
+    if (neverShow) {
+      localStorage.setItem("giglant_client_tutorial_dismissed", "true");
+    }
+  };
 
   if (loading) return (
     <div className="flex min-h-screen items-center justify-center bg-background">

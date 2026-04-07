@@ -38,7 +38,8 @@ export const extractDriveFileId = (url: string): string | null => {
 
 export const detectFileType = (url: string, filename: string): string => {
   const lower = (filename || url).toLowerCase();
-  if (/\.(mp4|mov|avi|mkv|webm)/.test(lower)) return "video";
+  if (/\.(mp4|mov|avi|mkv|webm|m4v)/.test(lower)) return "video";
+  if (/\.(mp3|wav|ogg|m4a|aac|flac)/.test(lower)) return "audio";
   if (/\.(jpg|jpeg|png|gif|webp|svg|bmp)/.test(lower)) return "image";
   if (/\.(pdf)/.test(lower)) return "pdf";
   if (/\.(doc|docx|txt|rtf)/.test(lower)) return "document";

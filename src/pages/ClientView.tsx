@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Loader2, MessageSquare, Plus, Info, HelpCircle } from "lucide-react";
+import { Loader2, MessageSquare, Plus, Info, HelpCircle, Clock } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,7 +36,6 @@ const ClientView = () => {
   const [tutorialStep, setTutorialStep] = useState(0);
 
   useEffect(() => {
-    // Show tutorial every time unless "never show again" is set (legacy)
     if (localStorage.getItem("giglant_client_tutorial_dismissed") !== "true") {
       setShowTutorial(true);
     }
@@ -123,7 +122,6 @@ const ClientView = () => {
         />
       )}
 
-      {/* Header — no navbar, clean viewer */}
       <div className="border-b border-border bg-card px-4 py-4">
         <div className="mx-auto max-w-6xl flex items-center justify-between gap-4">
           <div>
@@ -138,7 +136,6 @@ const ClientView = () => {
 
       <div className="mx-auto max-w-6xl px-4 py-6">
         <div className="grid gap-6 lg:grid-cols-4">
-          {/* File list */}
           <div className="lg:col-span-1">
             <div id="client-file-list" className="rounded-xl border border-border bg-card p-4">
               <h2 className="font-display text-sm font-semibold text-foreground mb-3">Files ({files.length})</h2>
@@ -158,7 +155,6 @@ const ClientView = () => {
             </div>
           </div>
 
-          {/* Preview + Comments */}
           <div className="lg:col-span-3 space-y-4">
             {selectedFile ? (
               <>
@@ -186,24 +182,26 @@ const ClientView = () => {
                 <div id="client-feedback-form" className="rounded-xl border border-border bg-card p-4">
                   <div className="flex gap-2 items-end flex-wrap">
                     {isTimeable && (
-                      <div className="w-20">
-                        <label className="mb-1 block text-[10px] text-muted-foreground">Time</label>
-                        <input type="text" value={newTimestamp} onChange={e => setNewTimestamp(e.target.value)} placeholder="MM:SS"
-                          className="w-full rounded-lg border border-border bg-background px-2 py-2 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
+                      <div className="w-24">
+                        <label className="mb-1 flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+                          <Clock className="h-2.5 w-2.5" /> Time (MM:SS)
+                        </label>
+                        <input type="text" value={newTimestamp} onChange={e => setNewTimestamp(e.target.value)} placeholder="01:24"
+                          className="w-full rounded-lg border border-border bg-background px-2 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
                       </div>
                     )}
                     <div className="w-24">
-                      <label className="mb-1 block text-[10px] text-muted-foreground">Your Name</label>
+                      <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Your Name</label>
                       <input type="text" value={authorName} onChange={e => setAuthorName(e.target.value)} placeholder="Client"
-                        className="w-full rounded-lg border border-border bg-background px-2 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
+                        className="w-full rounded-lg border border-border bg-background px-2 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
                     </div>
                     <div className="flex-1 min-w-[150px]">
-                      <label className="mb-1 block text-[10px] text-muted-foreground">Feedback</label>
+                      <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Feedback</label>
                       <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Describe what you'd like changed..."
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
                         onKeyDown={e => e.key === "Enter" && handleAddComment()} />
                     </div>
-                    <Button onClick={handleAddComment} size="sm"><Plus className="h-4 w-4 mr-1" /> Add</Button>
+                    <Button onClick={handleAddComment} className="h-10"><Plus className="h-4 w-4 mr-1" /> Add</Button>
                   </div>
                 </div>
 
@@ -217,7 +215,7 @@ const ClientView = () => {
                         <div key={c.id} className="rounded-lg border border-border bg-background p-3">
                           <div className="flex items-center gap-2">
                             {c.timestamp_seconds !== null && <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono font-bold text-primary">{fmtTs(c.timestamp_seconds)}</span>}
-                            <span className="text-[10px] text-muted-foreground">{c.author_name}</span>
+                            <span className="text-[10px] text-muted-foreground font-medium">{c.author_name}</span>
                           </div>
                           <p className="mt-1 text-sm text-foreground">{c.comment}</p>
                         </div>

@@ -2,20 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { Plus, FolderOpen, Clock, ChevronRight, Loader2, Search, HelpCircle } from "lucide-react";
+import { Plus, FolderOpen, Clock, ChevronRight, Loader2, Search } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
-import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const { user, session, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
@@ -32,14 +30,6 @@ const Dashboard = () => {
 
     if (!error) setProjects(data || []);
     setLoading(false);
-  };
-
-  const handleTriggerTutorial = () => {
-    localStorage.setItem("giglant_force_tutorial", "true");
-    toast({ 
-      title: "Tutorial Active!", 
-      description: "The guide will appear when you open your next project." 
-    });
   };
 
   if (authLoading) return <Layout><div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
@@ -61,9 +51,6 @@ const Dashboard = () => {
               <p className="text-muted-foreground">Manage your active workspaces and client feedback.</p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={handleTriggerTutorial} title="How to use Giglant?">
-                <HelpCircle className="h-5 w-5" />
-              </Button>
               <Button asChild size="lg" className="shadow-lg shadow-primary/20">
                 <Link to="/projects/new"><Plus className="mr-2 h-5 w-5" /> New Project</Link>
               </Button>

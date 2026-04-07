@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
-import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt } from "lucide-react";
+import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
@@ -49,14 +49,9 @@ const ProjectWorkspace = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Only show tutorial if it's a newly created project or manual re-trigger from dashboard
-    const isNew = location.state?.isNew;
-    const forceTutorial = localStorage.getItem("giglant_force_tutorial") === "true";
-    
-    if (isNew || forceTutorial) {
+    // Only show tutorial if it's a newly created project
+    if (location.state?.isNew) {
       setShowTutorial(true);
-      // Clear the forced flag once shown
-      localStorage.removeItem("giglant_force_tutorial");
     }
   }, [location.state]);
 
@@ -90,6 +85,11 @@ const ProjectWorkspace = () => {
     if (!project || !confirm("Delete this project and all its data? This cannot be undone.")) return;
     await db.from("projects").delete().eq("id", project.id);
     window.location.href = "/dashboard";
+  };
+
+  const handleStartTutorial = () => {
+    setTutorialStep(0);
+    setShowTutorial(true);
   };
 
   const dismissTutorial = () => { 
@@ -126,9 +126,14 @@ const ProjectWorkspace = () => {
               <h1 className="font-display text-2xl font-bold text-foreground">{project.name}</h1>
               {project.client_name && <p className="text-sm text-muted-foreground">Client: {project.client_name}</p>}
             </div>
-            <Button variant="outline" size="sm" onClick={handleDeleteProject} className="text-destructive border-destructive/30 hover:bg-destructive/10">
-              <Trash2 className="mr-1 h-3 w-3" /> Delete Project
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleStartTutorial} className="text-primary border-primary/30 hover:bg-primary/5">
+                <HelpCircle className="mr-1 h-3 w-3" /> Guide
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleDeleteProject} className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                <Trash2 className="mr-1 h-3 w-3" /> Delete Project
+              </Button>
+            </div>
           </div>
 
           <div id="ws-tabs" className="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-border bg-card p-1">

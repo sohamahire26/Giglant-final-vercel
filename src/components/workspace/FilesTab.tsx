@@ -71,6 +71,7 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
   };
 
   const fileComments = selectedFile ? comments.filter(c => c.file_id === selectedFile.id) : [];
+  const isTimeable = selectedFile?.file_type === "video" || selectedFile?.file_type === "audio";
 
   return (
     <div className="space-y-6">
@@ -129,14 +130,15 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
               {/* Add feedback */}
               <div className="rounded-2xl border border-border bg-card p-4">
                 <h3 className="font-display text-sm font-semibold text-foreground mb-3">Add Feedback</h3>
-                {selectedFile.file_type === "video" && (
-                  <p className="text-xs text-muted-foreground mb-2">Pause the video, note the timestamp, and type your feedback below.</p>
-                )}
-                {selectedFile.file_type !== "video" && (
-                  <p className="text-xs text-muted-foreground mb-2">Review the file and type your feedback below.</p>
-                )}
+                <div className="rounded-xl border border-border bg-primary/5 p-4 mb-3">
+                  {isTimeable ? (
+                    <p className="text-xs text-muted-foreground">Pause the video, note the timestamp, and type your feedback below.</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Review the file and type your feedback below.</p>
+                  )}
+                </div>
                 <div className="flex gap-2 items-end flex-wrap">
-                  {selectedFile.file_type === "video" && (
+                  {isTimeable && (
                     <div className="w-24">
                       <label className="mb-1 block text-[10px] text-muted-foreground">Time</label>
                       <input type="text" value={newTimestamp} onChange={e => setNewTimestamp(e.target.value)} placeholder="MM:SS"

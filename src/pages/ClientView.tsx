@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Loader2, MessageSquare, Plus, Info } from "lucide-react";
+import { Loader2, MessageSquare, Plus, Info, HelpCircle } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,7 +36,7 @@ const ClientView = () => {
   const [tutorialStep, setTutorialStep] = useState(0);
 
   useEffect(() => {
-    // Show tutorial every time unless "never show again" is set
+    // Show tutorial every time unless "never show again" is set (legacy)
     if (localStorage.getItem("giglant_client_tutorial_dismissed") !== "true") {
       setShowTutorial(true);
     }
@@ -82,11 +82,13 @@ const ClientView = () => {
     setNewTimestamp("");
   };
 
-  const dismissTutorial = (neverShow: boolean) => { 
+  const handleStartTutorial = () => {
+    setTutorialStep(0);
+    setShowTutorial(true);
+  };
+
+  const dismissTutorial = () => { 
     setShowTutorial(false); 
-    if (neverShow) {
-      localStorage.setItem("giglant_client_tutorial_dismissed", "true");
-    }
   };
 
   if (loading) return (
@@ -105,6 +107,7 @@ const ClientView = () => {
   );
 
   const fileComments = selectedFile ? comments.filter(c => c.file_id === selectedFile.id) : [];
+  const isTimeable = selectedFile?.file_type === "video" || selectedFile?.file_type === "audio";
 
   return (
     <div className="min-h-screen bg-background">
@@ -122,9 +125,14 @@ const ClientView = () => {
 
       {/* Header — no navbar, clean viewer */}
       <div className="border-b border-border bg-card px-4 py-4">
-        <div className="mx-auto max-w-6xl">
-          <h1 className="font-display text-xl font-bold text-foreground">{project?.name}</h1>
-          {project?.client_name && <p className="text-sm text-muted-foreground">For: {project.client_name}</p>}
+        <div className="mx-auto max-w-6xl flex items-center justify-between gap-4">
+          <div>
+            <h1 className="font-display text-xl font-bold text-foreground">{project?.name}</h1>
+            {project?.client_name && <p className="text-sm text-muted-foreground">For: {project.client_name}</p>}
+          </div>
+          <Button variant="outline" size="sm" onClick={handleStartTutorial} className="text-primary border-primary/30 hover:bg-primary/5">
+            <HelpCircle className="mr-1 h-3 w-3" /> Guide
+          </Button>
         </div>
       </div>
 
@@ -168,7 +176,7 @@ const ClientView = () => {
                     <Info className="h-4 w-4 text-primary" />
                     <span className="text-sm font-medium text-primary">How to give feedback</span>
                   </div>
-                  {selectedFile.file_type === "video" ? (
+                  {isTimeable ? (
                     <p className="text-xs text-muted-foreground">Watch the video, <strong className="text-foreground">pause where you want changes</strong>, note the timestamp, and type your comment below.</p>
                   ) : (
                     <p className="text-xs text-muted-foreground">Review the file and type your feedback in the comment box below.</p>
@@ -177,7 +185,7 @@ const ClientView = () => {
 
                 <div id="client-feedback-form" className="rounded-xl border border-border bg-card p-4">
                   <div className="flex gap-2 items-end flex-wrap">
-                    {selectedFile.file_type === "video" && (
+                    {isTimeable && (
                       <div className="w-20">
                         <label className="mb-1 block text-[10px] text-muted-foreground">Time</label>
                         <input type="text" value={newTimestamp} onChange={e => setNewTimestamp(e.target.value)} placeholder="MM:SS"

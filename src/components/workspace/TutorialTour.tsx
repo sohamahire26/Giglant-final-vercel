@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useLayoutEffect, useEffect } from "react";
+import { useState, useLayoutEffect, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, ChevronLeft, X, Sparkles } from "lucide-react";
@@ -22,7 +22,9 @@ interface Props {
 
 const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) => {
   const [coords, setCoords] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+  const [tipPosition, setTipPosition] = useState<"top" | "bottom">("bottom");
   const [neverShowAgain, setNeverShowAgain] = useState(false);
+  const tipRef = useRef<HTMLDivElement>(null);
   const step = steps[currentStep];
 
   // Lock scroll when tutorial is active
@@ -40,16 +42,23 @@ const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) 
     }
     const el = document.getElementById(step.targetId);
     if (el) {
+      // Scroll target into view first
       el.scrollIntoView({ behavior: "smooth", block: "center" });
+      
+      // Wait for scroll to finish
       setTimeout(() => {
         const rect = el.getBoundingClientRect();
         setCoords({
-          top: rect.top + window.scrollY,
-          left: rect.left + window.scrollX,
+          top: rect.top,
+          left: rect.left,
           width: rect.width,
           height: rect.height,
         });
-      }, 300);
+
+        // Decide position: if target is in bottom half, show tip at top
+        const isBottomHalf = rect.top + rect.height / 2 > window.innerHeight / 2;
+        setTipPosition(isBottomHalf ? "top" : "bottom");
+      }, 350);
     } else {
       setCoords(null);
     }
@@ -68,8 +77,9 @@ const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/70 pointer-events-auto"
+          className="absolute inset-0 bg-black/80 pointer-events-auto"
           style={{
+            // Mask effect using viewport coordinates
             clipPath: coords 
               ? `polygon(0% 0%, 0% 100%, ${coords.left - 8}px 100%, ${coords.left - 8}px ${coords.top - 8}px, ${coords.left + coords.width + 8}px ${coords.top - 8}px, ${coords.left + coords.width + 8}px ${coords.top + coords.height + 8}px, ${coords.left - 8}px ${coords.top + coords.height + 8}px, ${coords.left - 8}px 100%, 100% 100%, 100% 0%)`
               : "none"
@@ -81,18 +91,127 @@ const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) 
       <AnimatePresence mode="wait">
         <motion.div
           key={currentStep}
+          ref={tipRef}
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ 
             opacity: 1, 
             scale: 1, 
             y: 0,
-            position: coords ? "absolute" : "relative",
-            top: coords ? coords.top + coords.height + 24 : "auto",
-            left: coords ? coords.left + (coords.width / 2) : "auto",
-            translateX: coords ? "-50%" : "0",
+            position: "fixed",
+            // Position above or below the target based on tipPosition
+<dyad-write path="src/components/workspace/TutorialTour.tsx" description="Rebuilding the tutorial component to be fully responsive with automatic flip-positioning">
+"use client";
+
+import { useState, useLayoutEffect, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { ChevronRight, ChevronLeft, X, Sparkles } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+
+export interface TourStep {
+  targetId?: string;
+  title: string;
+  desc: string;
+}
+
+interface Props {
+  steps: TourStep[];
+  currentStep: number;
+  onNext: () => void;
+  onBack: () => void;
+  onDismiss: (neverShowAgain: boolean) => void;
+}
+
+const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) => {
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+  const [tipPosition, setTipPosition] = useState<"top" | "bottom">("bottom");
+  const [neverShowAgain, setNeverShowAgain] = useState(false);
+  const tipRef = useRef<HTMLDivElement>(null);
+  const step = steps[currentStep];
+
+  // Lock scroll when tutorial is active
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, []);
+
+  const updateCoords = () => {
+    if (!step.targetId) {
+      setCoords(null);
+      return;
+    }
+    const el = document.getElementById(step.targetId);
+    if (el) {
+      // Scroll target into view first
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      
+      // Wait for scroll to finish
+      setTimeout(() => {
+        const rect = el.getBoundingClientRect();
+        setCoords({
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height,
+        });
+
+        // Decide position: if target is in bottom half, show tip at top
+        const isBottomHalf = rect.top + rect.height / 2 > window.innerHeight / 2;
+        setTipPosition(isBottomHalf ? "top" : "bottom");
+      }, 350);
+    } else {
+      setCoords(null);
+    }
+  };
+
+  useLayoutEffect(() => {
+    updateCoords();
+    window.addEventListener("resize", updateCoords);
+    return () => window.removeEventListener("resize", updateCoords);
+  }, [currentStep, step.targetId]);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+      <AnimatePresence>
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-black/80 pointer-events-auto"
+          style={{
+            // Mask effect using viewport coordinates
+            clipPath: coords 
+              ? `polygon(0% 0%, 0% 100%, ${coords.left - 8}px 100%, ${coords.left - 8}px ${coords.top - 8}px, ${coords.left + coords.width + 8}px ${coords.top - 8}px, ${coords.left + coords.width + 8}px ${coords.top + coords.height + 8}px, ${coords.left - 8}px ${coords.top + coords.height + 8}px, ${coords.left - 8}px 100%, 100% 100%, 100% 0%)`
+              : "none"
+          }}
+          onClick={() => onDismiss(neverShowAgain)}
+        />
+      </AnimatePresence>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentStep}
+          ref={tipRef}
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ 
+            opacity: 1, 
+            scale: 1, 
+            y: 0,
+            position: "fixed",
+            // Position above or below the target based on tipPosition
+            top: coords 
+              ? (tipPosition === "bottom" ? coords.top + coords.height + 24 : "auto")
+              : "50%",
+            bottom: coords
+              ? (tipPosition === "top" ? (window.innerHeight - coords.top) + 24 : "auto")
+              : "auto",
+            left: "50%",
+            translateX: "-50%",
           }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="z-[101] w-[340px] rounded-2xl border border-border bg-card p-6 shadow-2xl pointer-events-auto"
+          className="z-[101] w-[90vw] max-w-[380px] rounded-2xl border border-border bg-card p-6 shadow-2xl pointer-events-auto"
         >
           <button onClick={() => onDismiss(neverShowAgain)} className="absolute right-4 top-4 text-muted-foreground hover:text-foreground">
             <X size={18} />

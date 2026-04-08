@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Plus, Trash2, ExternalLink, CheckSquare, Square, Clock, FileEdit, Info } from "lucide-react";
+import { Plus, Trash2, ExternalLink, CheckSquare, Square, Clock, FileEdit, Info, HelpCircle, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Project, ProjectFile, FileComment } from "./types";
 import { extractDriveFileId } from "./types";
+import { fmtTs } from "./types";
 
 const db = supabase as any;
 
@@ -85,7 +86,29 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
   const selectedFileType = FILE_TYPES.find(t => t.value === selectedFile?.file_type);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* How to Use Section */}
+      <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <HelpCircle className="h-5 w-5 text-primary" />
+          <h2 className="font-display text-lg font-semibold text-foreground">How to Manage Project Files</h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-4">
+          {[
+            { step: "1", title: "Upload to Drive", desc: "Upload your work to Google Drive" },
+            { step: "2", title: "Set Permissions", desc: "Set to 'Anyone with the link' → Viewer" },
+            { step: "3", title: "Add to Project", desc: "Paste the link below to add the file" },
+            { step: "4", title: "Collect Feedback", desc: "Share the client link for revisions" },
+          ].map(s => (
+            <div key={s.step} className="rounded-xl border border-border bg-background p-4 text-center">
+              <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">{s.step}</div>
+              <p className="text-sm font-semibold text-foreground">{s.title}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* File Renamer Tip */}
       <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
         <div className="flex items-start gap-3">
@@ -101,70 +124,57 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-6">
-        <h2 className="font-display text-lg font-semibold text-foreground mb-2">Add File from Google Drive</h2>
-        <p className="text-xs text-muted-foreground mb-4">Upload to Google Drive → Right-click → Get link → Set "Anyone with the link" → Paste below</p>
-        
-        <div className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-foreground">
-                File Type <span className="text-primary">*</span>
-              </label>
-              <select
-                value={newFileType}
-                onChange={(e) => setNewFileType(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none"
-              >
-                {FILE_TYPES.map(t => (
-                  <option key={t.value} value={t.value}>
-                    {t.label} {t.hasTimestamp ? "🎬" : "📄"}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                {newFileType === "video" || newFileType === "audio" 
-                  ? "✓ Timestamp feedback available" 
-                  : "✗ No timestamp (regular feedback only)"}
-              </p>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-foreground">File Name</label>
-              <input 
-                type="text" 
-                value={newFilename} 
-                onChange={e => setNewFilename(e.target.value)} 
-                placeholder="e.g., Brand Video v2, Logo Final" 
-                className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" 
-              />
+      <div className="grid gap-8 lg:grid-cols-3">
+        <div className="lg:col-span-1 space-y-6">
+          {/* Add File Form */}
+          <div className="rounded-2xl border border-border bg-card p-6">
+            <h2 className="font-display text-lg font-semibold text-foreground mb-4">Add New File</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">File Type</label>
+                <select
+                  value={newFileType}
+                  onChange={(e) => setNewFileType(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                >
+                  {FILE_TYPES.map(t => (
+                    <option key={t.value} value={t.value}>
+                      {t.label} {t.hasTimestamp ? "🎬" : "📄"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">File Name</label>
+                <input 
+                  type="text" 
+                  value={newFilename} 
+                  onChange={e => setNewFilename(e.target.value)} 
+                  placeholder="e.g., Brand Video v2" 
+                  className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" 
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Google Drive Link</label>
+                <input 
+                  type="text" 
+                  value={newDriveUrl} 
+                  onChange={e => setNewDriveUrl(e.target.value)} 
+                  placeholder="Paste link here..." 
+                  className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" 
+                />
+              </div>
+              <Button onClick={handleAddFile} className="w-full" disabled={!newDriveUrl.trim()}>
+                <Plus className="mr-1 h-4 w-4" /> Add File
+              </Button>
             </div>
           </div>
-          
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-foreground">
-              Google Drive Link <span className="text-primary">*</span>
-            </label>
-            <input 
-              type="text" 
-              value={newDriveUrl} 
-              onChange={e => setNewDriveUrl(e.target.value)} 
-              placeholder="https://drive.google.com/file/d/FILE_ID/view" 
-              className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" 
-            />
-          </div>
-          
-          <Button onClick={handleAddFile} className="w-full" disabled={!newDriveUrl.trim()}>
-            <Plus className="mr-1 h-4 w-4" /> Add File
-          </Button>
-        </div>
-      </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-1">
+          {/* File List */}
           <div className="rounded-2xl border border-border bg-card p-4">
-            <h3 className="font-display text-sm font-semibold text-foreground mb-3">Files ({files.length})</h3>
+            <h3 className="font-display text-sm font-semibold text-foreground mb-3">Project Files ({files.length})</h3>
             {files.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">No files yet. Add your first file above.</p>
+              <p className="text-sm text-muted-foreground text-center py-6">No files yet.</p>
             ) : (
               <div className="space-y-2">
                 {files.map(f => {
@@ -183,20 +193,49 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
               </div>
             )}
           </div>
+
+          {/* Information Section */}
+          <div className="rounded-2xl border border-border bg-card p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Info className="h-5 w-5 text-primary" />
+              <h3 className="font-display text-sm font-semibold text-foreground">File Security & Access</h3>
+            </div>
+            <ul className="space-y-3 text-xs text-muted-foreground">
+              <li className="flex gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1 shrink-0" />
+                <span>Files are loaded directly from Google Drive. We don't store your files on our servers.</span>
+              </li>
+              <li className="flex gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1 shrink-0" />
+                <span>Ensure "Anyone with the link" is enabled so your client can see the preview.</span>
+              </li>
+              <li className="flex gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1 shrink-0" />
+                <span>Clients can leave timestamped feedback on video and audio files automatically.</span>
+              </li>
+            </ul>
+          </div>
         </div>
 
         <div className="lg:col-span-2">
           {selectedFile ? (
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-border bg-card p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-display text-sm font-semibold text-foreground">{selectedFile.filename}</h3>
+            <div className="space-y-6">
+              {/* Preview Card */}
+              <div className="rounded-2xl border border-border bg-card p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <h3 className="font-display text-lg font-semibold text-foreground">{selectedFile.filename}</h3>
                     <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${selectedFileType?.hasTimestamp ? "bg-amber-500/10 text-amber-600" : "bg-secondary text-muted-foreground"}`}>
-                      {selectedFileType?.hasTimestamp ? "🎬 Timestamp" : "📄 Standard"}
+                      {selectedFileType?.hasTimestamp ? "🎬 Timestamp Enabled" : "📄 Standard Feedback"}
                     </span>
                   </div>
-                  <a href={selectedFile.drive_url} target="_blank" rel="noopener" className="text-xs text-primary hover:underline flex items-center gap-1">Open in Drive <ExternalLink className="h-3 w-3" /></a>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={selectedFile.drive_url} target="_blank" rel="noopener">
+                        <ExternalLink className="mr-1 h-3 w-3" /> Open in Drive
+                      </a>
+                    </Button>
+                  </div>
                 </div>
                 {selectedFile.drive_file_id && (
                   <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-background">
@@ -205,61 +244,73 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
                 )}
               </div>
 
-              <div className="rounded-2xl border border-border bg-card p-4">
-                <h3 className="font-display text-sm font-semibold text-foreground mb-3">Add Feedback</h3>
-                <div className={`rounded-xl border p-4 mb-3 ${isTimeable ? "border-amber-500/30 bg-amber-500/5" : "border-border bg-muted/30"}`}>
-                  {isTimeable ? (
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-medium text-amber-600">🎬 Video/Audio detected</span> — Pause the video, note the timestamp, and type your feedback below.
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Standard feedback mode — Type your comment below.
-                    </p>
-                  )}
-                </div>
-                <div className="flex gap-2 items-end flex-wrap">
+              {/* Feedback Input */}
+              <div className="rounded-2xl border border-border bg-card p-6">
+                <h3 className="font-display text-sm font-semibold text-foreground mb-4">Add Feedback</h3>
+                <div className="flex gap-3 items-end flex-wrap">
                   {isTimeable && (
                     <div className="w-28">
-                      <label className="mb-1 flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+                      <label className="mb-1.5 flex items-center gap-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                         <Clock className="h-2.5 w-2.5" /> Time (MM:SS)
                       </label>
                       <input type="text" value={newTimestamp} onChange={e => setNewTimestamp(e.target.value)} placeholder="01:24"
-                        className="w-full rounded-lg border border-border bg-background px-2 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
                     </div>
                   )}
-                  <div className="w-24">
-                    <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Name</label>
-                    <input type="text" value={authorName} onChange={e => setAuthorName(e.target.value)} placeholder="You"
-                      className="w-full rounded-lg border border-border bg-background px-2 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
+                  <div className="w-32">
+                    <label className="mb-1.5 block text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Author</label>
+                    <input type="text" value={authorName} onChange={e => setAuthorName(e.target.value)} placeholder="Your Name"
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
                   </div>
-                  <div className="flex-1 min-w-[150px]">
-                    <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Comment</label>
-                    <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="What needs to change?"
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="mb-1.5 block text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Comment</label>
+                    <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Describe the change..."
                       className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
                       onKeyDown={e => e.key === "Enter" && handleAddComment()} />
                   </div>
-                  <Button onClick={handleAddComment} className="h-10"><Plus className="h-4 w-4" /></Button>
+                  <Button onClick={handleAddComment} className="h-[42px] px-6">
+                    <Plus className="mr-1 h-4 w-4" /> Add
+                  </Button>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-border bg-card p-4">
-                <h3 className="font-display text-sm font-semibold text-foreground mb-3">Comments ({fileComments.length})</h3>
+              {/* Comments List */}
+              <div className="rounded-2xl border border-border bg-card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-display text-sm font-semibold text-foreground">Comments ({fileComments.length})</h3>
+                  {fileComments.length > 0 && (
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                      <CheckSquare className="h-3 w-3 text-primary" /> Resolved
+                      <Square className="h-3 w-3" /> Pending
+                    </div>
+                  )}
+                </div>
                 {fileComments.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">No comments yet.</p>
+                  <div className="text-center py-12">
+                    <Share2 className="mx-auto h-8 w-8 text-muted-foreground/30 mb-3" />
+                    <p className="text-sm text-muted-foreground">No comments yet. Share the client link to start collecting feedback.</p>
+                  </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {fileComments.map(c => (
-                      <div key={c.id} className={`flex items-start gap-3 rounded-xl border p-3 ${c.is_resolved ? "border-border/50 bg-muted/30" : "border-border bg-background"}`}>
-                        <button onClick={() => toggleResolved(c.id)} className="mt-0.5 shrink-0">
-                          {c.is_resolved ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4 text-muted-foreground" />}
+                      <div key={c.id} className={`flex items-start gap-4 rounded-xl border p-4 transition-all ${c.is_resolved ? "border-border/50 bg-muted/30 opacity-70" : "border-border bg-background shadow-sm"}`}>
+                        <button onClick={() => toggleResolved(c.id)} className="mt-1 shrink-0">
+                          {c.is_resolved ? <CheckSquare className="h-5 w-5 text-primary" /> : <Square className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />}
                         </button>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            {c.timestamp_seconds !== null && <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono font-bold text-primary">{fmtTs(c.timestamp_seconds)}</span>}
-                            <span className="text-[10px] text-muted-foreground font-medium">{c.author_name} {c.is_client ? "(Client)" : ""}</span>
+                          <div className="flex items-center gap-2 mb-1">
+                            {c.timestamp_seconds !== null && (
+                              <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-bold text-primary">
+                                {fmtTs(c.timestamp_seconds)}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-tight">
+                              {c.author_name} {c.is_client ? "• Client" : "• Freelancer"}
+                            </span>
                           </div>
-                          <p className={`mt-1 text-sm ${c.is_resolved ? "line-through text-muted-foreground" : "text-foreground"}`}>{c.comment}</p>
+                          <p className={`text-sm leading-relaxed ${c.is_resolved ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                            {c.comment}
+                          </p>
                         </div>
                       </div>
                     ))}
@@ -268,8 +319,12 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center rounded-2xl border border-dashed border-border bg-card p-16">
-              <p className="text-sm text-muted-foreground">Select a file to preview and add feedback</p>
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card p-20 text-center">
+              <div className="h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center mb-4">
+                <Plus className="h-6 w-6 text-primary/40" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-1">No File Selected</h3>
+              <p className="text-sm text-muted-foreground max-w-xs">Select a file from the list on the left to preview it and manage feedback.</p>
             </div>
           )}
         </div>

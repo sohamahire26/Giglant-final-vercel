@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, FileEdit, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Project, FileComment, ProjectFile } from "./types";
 
@@ -48,6 +48,7 @@ const OverviewTab = ({ project, files, comments }: Props) => {
         <h2 className="font-display text-lg font-semibold text-foreground mb-4">Recommended Workflow</h2>
         <div className="space-y-3">
           {[
+            "Rename your files using the Smart File Renamer tool (optional but recommended)",
             "Add your files from Google Drive in the 'Files & Feedback' tab",
             "Share the Client Access Link with your client",
             "Client views files and leaves feedback",
@@ -59,6 +60,30 @@ const OverviewTab = ({ project, files, comments }: Props) => {
               <p className="text-sm text-foreground">{text}</p>
             </div>
           ))}
+        </div>
+        
+        {/* File Renamer Suggestion */}
+        <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+          <div className="flex items-start gap-3">
+            <div className="shrink-0">
+              <FileEdit className="h-5 w-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-foreground">Want cleaner file names?</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Use our free Smart File Renamer tool to automatically rename your files with meaningful names. 
+                It reads PDF content, image EXIF data, and detects 25+ document types.
+              </p>
+              <a 
+                href="/tools/file-renamer" 
+                target="_blank" 
+                rel="noopener"
+                className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-amber-600 hover:text-amber-700"
+              >
+                Open File Renamer Tool <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </div>

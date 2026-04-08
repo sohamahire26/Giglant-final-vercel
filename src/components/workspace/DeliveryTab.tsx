@@ -41,9 +41,9 @@ const DeliveryTab = ({ project }: Props) => {
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            { step: "1", title: "Select Type", desc: "Choose if this is a draft, final version, or revision." },
-            { step: "2", title: "Choose Tone", desc: "Pick a tone that matches your client relationship." },
-            { step: "3", title: "Copy & Send", desc: "Generate, copy, and send via your preferred app." },
+            { step: "1", title: "Define Stage", desc: "Select if you're sending a draft, revision, or final file." },
+            { step: "2", title: "Set the Mood", desc: "Choose a tone that fits your professional relationship." },
+            { step: "3", title: "Deliver Work", desc: "Generate the message and send it with the review link." },
           ].map(s => (
             <div key={s.step} className="rounded-xl border border-border bg-background p-4 text-center">
               <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">{s.step}</div>

@@ -152,7 +152,7 @@ const ProjectWorkspace = () => {
           </div>
 
           <div className="min-h-[400px]">
-            {activeTab === "overview" && <OverviewTab project={project} files={files} comments={comments} />}
+            {activeTab === "overview" && <OverviewTab project={project} />}
             {activeTab === "renamer" && (
               <div className="p-6">
                 <h2 className="font-display text-lg font-semibold text-foreground mb-4">Smart File Renamer</h2>

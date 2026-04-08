@@ -4,9 +4,19 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Project, ProjectFile, FileComment } from "./types";
-import { extractDriveFileId, detectFileType, fmtTs } from "./types";
+import { extractDriveFileId } from "./types";
 
 const db = supabase as any;
+
+const FILE_TYPES = [
+  { value: "video", label: "Video", hasTimestamp: true },
+  { value: "audio", label: "Audio", hasTimestamp: true },
+  { value: "image", label: "Image", hasTimestamp: false },
+  { value: "pdf", label: "PDF / Document", hasTimestamp: false },
+  { value: "document", label: "Document", hasTimestamp: false },
+  { value: "design", label: "Design File", hasTimestamp: false },
+  { value: "other", label: "Other", hasTimestamp: false },
+];
 
 interface Props {
   project: Project;
@@ -21,6 +31,7 @@ interface Props {
 const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFile, setSelectedFile }: Props) => {
   const [newDriveUrl, setNewDriveUrl] = useState("");
   const [newFilename, setNewFilename] = useState("");
+  const [newFileType, setNewFileType] = useState("video");
   const [newComment, setNewComment] = useState("");
   const [newTimestamp, setNewTimestamp] = useState("");
   const [authorName, setAuthorName] = useState("");
@@ -31,9 +42,8 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
     const fid = extractDriveFileId(newDriveUrl);
     if (!fid) { toast({ title: "Invalid Google Drive URL", variant: "destructive" }); return; }
     const filename = newFilename.trim() || "Untitled File";
-    const fileType = detectFileType(newDriveUrl, filename);
     const { data, error } = await db.from("project_files")
-      .insert({ project_id: project.id, file_type: fileType, drive_url: newDriveUrl.trim(), drive_file_id: fid, filename, sort_order: files.length })
+      .insert({ project_id: project.id, file_type: newFileType, drive_url: newDriveUrl.trim(), drive_file_id: fid, filename, sort_order: files.length })
       .select().single();
     if (error) { toast({ title: "Failed to add file", variant: "destructive" }); return; }
     setFiles(prev => [...prev, data]);
@@ -72,18 +82,65 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
 
   const fileComments = selectedFile ? comments.filter(c => c.file_id === selectedFile.id) : [];
   const isTimeable = selectedFile?.file_type === "video" || selectedFile?.file_type === "audio";
+  const selectedFileType = FILE_TYPES.find(t => t.value === selectedFile?.file_type);
 
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-border bg-card p-6">
         <h2 className="font-display text-lg font-semibold text-foreground mb-2">Add File from Google Drive</h2>
         <p className="text-xs text-muted-foreground mb-4">Upload to Google Drive → Right-click → Get link → Set "Anyone with the link" → Paste below</p>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <input type="text" value={newFilename} onChange={e => setNewFilename(e.target.value)} placeholder="File name (e.g., Brand Video v2)"
-            className="sm:w-48 rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
-          <input type="text" value={newDriveUrl} onChange={e => setNewDriveUrl(e.target.value)} placeholder="https://drive.google.com/file/d/..."
-            className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
-          <Button onClick={handleAddFile}><Plus className="mr-1 h-4 w-4" /> Add</Button>
+        
+        <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">
+                File Type <span className="text-primary">*</span>
+              </label>
+              <select
+                value={newFileType}
+                onChange={(e) => setNewFileType(e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none"
+              >
+                {FILE_TYPES.map(t => (
+                  <option key={t.value} value={t.value}>
+                    {t.label} {t.hasTimestamp ? "🎬" : "📄"}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                {newFileType === "video" || newFileType === "audio" 
+                  ? "✓ Timestamp feedback available" 
+                  : "✗ No timestamp (regular feedback only)"}
+              </p>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">File Name</label>
+              <input 
+                type="text" 
+                value={newFilename} 
+                onChange={e => setNewFilename(e.target.value)} 
+                placeholder="e.g., Brand Video v2, Logo Final" 
+                className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" 
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
+              Google Drive Link <span className="text-primary">*</span>
+            </label>
+            <input 
+              type="text" 
+              value={newDriveUrl} 
+              onChange={e => setNewDriveUrl(e.target.value)} 
+              placeholder="https://drive.google.com/file/d/FILE_ID/view" 
+              className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" 
+            />
+          </div>
+          
+          <Button onClick={handleAddFile} className="w-full" disabled={!newDriveUrl.trim()}>
+            <Plus className="mr-1 h-4 w-4" /> Add File
+          </Button>
         </div>
       </div>
 
@@ -95,15 +152,19 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
               <p className="text-sm text-muted-foreground text-center py-6">No files yet. Add your first file above.</p>
             ) : (
               <div className="space-y-2">
-                {files.map(f => (
-                  <div key={f.id} className={`flex items-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${selectedFile?.id === f.id ? "border-primary bg-primary/5" : "border-border hover:bg-secondary"}`}
-                    onClick={() => setSelectedFile(f)}>
-                    <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary uppercase">{f.file_type}</span>
-                    <span className="flex-1 text-sm text-foreground truncate">{f.filename}</span>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">{comments.filter(c => c.file_id === f.id).length}💬</span>
-                    <button onClick={e => { e.stopPropagation(); handleDeleteFile(f.id); }} className="shrink-0 p-1 text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></button>
-                  </div>
-                ))}
+                {files.map(f => {
+                  const fileTypeInfo = FILE_TYPES.find(t => t.value === f.file_type);
+                  return (
+                    <div key={f.id} className={`flex items-center gap-2 rounded-lg border p-3 cursor-pointer transition-colors ${selectedFile?.id === f.id ? "border-primary bg-primary/5" : "border-border hover:bg-secondary"}`}
+                      onClick={() => setSelectedFile(f)}>
+                      <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary uppercase">{f.file_type}</span>
+                      <span className="flex-1 text-sm text-foreground truncate">{f.filename}</span>
+                      {fileTypeInfo?.hasTimestamp && <span className="text-[10px]">🎬</span>}
+                      <span className="shrink-0 text-[10px] text-muted-foreground">{comments.filter(c => c.file_id === f.id).length}💬</span>
+                      <button onClick={e => { e.stopPropagation(); handleDeleteFile(f.id); }} className="shrink-0 p-1 text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -114,7 +175,12 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
             <div className="space-y-4">
               <div className="rounded-2xl border border-border bg-card p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-display text-sm font-semibold text-foreground">{selectedFile.filename}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-display text-sm font-semibold text-foreground">{selectedFile.filename}</h3>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${selectedFileType?.hasTimestamp ? "bg-amber-500/10 text-amber-600" : "bg-secondary text-muted-foreground"}`}>
+                      {selectedFileType?.hasTimestamp ? "🎬 Timestamp" : "📄 Standard"}
+                    </span>
+                  </div>
                   <a href={selectedFile.drive_url} target="_blank" rel="noopener" className="text-xs text-primary hover:underline flex items-center gap-1">Open in Drive <ExternalLink className="h-3 w-3" /></a>
                 </div>
                 {selectedFile.drive_file_id && (
@@ -126,11 +192,15 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
 
               <div className="rounded-2xl border border-border bg-card p-4">
                 <h3 className="font-display text-sm font-semibold text-foreground mb-3">Add Feedback</h3>
-                <div className="rounded-xl border border-border bg-primary/5 p-4 mb-3">
+                <div className={`rounded-xl border p-4 mb-3 ${isTimeable ? "border-amber-500/30 bg-amber-500/5" : "border-border bg-muted/30"}`}>
                   {isTimeable ? (
-                    <p className="text-xs text-muted-foreground">Pause the video, note the timestamp, and type your feedback below.</p>
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-medium text-amber-600">🎬 Video/Audio detected</span> — Pause the video, note the timestamp, and type your feedback below.
+                    </p>
                   ) : (
-                    <p className="text-xs text-muted-foreground">Review the file and type your feedback below.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Standard feedback mode — Type your comment below.
+                    </p>
                   )}
                 </div>
                 <div className="flex gap-2 items-end flex-wrap">

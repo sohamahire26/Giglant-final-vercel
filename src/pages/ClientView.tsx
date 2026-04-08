@@ -14,6 +14,16 @@ interface Project { id: string; name: string; client_name: string | null; }
 
 const db = supabase as any;
 
+const FILE_TYPES = [
+  { value: "video", label: "Video", hasTimestamp: true },
+  { value: "audio", label: "Audio", hasTimestamp: true },
+  { value: "image", label: "Image", hasTimestamp: false },
+  { value: "pdf", label: "PDF / Document", hasTimestamp: false },
+  { value: "document", label: "Document", hasTimestamp: false },
+  { value: "design", label: "Design File", hasTimestamp: false },
+  { value: "other", label: "Other", hasTimestamp: false },
+];
+
 const clientSteps: TourStep[] = [
   { title: "Welcome! 👋", desc: "You've been invited to review files for this project. No signup needed — just browse and leave your feedback." },
   { targetId: "client-file-list", title: "Select a File", desc: "Click any file from this list to preview it. We support videos, images, and documents." },
@@ -107,6 +117,7 @@ const ClientView = () => {
 
   const fileComments = selectedFile ? comments.filter(c => c.file_id === selectedFile.id) : [];
   const isTimeable = selectedFile?.file_type === "video" || selectedFile?.file_type === "audio";
+  const selectedFileType = FILE_TYPES.find(t => t.value === selectedFile?.file_type);
 
   return (
     <div className="min-h-screen bg-background">
@@ -143,13 +154,17 @@ const ClientView = () => {
                 <p className="text-sm text-muted-foreground text-center py-4">No files uploaded yet.</p>
               ) : (
                 <div className="space-y-2">
-                  {files.map(f => (
-                    <button key={f.id} onClick={() => setSelectedFile(f)}
-                      className={`w-full flex items-center gap-2 rounded-lg border p-3 text-left transition-colors ${selectedFile?.id === f.id ? "border-primary bg-primary/5" : "border-border hover:bg-secondary"}`}>
-                      <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary uppercase">{f.file_type}</span>
-                      <span className="flex-1 text-sm text-foreground truncate">{f.filename}</span>
-                    </button>
-                  ))}
+                  {files.map(f => {
+                    const fileTypeInfo = FILE_TYPES.find(t => t.value === f.file_type);
+                    return (
+                      <button key={f.id} onClick={() => setSelectedFile(f)}
+                        className={`w-full flex items-center gap-2 rounded-lg border p-3 text-left transition-colors ${selectedFile?.id === f.id ? "border-primary bg-primary/5" : "border-border hover:bg-secondary"}`}>
+                        <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary uppercase">{f.file_type}</span>
+                        <span className="flex-1 text-sm text-foreground truncate">{f.filename}</span>
+                        {fileTypeInfo?.hasTimestamp && <span className="text-[10px]">🎬</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -160,29 +175,41 @@ const ClientView = () => {
               <>
                 {selectedFile.drive_file_id && (
                   <div id="client-preview-area" className="rounded-xl border border-border bg-card p-4">
-                    <h3 className="font-display text-sm font-semibold text-foreground mb-3">{selectedFile.filename}</h3>
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3 className="font-display text-sm font-semibold text-foreground">{selectedFile.filename}</h3>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${selectedFileType?.hasTimestamp ? "bg-amber-500/10 text-amber-600" : "bg-secondary text-muted-foreground"}`}>
+                        {selectedFileType?.hasTimestamp ? "🎬 Timestamp" : "📄 Standard"}
+                      </span>
+                    </div>
                     <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-background">
                       <iframe src={`https://drive.google.com/file/d/${selectedFile.drive_file_id}/preview`} className="h-full w-full" allow="autoplay" allowFullScreen />
                     </div>
                   </div>
                 )}
 
-                <div className="rounded-xl border border-border bg-primary/5 p-4">
+                <div className={`rounded-xl border p-4 ${isTimeable ? "border-amber-500/30 bg-amber-500/5" : "border-border bg-muted/30"}`}>
                   <div className="flex items-center gap-2 mb-2">
-                    <Info className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium text-primary">How to give feedback</span>
+                    <Info className={`h-4 w-4 ${isTimeable ? "text-amber-600" : "text-primary"}`} />
+                    <span className={`text-sm font-medium ${isTimeable ? "text-amber-600" : "text-primary"}`}>
+                      {isTimeable ? "Timestamp Feedback Mode" : "Standard Feedback Mode"}
+                    </span>
                   </div>
                   {isTimeable ? (
-                    <p className="text-xs text-muted-foreground">Watch the video, <strong className="text-foreground">pause where you want changes</strong>, note the timestamp, and type your comment below.</p>
+                    <p className="text-xs text-muted-foreground">
+                      <strong className="text-foreground">Watch the video, pause where you want changes</strong>, note the timestamp shown in the video player, and enter it below along with your feedback.
+                    </p>
                   ) : (
-                    <p className="text-xs text-muted-foreground">Review the file and type your feedback in the comment box below.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Review the file and type your feedback in the comment box below.
+                    </p>
                   )}
                 </div>
 
                 <div id="client-feedback-form" className="rounded-xl border border-border bg-card p-4">
+                  <h3 className="font-display text-sm font-semibold text-foreground mb-3">Leave Your Feedback</h3>
                   <div className="flex gap-2 items-end flex-wrap">
                     {isTimeable && (
-                      <div className="w-24">
+                      <div className="w-28">
                         <label className="mb-1 flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
                           <Clock className="h-2.5 w-2.5" /> Time (MM:SS)
                         </label>
@@ -190,14 +217,14 @@ const ClientView = () => {
                           className="w-full rounded-lg border border-border bg-background px-2 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
                       </div>
                     )}
-                    <div className="w-24">
+                    <div className="w-32">
                       <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Your Name</label>
                       <input type="text" value={authorName} onChange={e => setAuthorName(e.target.value)} placeholder="Client"
                         className="w-full rounded-lg border border-border bg-background px-2 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
                     </div>
                     <div className="flex-1 min-w-[150px]">
-                      <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Feedback</label>
-                      <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Describe what you'd like changed..."
+                      <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Comment</label>
+                      <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder={isTimeable ? "Describe what you'd like changed at this point..." : "Describe what you'd like changed..."}
                         className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
                         onKeyDown={e => e.key === "Enter" && handleAddComment()} />
                     </div>

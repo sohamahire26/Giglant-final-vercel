@@ -7,6 +7,7 @@ import { AuthProvider } from "./components/AuthProvider";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ToolsPage from "./pages/Tools";
+import FileRenamer from "./pages/tools/FileRenamer";
 import RevisionNotesFormatter from "./pages/tools/RevisionNotesFormatter";
 import DeliveryMessageGenerator from "./pages/tools/DeliveryMessageGenerator";
 import InvoiceMessageHelper from "./pages/tools/InvoiceMessageHelper";
@@ -48,7 +49,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/tools" element={<ToolsPage />} />
-            <Route path="/tools/file-renamer" element={<ToolsPage />} />
+            <Route path="/tools/file-renamer" element={<FileRenamer />} />
             <Route path="/tools/revision-notes-formatter" element={<RevisionNotesFormatter />} />
             <Route path="/tools/delivery-message-generator" element={<DeliveryMessageGenerator />} />
             <Route path="/tools/invoice-message-helper" element={<InvoiceMessageHelper />} />

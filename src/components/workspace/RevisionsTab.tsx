@@ -43,9 +43,9 @@ const RevisionsTab = ({ files, comments, setComments }: Props) => {
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            { step: "1", title: "Analyze Feedback", desc: "Review all client comments and timestamped notes." },
-            { step: "2", title: "Execute Changes", desc: "Update your project files based on the feedback." },
-            { step: "3", title: "Resolve Items", desc: "Mark tasks as completed to track your progress." },
+            { step: "1", title: "Review Feedback", desc: "Go through each comment left by your client." },
+            { step: "2", title: "Mark as Done", desc: "Click the checkbox once you've made the change." },
+            { step: "3", title: "Copy & Confirm", desc: "Copy the list to send a summary to your client." },
           ].map(s => (
             <div key={s.step} className="rounded-xl border border-border bg-background p-4 text-center">
               <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">{s.step}</div>

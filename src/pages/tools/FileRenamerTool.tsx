@@ -1,1 +1,0 @@
-"use client"; import React from 'react'; const FileRenamerTool = () => { return <div>File Renamer Tool</div>; }; export default FileRenamerTool;

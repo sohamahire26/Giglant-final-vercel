@@ -39,9 +39,9 @@ const InvoiceTab = ({ project }: Props) => {
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            { step: "1", title: "Set Terms", desc: "Enter the total project amount and payment deadline." },
-            { step: "2", title: "Choose Context", desc: "Select an initial request or a follow-up reminder." },
-            { step: "3", title: "Request Payment", desc: "Copy the generated message and send it to your client." },
+            { step: "1", title: "Enter Details", desc: "Input the final amount and any payment deadline." },
+            { step: "2", title: "Select Stage", desc: "Choose between initial invoice or follow-up reminders." },
+            { step: "3", title: "Copy & Request", desc: "Copy the message and send it to your client." },
           ].map(s => (
             <div key={s.step} className="rounded-xl border border-border bg-background p-4 text-center">
               <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">{s.step}</div>

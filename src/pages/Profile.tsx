@@ -10,14 +10,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, User as UserIcon, LogOut } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
-interface ProfileData {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  avatar_url: string | null;
-  updated_at: string;
-}
-
 const Profile = () => {
   const { user, session, loading: authLoading, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -33,11 +25,11 @@ const Profile = () => {
 
   const getProfile = async () => {
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('profiles')
         .select('first_name, last_name')
         .eq('id', user?.id)
-        .single() as { data: ProfileData | null; error: any };
+        .single();
 
       if (error) throw error;
       if (data) {
@@ -54,12 +46,12 @@ const Profile = () => {
   const updateProfile = async () => {
     setLoading(true);
     try {
-      const { error } = await (supabase as any).from('profiles').upsert({
+      const { error } = await supabase.from('profiles').upsert({
         id: user?.id,
         first_name: firstName,
         last_name: lastName,
         updated_at: new Date().toISOString(),
-      } as any);
+      });
 
       if (error) throw error;
       toast({ title: "Profile updated successfully!" });

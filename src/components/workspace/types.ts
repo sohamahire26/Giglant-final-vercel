@@ -6,7 +6,6 @@ export interface Project {
   work_type: string;
   share_token: string;
   drive_folder_url: string | null;
-  user_id: string | null;
   created_at: string;
 }
 

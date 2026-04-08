@@ -95,10 +95,10 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
         </div>
         <div className="grid gap-4 md:grid-cols-4">
           {[
-            { step: "1", title: "Prepare File", desc: "Upload your work to Google Drive or Dropbox." },
-            { step: "2", title: "Enable Access", desc: "Set permissions to 'Anyone with the link' as Viewer." },
-            { step: "3", title: "Link File", desc: "Paste the shareable link below to add it to this project." },
-            { step: "4", title: "Get Feedback", desc: "Share the Client Review Link to start collecting comments." },
+            { step: "1", title: "Upload to Drive", desc: "Upload your work to Google Drive" },
+            { step: "2", title: "Set Permissions", desc: "Set to 'Anyone with the link' → Viewer" },
+            { step: "3", title: "Add to Project", desc: "Paste the link below to add the file" },
+            { step: "4", title: "Collect Feedback", desc: "Share the client link for revisions" },
           ].map(s => (
             <div key={s.step} className="rounded-xl border border-border bg-background p-4 text-center">
               <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">{s.step}</div>

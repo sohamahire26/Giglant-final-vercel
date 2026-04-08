@@ -42,7 +42,7 @@ const OverviewTab = ({ project }: Props) => {
                 <h2 className="font-display text-lg font-semibold text-foreground">Project Overview</h2>
               </div>
               <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary capitalize">
-                Active
+                {project.status || "Active"}
               </span>
             </div>
 

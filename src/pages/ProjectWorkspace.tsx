@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
-import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle } from "lucide-react";
+import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle, FileEdit } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ const db = supabase as any;
 const freelancerSteps: TourStep[] = [
   { title: "Welcome to Your Workspace! 🚀", desc: "This is where you manage your entire client project. Let's walk through the tools that will save you hours of work." },
   { targetId: "ws-share-card", title: "The Magic Link 🔗", desc: "This is your most important tool. Copy this link and send it to your client. They can view files and leave feedback instantly—no login required for them!" },
-  { title: "Pro Tip: Rename Files First 📝", desc: "Before adding files, use our free Smart File Renamer tool to clean up messy filenames. It auto-detects document types (invoices, contracts, etc.) and organizes files with proper naming. Click 'Guide' anytime to see this again." },
+  { targetId: "ws-renamer-tab-btn", title: "Smart File Renamer 📝", desc: "Use our free Smart File Renamer tool to clean up messy filenames before uploading. It auto-detects document types and organizes files with proper naming." },
   { targetId: "ws-files-tab-btn", title: "Files & Feedback 📁", desc: "Upload your work here by pasting Google Drive links. Select the file type (Video/Audio gets timestamp feedback, others get standard comments). We'll generate a professional preview for your client." },
   { targetId: "ws-revisions-tab-btn", title: "Revision Checklist ✅", desc: "Once your client leaves feedback, it all appears here as an organized checklist. Mark items as resolved as you work through them." },
   { targetId: "ws-delivery-tab-btn", title: "Smart Delivery ✉️", desc: "Ready to send a draft or final version? Use this to generate professional, psychology-backed messages that make you look like a pro." },
@@ -30,6 +30,7 @@ const freelancerSteps: TourStep[] = [
 
 const tabs = [
   { id: "overview", label: "Overview", icon: FolderOpen },
+  { id: "renamer", label: "File Renamer", icon: FileEdit },
   { id: "files", label: "Files & Feedback", icon: MessageSquare },
   { id: "revisions", label: "Revisions", icon: CheckSquare },
   { id: "delivery", label: "Delivery", icon: Send },
@@ -39,7 +40,7 @@ const tabs = [
 const ProjectWorkspace = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
-  const [project, setProject] = useState<Project | null>(null);
+  const [project, setProject] = useconst [project, setProject] = useState<Project | null>(null);
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [comments, setComments] = useState<FileComment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,6 +153,23 @@ const ProjectWorkspace = () => {
 
           <div className="min-h-[400px]">
             {activeTab === "overview" && <OverviewTab project={project} files={files} comments={comments} />}
+            {activeTab === "renamer" && <div className="p-6">
+              <h2 className="font-display text-lg font-semibold text-foreground mb-4">Smart File Renamer</h2>
+              <p className="text-sm text-muted-foreground">
+                Use our free Smart File Renamer tool to automatically rename your files with meaningful names. 
+                It reads PDF content, image EXIF data, and detects 25+ document types.
+              </p>
+              <div className="mt-4">
+                <a 
+                  href="/tools/file-renamer" 
+                  target="_blank" 
+                  rel="noopener"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/90"
+                >
+                  Open File Renamer Tool <FileEdit className="h-4 w-4" />
+                </a>
+              </div>
+            />}
             {activeTab === "files" && <FilesTab project={project} files={files} setFiles={setFiles} comments={comments} setComments={setComments} selectedFile={selectedFile} setSelectedFile={setSelectedFile} />}
             {activeTab === "revisions" && <RevisionsTab files={files} comments={comments} setComments={setComments} />}
             {activeTab === "delivery" && <DeliveryTab project={project} />}

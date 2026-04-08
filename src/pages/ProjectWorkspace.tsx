@@ -153,23 +153,25 @@ const ProjectWorkspace = () => {
 
           <div className="min-h-[400px]">
             {activeTab === "overview" && <OverviewTab project={project} files={files} comments={comments} />}
-            {activeTab === "renamer" && <div className="p-6">
-              <h2 className="font-display text-lg font-semibold text-foreground mb-4">Smart File Renamer</h2>
-              <p className="text-sm text-muted-foreground">
-                Use our free Smart File Renamer tool to automatically rename your files with meaningful names. 
-                It reads PDF content, image EXIF data, and detects 25+ document types.
-              </p>
-              <div className="mt-4">
-                <a 
-                  href="/tools/file-renamer" 
-                  target="_blank" 
-                  rel="noopener"
-                  className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/90"
-                >
-                  Open File Renamer Tool <FileEdit className="h-4 w-4" />
-                </a>
+            {activeTab === "renamer" && (
+              <div className="p-6">
+                <h2 className="font-display text-lg font-semibold text-foreground mb-4">Smart File Renamer</h2>
+                <p className="text-sm text-muted-foreground">
+                  Use our free Smart File Renamer tool to automatically rename your files with meaningful names. 
+                  It reads PDF content, image EXIF data, and detects 25+ document types.
+                </p>
+                <div className="mt-4">
+                  <a 
+                    href="/tools/file-renamer" 
+                    target="_blank" 
+                    rel="noopener"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/90"
+                  >
+                    Open File Renamer Tool <FileEdit className="h-4 w-4" />
+                  </a>
+                </div>
               </div>
-            />}
+            )}
             {activeTab === "files" && <FilesTab project={project} files={files} setFiles={setFiles} comments={comments} setComments={setComments} selectedFile={selectedFile} setSelectedFile={setSelectedFile} />}
             {activeTab === "revisions" && <RevisionsTab files={files} comments={comments} setComments={setComments} />}
             {activeTab === "delivery" && <DeliveryTab project={project} />}

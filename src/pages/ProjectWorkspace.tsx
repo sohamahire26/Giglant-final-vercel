@@ -40,7 +40,7 @@ const tabs = [
 const ProjectWorkspace = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
-  const [project, setProject] = useconst [project, setProject] = useState<Project | null>(null);
+  const [project, setProject] = useState<Project | null>(null);
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [comments, setComments] = useState<FileComment[]>([]);
   const [loading, setLoading] = useState(true);

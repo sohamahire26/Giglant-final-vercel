@@ -87,21 +87,26 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
 
   return (
     <div className="space-y-8">
+      {/* Heading */}
+      <div className="mb-8 text-center">
+        <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">Files and Feedback</h1>
+      </div>
+
       {/* How to Use Section */}
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="flex items-center gap-2 mb-6">
-          <HelpCircle className="h-5 w-5 text-primary" />
-          <h2 className="font-display text-lg font-semibold text-foreground">How to Manage Project Files</h2>
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">i</div>
+          <h2 className="font-display text-lg font-semibold text-foreground">For Freelancers — How to Use</h2>
         </div>
         <div className="grid gap-4 md:grid-cols-4">
           {[
-            { step: "1", title: "Upload to Drive", desc: "Upload your work to Google Drive" },
-            { step: "2", title: "Set Permissions", desc: "Set to 'Anyone with the link' → Viewer" },
-            { step: "3", title: "Add to Project", desc: "Paste the link below to add the file" },
-            { step: "4", title: "Collect Feedback", desc: "Share the client link for revisions" },
+            { step: "1", title: "Upload to Drive", desc: "Upload your video to Google Drive" },
+            { step: "2", title: "Get Link", desc: "Right-click the video -> 'Get link'" },
+            { step: "3", title: "Paste Here", desc: "Copy the link and paste it below" },
+            { step: "4", title: "Copy Magic Link", desc: "Share it to your Client" },
           ].map(s => (
             <div key={s.step} className="rounded-xl border border-border bg-background p-4 text-center">
-              <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">{s.step}</div>
+              <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-white text-sm font-bold">{s.step}</div>
               <p className="text-sm font-semibold text-foreground">{s.title}</p>
               <p className="mt-1 text-xs text-muted-foreground">{s.desc}</p>
             </div>

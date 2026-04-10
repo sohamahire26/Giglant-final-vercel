@@ -1,5 +1,7 @@
+"use client";
+
 import { useState } from "react";
-import { ClipboardCopy, Info, MessageSquare, Receipt, Sparkles, Loader2, User, Building, DollarSign, Calendar, MessageSquareText } from "lucide-react";
+import { ClipboardCopy, Info, MessageSquare, Receipt, Sparkles, Loader2, User, Building, DollarSign, Calendar, MessageSquareText, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import FAQSection from "@/components/FAQSection";
@@ -8,6 +10,12 @@ import type { Project } from "./types";
 declare const puter: any;
 
 interface Props { project: Project; }
+
+const INVOICE_TYPE_INFO = {
+  initial: "The first request for payment. It's professional, clear about terms, and assumes the client is ready to pay.",
+  reminder: "A gentle nudge for an upcoming or slightly overdue payment. It maintains a good relationship while being firm.",
+  final: "A firm, urgent message for significantly overdue payments. It's clear about the delay and the need for immediate action."
+};
 
 const InvoiceTab = ({ project }: Props) => {
   const [userName, setUserName] = useState("");
@@ -105,6 +113,10 @@ const InvoiceTab = ({ project }: Props) => {
                     <button key={t} onClick={() => setInvoiceType(t)} className={`rounded-lg px-4 py-2 text-sm font-medium capitalize transition-all ${invoiceType === t ? "bg-primary text-primary-foreground shadow-md" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}>{t === "initial" ? "Initial Invoice" : t === "reminder" ? "Friendly Reminder" : "Final Follow-up"}</button>
                   ))}
                 </div>
+                <p className="mt-2 text-xs text-muted-foreground flex items-start gap-1.5 italic">
+                  <HelpCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                  {INVOICE_TYPE_INFO[invoiceType]}
+                </p>
               </div>
 
               <div>

@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
-import { ClipboardCopy, Info, MessageSquare, Sparkles, Loader2, User, Building, Link as LinkIcon, MessageSquareText } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { ClipboardCopy, Info, MessageSquare, Sparkles, Loader2, User, Building, Link as LinkIcon, MessageSquareText, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import FAQSection from "@/components/FAQSection";
@@ -8,6 +10,12 @@ import type { Project } from "./types";
 declare const puter: any;
 
 interface Props { project: Project; }
+
+const DELIVERY_TYPE_INFO = {
+  draft: "Use this for early versions. It sets expectations that the work is in progress and you're looking for initial direction.",
+  final: "Use this when the project is complete. It sounds polished, conclusive, and ready for official sign-off.",
+  revision: "Use this when sending updates based on feedback. It highlights that you've specifically addressed their notes."
+};
 
 const DeliveryTab = ({ project }: Props) => {
   const [userName, setUserName] = useState("");
@@ -99,6 +107,10 @@ const DeliveryTab = ({ project }: Props) => {
                     <button key={key} onClick={() => setDeliveryType(key)} className={`rounded-lg px-4 py-2 text-sm font-medium capitalize transition-all ${deliveryType === key ? "bg-primary text-primary-foreground shadow-md" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}>{key}</button>
                   ))}
                 </div>
+                <p className="mt-2 text-xs text-muted-foreground flex items-start gap-1.5 italic">
+                  <HelpCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                  {DELIVERY_TYPE_INFO[deliveryType]}
+                </p>
               </div>
               <div>
                 <label className="mb-2 block text-sm font-medium text-foreground">Message Tone</label>

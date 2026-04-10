@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
-import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle, FileEdit, RefreshCw, Bell } from "lucide-react";
+import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle, FileEdit, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
@@ -49,41 +49,10 @@ const ProjectWorkspace = () => {
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
+  const [isSynced, setIsSynced] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (location.state?.isNew) {
-      setShowTutorial(true);
-    }
-  }, [location.state]);
-
-  useEffect(() => {
-    if (showTutorial) {
-      switch (tutorialStep) {
-        case 0:
-        case 1:
-          setActiveTab("overview");
-          break;
-        case 2:
-          setActiveTab("renamer");
-          break;
-        case 3:
-          setActiveTab("files");
-          break;
-        case 4:
-          setActiveTab("revisions");
-          break;
-        case 5:
-          setActiveTab("delivery");
-          break;
-        case 6:
-          setActiveTab("invoice");
-          break;
-      }
-    }
-  }, [tutorialStep, showTutorial]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!id) return;
     const { data: proj } = await db.from("projects").select("*").eq("id", id).single();
     if (!proj) { setLoading(false); return; }
@@ -95,57 +64,58 @@ const ProjectWorkspace = () => {
       setComments(c || []);
     }
     setLoading(false);
-  };
-
-  useEffect(() => {
-    loadData();
   }, [id]);
 
   useEffect(() => {
-    if (!files.length) return;
+    if (location.state?.isNew) {
+      setShowTutorial(true);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    if (!files.length || !id) return;
     
     const fileIds = files.map(f => f.id);
     
-    // Listen for ALL changes to comments (Insert, Update, Delete)
-    const channel = supabase.channel(`ws-comments-${id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "file_comments" }, (payload) => {
-        const newComment = payload.new as FileComment;
-        const oldComment = payload.old as any;
-        
-        // Only process if the comment belongs to one of our files
-        const targetFileId = newComment?.file_id || oldComment?.file_id;
+    const channel = supabase.channel(`ws-realtime-${id}`)
+      .on("postgres_changes", { 
+        event: "*", 
+        schema: "public", 
+        table: "file_comments" 
+      }, (payload) => {
+        const newC = payload.new as FileComment;
+        const oldC = payload.old as any;
+        const targetFileId = newC?.file_id || oldC?.file_id;
+
         if (!fileIds.includes(targetFileId)) return;
 
         if (payload.eventType === 'INSERT') {
-          setComments(prev => prev.find(c => c.id === newComment.id) ? prev : [...prev, newComment]);
+          setComments(prev => prev.find(c => c.id === newC.id) ? prev : [...prev, newC]);
           toast({ 
-            title: "New Feedback Received!", 
-            description: "A client just left a comment. Click to refresh if it doesn't appear.",
-            action: <Button variant="outline" size="sm" onClick={() => loadData()}><RefreshCw className="mr-1 h-3 w-3" /> Refresh</Button>
+            title: "New Feedback!", 
+            description: `${newC.author_name} left a comment: "${newC.comment.substring(0, 30)}..."`
           });
         } else if (payload.eventType === 'UPDATE') {
-          setComments(prev => prev.map(c => c.id === newComment.id ? newComment : c));
+          setComments(prev => prev.map(c => c.id === newC.id ? newC : c));
         } else if (payload.eventType === 'DELETE') {
-          setComments(prev => prev.filter(c => c.id !== oldComment.id));
+          setComments(prev => prev.filter(c => c.id !== oldC.id));
         }
-      }).subscribe();
+      })
+      .subscribe((status) => {
+        setIsSynced(status === 'SUBSCRIBED');
+      });
       
     return () => { supabase.removeChannel(channel); };
-  }, [files, id]);
+  }, [files, id, toast]);
 
   const handleDeleteProject = async () => {
     if (!project || !confirm("Delete this project and all its data? This cannot be undone.")) return;
     await db.from("projects").delete().eq("id", project.id);
     window.location.href = "/dashboard";
-  };
-
-  const handleStartTutorial = () => {
-    setTutorialStep(0);
-    setShowTutorial(true);
-  };
-
-  const dismissTutorial = () => { 
-    setShowTutorial(false); 
   };
 
   if (loading) return <Layout><div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
@@ -167,22 +137,28 @@ const ProjectWorkspace = () => {
           currentStep={tutorialStep} 
           onNext={() => setTutorialStep(s => s + 1)}
           onBack={() => setTutorialStep(s => s - 1)}
-          onDismiss={dismissTutorial} 
+          onDismiss={() => setShowTutorial(false)} 
         />
       )}
 
       <section className="section-padding">
         <div className="container-tight">
-          <div className="mb-6 flex items-center justify-between flex-wrap gap-2">
+          <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h1 className="font-display text-2xl font-bold text-foreground">{project.name}</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="font-display text-2xl font-bold text-foreground">{project.name}</h1>
+                <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${isSynced ? "bg-green-500/10 text-green-600" : "bg-amber-500/10 text-amber-600"}`}>
+                  {isSynced ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+                  {isSynced ? "Live Sync Active" : "Connecting..."}
+                </div>
+              </div>
               {project.client_name && <p className="text-sm text-muted-foreground">Client: {project.client_name}</p>}
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => loadData()} className="text-muted-foreground border-border hover:bg-secondary">
                 <RefreshCw className="mr-1 h-3 w-3" /> Refresh
               </Button>
-              <Button variant="outline" size="sm" onClick={handleStartTutorial} className="text-primary border-primary/30 hover:bg-primary/5">
+              <Button variant="outline" size="sm" onClick={() => setShowTutorial(true)} className="text-primary border-primary/30 hover:bg-primary/5">
                 <HelpCircle className="mr-1 h-3 w-3" /> Guide
               </Button>
               <Button variant="outline" size="sm" onClick={handleDeleteProject} className="text-destructive border-destructive/30 hover:bg-destructive/10">

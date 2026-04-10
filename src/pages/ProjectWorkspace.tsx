@@ -61,7 +61,17 @@ const ProjectWorkspace = () => {
   // Handle tab switching during tutorial
   useEffect(() => {
     if (showTutorial) {
-      if (tutorialStep === 1) setActiveTab("overview");
+      if (tutorialStep === 1 || tutorialStep === 4) {
+        setActiveTab("overview");
+      } else if (tutorialStep === 2) {
+        setActiveTab("renamer");
+      } else if (tutorialStep === 3) {
+        setActiveTab("files");
+      } else if (tutorialStep === 5) {
+        setActiveTab("delivery");
+      } else if (tutorialStep === 6) {
+        setActiveTab("invoice");
+      }
     }
   }, [tutorialStep, showTutorial]);
 

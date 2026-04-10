@@ -91,7 +91,7 @@ const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) 
           width: `${tooltipWidth}px`,
           opacity: 1,
         });
-      }, 100);
+      }, 150); // Slightly longer delay to ensure tab content is rendered
     } else {
       // Fallback to center if element not found
       setCoords(null);
@@ -114,13 +114,13 @@ const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) 
 
   return (
     <div className="fixed inset-0 z-[9999] overflow-hidden pointer-events-none">
-      {/* Backdrop with spotlight */}
+      {/* Backdrop - only visual when no spotlight is active */}
       <div 
-        className="absolute inset-0 bg-black/60 pointer-events-auto"
+        className={`absolute inset-0 transition-colors duration-300 pointer-events-auto ${coords ? 'bg-transparent' : 'bg-black/60'}`}
         onClick={onDismiss}
       />
 
-      {/* Spotlight Highlight */}
+      {/* Spotlight Highlight with shadow-based backdrop */}
       <AnimatePresence>
         {coords && (
           <motion.div

@@ -4,10 +4,6 @@ import logo from "@/assets/logo.png";
 const footerLinks = {
   Tools: [
     { name: "File Renamer", href: "/tools/file-renamer" },
-    { name: "Revision Notes Formatter", href: "/tools/revision-notes-formatter" },
-    { name: "Delivery Message Generator", href: "/tools/delivery-message-generator" },
-    { name: "Invoice Message Helper", href: "/tools/invoice-message-helper" },
-    { name: "Timestamp Feedback Tool", href: "/tools/timestamp-feedback-tool" },
   ],
   Company: [
     { name: "About", href: "/about" },

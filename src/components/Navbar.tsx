@@ -1,15 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { Menu, X, ChevronDown, User as UserIcon, LayoutDashboard } from "lucide-react";
+import { Menu, X, ChevronDown, User as UserIcon } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "./AuthProvider";
 
 const tools = [
   { name: "File Renamer", href: "/tools/file-renamer" },
-  { name: "Revision Notes Formatter", href: "/tools/revision-notes-formatter" },
-  { name: "Delivery Message Generator", href: "/tools/delivery-message-generator" },
-  { name: "Invoice Message Helper", href: "/tools/invoice-message-helper" },
-  { name: "Timestamp Feedback Tool", href: "/tools/timestamp-feedback-tool" },
 ];
 
 const Navbar = () => {

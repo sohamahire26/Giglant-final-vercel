@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FileEdit, MessageSquare, Send, Receipt, Clock, ArrowRight, Zap, Shield, Sparkles, Users } from "lucide-react";
+import { FileEdit, ArrowRight } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import FAQSection from "@/components/FAQSection";
@@ -9,10 +9,6 @@ import { useAuth } from "@/components/AuthProvider";
 
 const tools = [
   { name: "File Renamer", description: "Smart file renaming with auto-detection and numbering. Organize your editing pipeline instantly.", icon: FileEdit, href: "/tools/file-renamer", color: "bg-primary/10 text-primary" },
-  { name: "Revision Notes Formatter", description: "Turn messy client feedback into clean, actionable revision lists for your post production workflow.", icon: MessageSquare, href: "/tools/revision-notes-formatter", color: "bg-blue-500/10 text-blue-600" },
-  { name: "Delivery Message Generator", description: "Generate professional client delivery workflow messages in seconds.", icon: Send, href: "/tools/delivery-message-generator", color: "bg-emerald-500/10 text-emerald-600" },
-  { name: "Invoice Message Helper", description: "Create invoice messages and payment reminders for your freelancer workflow.", icon: Receipt, href: "/tools/invoice-message-helper", color: "bg-amber-500/10 text-amber-600" },
-  { name: "Timestamp Feedback Tool", description: "Upload videos, share with clients, get timestamped feedback for your video editing workflow.", icon: Clock, href: "/tools/timestamp-feedback-tool", color: "bg-purple-500/10 text-purple-600" },
 ];
 
 const homeFAQ = [

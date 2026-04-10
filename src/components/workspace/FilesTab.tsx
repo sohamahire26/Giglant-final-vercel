@@ -1,6 +1,5 @@
-59 and support HH:MM:SS.">
 import { useState } from "react";
-import { Plus, Trash2, ExternalLink, CheckSquare, Square, Clock, FileEdit, Info, HelpCircle, Share2, Video, FileText, ShieldCheck } from "lucide-react";
+import { Plus, Trash2, ExternalLink, CheckSquare, Square, Clock, FileEdit, Share2, Video, FileText, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -77,18 +76,16 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
     const digits = val.replace(/[^0-9]/g, "");
     if (digits.length > 6) return;
 
-    // Validate tens place for minutes and seconds
-    // We pad with leading zeros to check the structure: HHMMSS
-    const padded = digits.padStart(6, "0");
-    const m_tens = parseInt(padded[2], 10);
-    const s_tens = parseInt(padded[4], 10);
+    // Validate tens place for minutes and seconds (must be <= 5)
+    if (digits.length >= 2) {
+      const s_tens = parseInt(digits[digits.length - 2], 10);
+      if (s_tens > 5) return;
+    }
+    if (digits.length >= 4) {
+      const m_tens = parseInt(digits[digits.length - 4], 10);
+      if (m_tens > 5) return;
+    }
 
-    // If user is typing and the resulting tens place would be > 5, reject it
-    // Exception: if they only have 1 or 2 digits, it's just seconds, so we check s_tens
-    if (digits.length >= 2 && parseInt(digits.slice(-2, -1), 10) > 5) return;
-    if (digits.length >= 4 && parseInt(digits.slice(-4, -3), 10) > 5) return;
-
-    // Format the output
     let formatted = "";
     if (digits.length <= 2) {
       formatted = digits;
@@ -126,12 +123,10 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
 
   return (
     <div className="space-y-8">
-      {/* Heading */}
       <div className="mb-8 text-center">
         <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">Files and Feedback</h1>
       </div>
 
-      {/* How to Use Section */}
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="flex items-center gap-2 mb-6">
           <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold">i</div>
@@ -153,7 +148,6 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
         </div>
       </div>
 
-      {/* File Renamer Tip */}
       <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
         <div className="flex items-start gap-3">
           <div className="shrink-0 mt-0.5">
@@ -170,7 +164,6 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-1 space-y-6">
-          {/* Add File Form */}
           <div className="rounded-2xl border border-border bg-card p-6">
             <h2 className="font-display text-lg font-semibold text-foreground mb-4">Add New File</h2>
             <div className="space-y-4">
@@ -214,7 +207,6 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
             </div>
           </div>
 
-          {/* File List */}
           <div className="rounded-2xl border border-border bg-card p-4">
             <h3 className="font-display text-sm font-semibold text-foreground mb-3">Project Files ({files.length})</h3>
             {files.length === 0 ? (
@@ -242,7 +234,6 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
         <div className="lg:col-span-2">
           {selectedFile ? (
             <div className="space-y-6">
-              {/* Preview Card */}
               <div className="rounded-2xl border border-border bg-card p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -266,7 +257,6 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
                 )}
               </div>
 
-              {/* Feedback Input */}
               <div className="rounded-2xl border border-border bg-card p-6">
                 <h3 className="font-display text-sm font-semibold text-foreground mb-4">Add Feedback</h3>
                 <div className="flex gap-3 items-end flex-wrap">
@@ -296,7 +286,6 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
                 </div>
               </div>
 
-              {/* Comments List */}
               <div className="rounded-2xl border border-border bg-card p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-display text-sm font-semibold text-foreground">Comments ({fileComments.length})</h3>
@@ -352,7 +341,6 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
         </div>
       </div>
 
-      {/* Real Examples */}
       <div className="mt-16">
         <h2 className="font-display text-2xl font-bold text-foreground mb-6">Real Examples — Feedback Workflow</h2>
         <p className="text-muted-foreground text-sm mb-6">
@@ -370,7 +358,6 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
         </div>
       </div>
 
-      {/* How It Works */}
       <div className="mt-16">
         <h2 className="font-display text-2xl font-bold text-foreground mb-6">How It Works — Streamline Your Review Process</h2>
         <div className="grid gap-4 md:grid-cols-4">
@@ -389,7 +376,6 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
         </div>
       </div>
 
-      {/* About Section */}
       <div className="mt-16">
         <h2 className="font-display text-2xl font-bold text-foreground mb-6">About Files & Feedback — Professional Client Review</h2>
         <div className="prose max-w-none text-muted-foreground space-y-3 text-sm leading-relaxed">
@@ -404,12 +390,10 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
             <li><Video className="inline h-3 w-3 mr-1" /> <strong>Video/Audio Timestamps:</strong> Frame-accurate feedback for precise editing.</li>
             <li><FileText className="inline h-3 w-3 mr-1" /> <strong>Document Support:</strong> Professional previews for PDFs and images.</li>
             <li><ShieldCheck className="inline h-3 w-3 mr-1" /> <strong>Privacy First:</strong> Files stay on your Drive; we only handle the communication layer.</li>
-            <li><Share2 className="inline h-3 w-3 mr-1" /> <strong>Magic Links:</strong> One-click access for clients with no login required.</li>
           </ul>
         </div>
       </div>
 
-      {/* FAQ Section */}
       <FAQSection title="Files & Feedback FAQ — Streamline Your Workflow" items={faq} />
     </div>
   );

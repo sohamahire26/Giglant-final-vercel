@@ -1,4 +1,3 @@
-59 and support HH:MM:SS.">
 "use client";
 
 import { useState, useEffect } from "react";
@@ -83,11 +82,16 @@ const ClientView = () => {
     const digits = val.replace(/[^0-9]/g, "");
     if (digits.length > 6) return;
 
-    // Validate tens place for minutes and seconds
-    if (digits.length >= 2 && parseInt(digits.slice(-2, -1), 10) > 5) return;
-    if (digits.length >= 4 && parseInt(digits.slice(-4, -3), 10) > 5) return;
+    // Validate tens place for minutes and seconds (must be <= 5)
+    if (digits.length >= 2) {
+      const s_tens = parseInt(digits[digits.length - 2], 10);
+      if (s_tens > 5) return;
+    }
+    if (digits.length >= 4) {
+      const m_tens = parseInt(digits[digits.length - 4], 10);
+      if (m_tens > 5) return;
+    }
 
-    // Format the output
     let formatted = "";
     if (digits.length <= 2) {
       formatted = digits;
@@ -204,24 +208,6 @@ const ClientView = () => {
                     <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-background">
                       <iframe src={`https://drive.google.com/file/d/${selectedFile.drive_file_id}/preview`} className="h-full w-full" allow="autoplay" allowFullScreen />
                     </div>
-                  )}
-                </div>
-
-                <div className={`rounded-xl border p-4 ${isTimeable ? "border-amber-500/30 bg-amber-500/5" : "border-border bg-muted/30"}`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Info className={`h-4 w-4 ${isTimeable ? "text-amber-600" : "text-primary"}`} />
-                    <span className={`text-sm font-medium ${isTimeable ? "text-amber-600" : "text-primary"}`}>
-                      {isTimeable ? "Timestamp Feedback Mode" : "Standard Feedback Mode"}
-                    </span>
-                  </div>
-                  {isTimeable ? (
-                    <p className="text-xs text-muted-foreground">
-                      <strong className="text-foreground">Watch the video, pause where you want changes</strong>, note the timestamp shown in the video player, and enter it below along with your feedback.
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      Review the file and type your feedback in the comment box below.
-                    </p>
                   )}
                 </div>
 

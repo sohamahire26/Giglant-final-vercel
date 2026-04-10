@@ -21,10 +21,10 @@ interface Props {
 
 const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) => {
   const [coords, setCoords] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
-  const [tipPosition, setTipPosition] = useState<"top" | "bottom">("bottom");
-  const tipRef = useRef<HTMLDivElement>(null);
+  const [tipStyle, setTipStyle] = useState<React.CSSProperties>({ opacity: 0 });
   const step = steps[currentStep];
 
+  // Disable scrolling when tour is active
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -36,19 +36,71 @@ const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) 
   const updateCoords = () => {
     if (!step.targetId) {
       setCoords(null);
+      setTipStyle({
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        opacity: 1,
+      });
       return;
     }
+
     const el = document.getElementById(step.targetId);
     if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      setTimeout(() => {
+      // Scroll the element into view first
+      el.scrollIntoView({ behavior: "instant", block: "center" });
+      
+      // Use a small delay to ensure scroll has finished and layout is stable
+      requestAnimationFrame(() => {
         const rect = el.getBoundingClientRect();
-        setCoords({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
-        const isBottomHalf = rect.top + rect.height / 2 > window.innerHeight / 2;
-        setTipPosition(isBottomHalf ? "top" : "bottom");
-      }, 400);
+        const padding = 8;
+        const newCoords = {
+          top: rect.top - padding,
+          left: rect.left - padding,
+          width: rect.width + padding * 2,
+          height: rect.height + padding * 2,
+        };
+        setCoords(newCoords);
+
+        // Calculate tooltip position
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        const tooltipWidth = Math.min(380, windowWidth * 0.9);
+        const tooltipHeight = 250; // Estimated max height
+
+        let top = newCoords.top + newCoords.height + 20;
+        let left = newCoords.left + newCoords.width / 2 - tooltipWidth / 2;
+
+        // Adjust if off-screen vertically
+        if (top + tooltipHeight > windowHeight) {
+          top = newCoords.top - tooltipHeight - 20;
+        }
+        
+        // Ensure it's at least visible
+        top = Math.max(20, Math.min(top, windowHeight - tooltipHeight - 20));
+        
+        // Adjust if off-screen horizontally
+        left = Math.max(10, Math.min(left, windowWidth - tooltipWidth - 10));
+
+        setTipStyle({
+          position: "fixed",
+          top: `${top}px`,
+          left: `${left}px`,
+          width: `${tooltipWidth}px`,
+          opacity: 1,
+        });
+      });
     } else {
+      // Fallback to center if element not found
       setCoords(null);
+      setTipStyle({
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        opacity: 1,
+      });
     }
   };
 
@@ -59,49 +111,65 @@ const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) 
   }, [currentStep, step.targetId]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+    <div className="fixed inset-0 z-[100] overflow-hidden">
+      {/* Backdrop with spotlight */}
       <AnimatePresence>
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/80 pointer-events-auto"
-          style={{
-            clipPath: coords 
-              ? `polygon(0% 0%, 0% 100%, ${coords.left - 8}px 100%, ${coords.left - 8}px ${coords.top - 8}px, ${coords.left + coords.width + 8}px ${coords.top - 8}px, ${coords.left + coords.width + 8}px ${coords.top + coords.height + 8}px, ${coords.left - 8}px ${coords.top + coords.height + 8}px, ${coords.left - 8}px 100%, 100% 100%, 100% 0%)`
-              : "none"
-          }}
+          className="absolute inset-0 bg-black/60 pointer-events-auto"
           onClick={onDismiss}
         />
       </AnimatePresence>
 
+      {/* Spotlight Highlight */}
+      {coords && (
+        <motion.div
+          initial={false}
+          animate={{
+            top: coords.top,
+            left: coords.left,
+            width: coords.width,
+            height: coords.height,
+          }}
+          className="absolute z-[101] rounded-xl border-2 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] pointer-events-none"
+          transition={{ type: "spring", damping: 25, stiffness: 200 }}
+        />
+      )}
+
+      {/* Tooltip */}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentStep}
-          ref={tipRef}
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ 
-            opacity: 1, scale: 1, y: 0, position: "fixed",
-            top: coords ? (tipPosition === "bottom" ? Math.min(coords.top + coords.height + 24, window.innerHeight - 300) : "auto") : "50%",
-            bottom: coords ? (tipPosition === "top" ? (window.innerHeight - coords.top) + 24 : "auto") : "auto",
-            left: "50%", translateX: "-50%",
-          }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="z-[101] w-[90vw] max-w-[380px] rounded-2xl border border-border bg-card p-6 shadow-2xl pointer-events-auto"
+          style={tipStyle}
+          className="z-[102] rounded-2xl border border-border bg-card p-6 shadow-2xl pointer-events-auto"
         >
           <button onClick={onDismiss} className="absolute right-4 top-4 text-muted-foreground hover:text-foreground">
             <X size={18} />
           </button>
+          
           <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">{currentStep + 1}</div>
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+              {currentStep + 1}
+            </div>
             <h3 className="font-display text-base font-bold text-foreground flex items-center gap-2">
               {step.title} {currentStep === 0 && <Sparkles className="h-4 w-4 text-amber-500" />}
             </h3>
           </div>
-          <p className="text-sm leading-relaxed text-muted-foreground">{step.desc}</p>
+          
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {step.desc}
+          </p>
+          
           <div className="mt-8 flex flex-col gap-4">
             <div className="text-right">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Step {currentStep + 1} of {steps.length}</span>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                Step {currentStep + 1} of {steps.length}
+              </span>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={onBack} disabled={currentStep === 0} className="flex-1">

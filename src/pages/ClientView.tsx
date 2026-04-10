@@ -10,7 +10,7 @@ import TutorialTour, { TourStep } from "@/components/workspace/TutorialTour";
 import { fmtTs } from "@/components/workspace/types";
 import type { ProjectFile, FileComment } from "@/components/workspace/types";
 
-interface Project { id: string; name: string; client_name: string | null; }
+interface Project { id: string; name: string; client_name: string | null; share_token: string; }
 
 const db = supabase as any;
 
@@ -98,6 +98,7 @@ const ClientView = () => {
 
   const dismissTutorial = () => { 
     setShowTutorial(false); 
+    localStorage.setItem("giglant_client_tutorial_dismissed", "true");
   };
 
   if (loading) return (
@@ -173,19 +174,19 @@ const ClientView = () => {
           <div className="lg:col-span-3 space-y-4">
             {selectedFile ? (
               <>
-                {selectedFile.drive_file_id && (
-                  <div id="client-preview-area" className="rounded-xl border border-border bg-card p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <h3 className="font-display text-sm font-semibold text-foreground">{selectedFile.filename}</h3>
-                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${selectedFileType?.hasTimestamp ? "bg-amber-500/10 text-amber-600" : "bg-secondary text-muted-foreground"}`}>
-                        {selectedFileType?.hasTimestamp ? "🎬 Timestamp" : "📄 Standard"}
-                      </span>
-                    </div>
+                <div id="client-preview-area" className="rounded-xl border border-border bg-card p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <h3 className="font-display text-sm font-semibold text-foreground">{selectedFile.filename}</h3>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${selectedFileType?.hasTimestamp ? "bg-amber-500/10 text-amber-600" : "bg-secondary text-muted-foreground"}`}>
+                      {selectedFileType?.hasTimestamp ? "🎬 Timestamp" : "📄 Standard"}
+                    </span>
+                  </div>
+                  {selectedFile.drive_file_id && (
                     <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-background">
                       <iframe src={`https://drive.google.com/file/d/${selectedFile.drive_file_id}/preview`} className="h-full w-full" allow="autoplay" allowFullScreen />
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 <div className={`rounded-xl border p-4 ${isTimeable ? "border-amber-500/30 bg-amber-500/5" : "border-border bg-muted/30"}`}>
                   <div className="flex items-center gap-2 mb-2">

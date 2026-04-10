@@ -23,7 +23,7 @@ interface Props {
 
 const OverviewTab = ({ project }: Props) => {
   const { toast } = useToast();
-  const clientLink = `${window.location.origin}/review/${project.id}`;
+  const clientLink = `${window.location.origin}/client/${project.share_token}`;
 
   const copyLink = () => {
     navigator.clipboard.writeText(clientLink);
@@ -79,7 +79,7 @@ const OverviewTab = ({ project }: Props) => {
           </div>
 
           {/* Client Review Link Card */}
-          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6">
+          <div id="ws-share-card" className="rounded-2xl border border-primary/20 bg-primary/5 p-6">
             <div className="flex items-center gap-2 mb-4">
               <Share2 className="h-5 w-5 text-primary" />
               <h2 className="font-display text-lg font-semibold text-foreground">Client Review Link</h2>

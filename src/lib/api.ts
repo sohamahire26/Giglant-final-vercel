@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 /**
  * API client for edge functions (blog only).
  * Project CRUD uses Supabase client directly.
@@ -17,6 +19,12 @@ const apiCall = async (endpoint: string, body?: any) => {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   if (apikey) headers["apikey"] = apikey;
+
+  // Add Authorization header if user is logged in
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    headers["Authorization"] = `Bearer ${session.access_token}`;
+  }
 
   const res = await fetch(`${getApiBase()}/${endpoint}`, {
     method: "POST",
@@ -40,5 +48,8 @@ export const getBlogPost = (category: string, slug: string) =>
 export const getBlogPostById = (id: string) =>
   apiCall("api", { action: "get_blog_post_by_id", id });
 
-export const saveBlogPost = (post: any, adminKey: string) =>
-  apiCall("api", { action: "save_blog_post", post, admin_key: adminKey });
+export const saveBlogPost = (post: any) =>
+  apiCall("api", { action: "save_blog_post", post });
+
+export const optimizeBlogSEO = (title: string, content: string) =>
+  apiCall("api", { action: "optimize_blog_seo", title, content });

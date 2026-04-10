@@ -6,6 +6,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const OWNER_EMAIL = "Sohamahire26@gmail.com";
+
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -20,20 +22,31 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")?.trim();
-    const supabaseKey =
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim() ||
-      Deno.env.get("SUPABASE_ANON_KEY")?.trim();
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
+    const groqApiKey = Deno.env.get("GROQ_API_KEY")?.trim();
 
     if (!supabaseUrl || !supabaseKey) {
       throw new Error("Database not configured.");
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Verify JWT for sensitive actions
+    const authHeader = req.headers.get('Authorization');
+    let userEmail = null;
+    
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      if (!userError && user) {
+        userEmail = user.email;
+      }
+    }
+
     const body = await req.json();
     const { action } = body;
 
     switch (action) {
-      /* ── Blog ── */
       case "get_blog_posts": {
         let query = supabase
           .from("blog_posts")
@@ -59,6 +72,10 @@ Deno.serve(async (req) => {
       }
 
       case "get_blog_post_by_id": {
+        // Only owner can see unpublished posts by ID
+        if (userEmail !== OWNER_EMAIL) {
+          return json({ error: "Unauthorized" }, 401);
+        }
         const { data, error } = await supabase
           .from("blog_posts")
           .select("*")
@@ -69,9 +86,8 @@ Deno.serve(async (req) => {
       }
 
       case "save_blog_post": {
-        const adminKey = Deno.env.get("ADMIN_KEY");
-        if (adminKey && body.admin_key !== adminKey) {
-          return json({ error: "Unauthorized — invalid admin key" }, 401);
+        if (userEmail !== OWNER_EMAIL) {
+          return json({ error: "Unauthorized" }, 401);
         }
         const { post } = body;
         let result;
@@ -85,10 +101,47 @@ Deno.serve(async (req) => {
         return json(result.data);
       }
 
+      case "optimize_blog_seo": {
+        if (userEmail !== OWNER_EMAIL) {
+          return json({ error: "Unauthorized" }, 401);
+        }
+        if (!groqApiKey) throw new Error("Groq API key not configured.");
+
+        const { title, content } = body;
+        const prompt = `You are an SEO expert for Giglant, a platform for video editors and freelancers. 
+        Analyze the following blog post and provide:
+        1. A compelling Meta Title (max 60 chars)
+        2. A high-converting Meta Description (max 160 chars)
+        3. A concise Excerpt (max 200 chars)
+        
+        Return ONLY a JSON object with keys: meta_title, meta_description, excerpt.
+        
+        Title: ${title}
+        Content: ${content.substring(0, 2000)}`;
+
+        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${groqApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "llama-3.1-70b-versatile",
+            messages: [{ role: "user", content: prompt }],
+            response_format: { type: "json_object" },
+          }),
+        });
+
+        const groqData = await groqRes.json();
+        const seo = JSON.parse(groqData.choices[0].message.content);
+        return json(seo);
+      }
+
       default:
         return json({ error: `Unknown action: ${action}` }, 400);
     }
   } catch (err: any) {
+    console.error("[api-function] Error:", err);
     return json({ error: err.message || "Internal error" }, 400);
   }
 });

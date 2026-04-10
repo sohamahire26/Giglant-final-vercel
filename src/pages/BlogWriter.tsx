@@ -1,11 +1,16 @@
+"use client";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Save, Eye, ArrowLeft, Loader2, Lock, ImageIcon, Bold, Italic, Heading2, Link2, List } from "lucide-react";
+import { Save, Eye, ArrowLeft, Loader2, Lock, ImageIcon, Bold, Italic, Heading2, Link2, List, Sparkles, Layout as LayoutIcon, FileText } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
-import { saveBlogPost, getBlogPostById } from "@/lib/api";
+import { saveBlogPost, getBlogPostById, optimizeBlogSEO } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/components/AuthProvider";
+
+const OWNER_EMAIL = "Sohamahire26@gmail.com";
 
 const categories = [
   { slug: "editing-tips", name: "Editing Tips" },
@@ -21,11 +26,8 @@ const BlogWriter = () => {
   const editId = searchParams.get("edit");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
   const contentRef = useRef<HTMLTextAreaElement>(null);
-
-  // Admin gate
-  const [adminKey, setAdminKey] = useState(() => localStorage.getItem("giglant_admin_key") || "");
-  const [authenticated, setAuthenticated] = useState(() => !!localStorage.getItem("giglant_admin_key"));
 
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
@@ -35,13 +37,16 @@ const BlogWriter = () => {
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState("");
-  const [_published, setPublished] = useState(false);
+  const [published, setPublished] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
   const [loading, setLoading] = useState(!!editId);
   const [preview, setPreview] = useState(false);
 
+  const isOwner = user?.email === OWNER_EMAIL;
+
   useEffect(() => {
-    if (editId && authenticated) {
+    if (editId && isOwner) {
       const loadPost = async () => {
         try {
           const data = await getBlogPostById(editId);
@@ -61,14 +66,7 @@ const BlogWriter = () => {
       };
       loadPost();
     }
-  }, [editId, authenticated]);
-
-  const handleAdminLogin = () => {
-    if (adminKey.trim()) {
-      localStorage.setItem("giglant_admin_key", adminKey.trim());
-      setAuthenticated(true);
-    }
-  };
+  }, [editId, isOwner]);
 
   const generateSlug = useCallback((text: string) => {
     return text.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
@@ -79,7 +77,25 @@ const BlogWriter = () => {
     if (!editId) setSlug(generateSlug(val));
   };
 
-  /* ── Formatting toolbar ── */
+  const handleAIOptimize = async () => {
+    if (!title || !content) {
+      toast({ title: "Missing content", description: "Add a title and some content first.", variant: "destructive" });
+      return;
+    }
+    setOptimizing(true);
+    try {
+      const seo = await optimizeBlogSEO(title, content);
+      setMetaTitle(seo.meta_title);
+      setMetaDescription(seo.meta_description);
+      setExcerpt(seo.excerpt);
+      toast({ title: "SEO Optimized!", description: "Meta tags and excerpt have been updated by AI." });
+    } catch (err: any) {
+      toast({ title: "Optimization failed", description: err.message, variant: "destructive" });
+    } finally {
+      setOptimizing(false);
+    }
+  };
+
   const insertFormat = (before: string, after: string = "") => {
     const ta = contentRef.current;
     if (!ta) return;
@@ -98,23 +114,8 @@ const BlogWriter = () => {
   const insertImage = () => {
     const url = prompt("Enter image URL:");
     if (url) {
-      const ta = contentRef.current;
-      const pos = ta ? ta.selectionStart : content.length;
-      const imgTag = `\n<img src="${url}" alt="image" style="max-width:100%;border-radius:8px;margin:1rem 0" />\n`;
-      setContent(content.substring(0, pos) + imgTag + content.substring(pos));
-    }
-  };
-
-  const insertLink = () => {
-    const url = prompt("Enter URL:");
-    if (url) {
-      const ta = contentRef.current;
-      if (!ta) return;
-      const start = ta.selectionStart;
-      const end = ta.selectionEnd;
-      const selected = content.substring(start, end) || "link text";
-      const linkTag = `<a href="${url}" target="_blank">${selected}</a>`;
-      setContent(content.substring(0, start) + linkTag + content.substring(end));
+      const imgTag = `\n<img src="${url}" alt="image" style="max-width:100%;border-radius:1rem;margin:2rem 0" />\n`;
+      setContent(prev => prev + imgTag);
     }
   };
 
@@ -139,7 +140,7 @@ const BlogWriter = () => {
     if (editId) postData.id = editId;
 
     try {
-      await saveBlogPost(postData, adminKey);
+      await saveBlogPost(postData);
       toast({ title: pub ? "Published!" : "Saved as draft", description: `Post "${title}" has been ${pub ? "published" : "saved"}.` });
       if (pub) navigate(`/blog/${category}/${slug}`);
     } catch (err: any) {
@@ -148,36 +149,7 @@ const BlogWriter = () => {
     setSaving(false);
   };
 
-  // Admin gate
-  if (!authenticated) {
-    return (
-      <Layout>
-        <SEOHead title="Blog Admin — Giglant" description="Admin access for blog management." />
-        <section className="section-padding">
-          <div className="container-tight max-w-md">
-            <div className="rounded-2xl border border-border bg-card p-8 text-center">
-              <Lock className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
-              <h1 className="font-display text-2xl font-bold text-foreground">Admin Access</h1>
-              <p className="mt-2 text-sm text-muted-foreground">Enter your admin key to access the blog editor.</p>
-              <div className="mt-6 space-y-3">
-                <input
-                  type="password"
-                  value={adminKey}
-                  onChange={(e) => setAdminKey(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAdminLogin()}
-                  placeholder="Admin key"
-                  className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-                />
-                <Button onClick={handleAdminLogin} className="w-full">Unlock Editor</Button>
-              </div>
-            </div>
-          </div>
-        </section>
-      </Layout>
-    );
-  }
-
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <Layout>
         <div className="flex items-center justify-center py-24">
@@ -187,123 +159,201 @@ const BlogWriter = () => {
     );
   }
 
+  if (!isOwner) {
+    return (
+      <Layout>
+        <SEOHead title="Access Denied — Giglant" description="You do not have permission to access this page." />
+        <section className="section-padding">
+          <div className="container-tight max-w-md">
+            <div className="rounded-2xl border border-border bg-card p-8 text-center">
+              <Lock className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+              <h1 className="font-display text-2xl font-bold text-foreground">Access Denied</h1>
+              <p className="mt-2 text-sm text-muted-foreground">Only the site owner can access the blog writer.</p>
+              <Button onClick={() => navigate("/login")} className="mt-6 w-full">Sign In as Owner</Button>
+            </div>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <SEOHead title="Write Blog Post — Giglant" description="Write and publish blog posts on Giglant." />
       <section className="section-padding">
-        <div className="container-tight max-w-4xl">
-          <div className="mb-6 flex items-center justify-between">
-            <button onClick={() => navigate("/blog")} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary">
-              <ArrowLeft className="h-4 w-4" /> Back to Blog
-            </button>
+        <div className="container-tight">
+          <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <button onClick={() => navigate("/blog")} className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-primary transition-colors">
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <div>
+                <h1 className="font-display text-2xl font-bold text-foreground">{editId ? "Edit Post" : "New Post"}</h1>
+                <p className="text-xs text-muted-foreground">Drafting as {user?.email}</p>
+              </div>
+            </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setPreview(!preview)}>
-                <Eye className="mr-1 h-4 w-4" /> {preview ? "Edit" : "Preview"}
+              <Button variant="outline" onClick={() => setPreview(!preview)}>
+                {preview ? <FileText className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                {preview ? "Edit" : "Preview"}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => handleSave(false)} disabled={saving}>
-                <Save className="mr-1 h-4 w-4" /> Save Draft
+              <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}>
+                <Save className="mr-2 h-4 w-4" /> Save Draft
               </Button>
-              <Button size="sm" onClick={() => handleSave(true)} disabled={saving}>
-                {saving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
+              <Button onClick={() => handleSave(true)} disabled={saving}>
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Publish
               </Button>
             </div>
           </div>
 
-          {preview ? (
-            <div className="rounded-2xl border border-border bg-card p-8">
-              {coverImageUrl && <img src={coverImageUrl} alt={title} className="w-full rounded-xl mb-6 max-h-80 object-cover" />}
-              <h1 className="font-display text-3xl font-bold text-foreground">{title || "Untitled"}</h1>
-              <p className="mt-2 text-sm text-muted-foreground">Category: {categories.find(c => c.slug === category)?.name}</p>
-              <div
-                className="mt-6 prose max-w-none text-foreground text-sm leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: content || "<p>No content yet.</p>" }}
-              />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">Title</label>
-                <input type="text" value={title} onChange={(e) => handleTitleChange(e.target.value)}
-                  placeholder="Your blog post title"
-                  className="w-full rounded-lg border border-border bg-card px-4 py-3 text-lg font-semibold text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-foreground">URL Slug</label>
-                  <input type="text" value={slug} onChange={(e) => setSlug(e.target.value)}
-                    placeholder="url-slug"
-                    className="w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none font-mono" />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-foreground">Category</label>
-                  <select value={category} onChange={(e) => setCategory(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none">
-                    {categories.map((c) => (
-                      <option key={c.slug} value={c.slug}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">Cover Image URL</label>
-                <input type="text" value={coverImageUrl} onChange={(e) => setCoverImageUrl(e.target.value)}
-                  placeholder="https://your-image-url.com/cover.jpg"
-                  className="w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
-                {coverImageUrl && <img src={coverImageUrl} alt="Cover preview" className="mt-2 h-32 rounded-lg object-cover" />}
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">Excerpt</label>
-                <textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)}
-                  placeholder="Brief summary of the post (shown in listings)"
-                  rows={2}
-                  className="w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none resize-none" />
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">Content</label>
-                {/* Formatting toolbar */}
-                <div className="flex gap-1 mb-2 p-1 rounded-lg border border-border bg-card">
-                  <button onClick={() => insertFormat("<strong>", "</strong>")} className="p-1.5 rounded hover:bg-secondary" title="Bold"><Bold className="h-4 w-4" /></button>
-                  <button onClick={() => insertFormat("<em>", "</em>")} className="p-1.5 rounded hover:bg-secondary" title="Italic"><Italic className="h-4 w-4" /></button>
-                  <button onClick={() => insertFormat("<h2>", "</h2>")} className="p-1.5 rounded hover:bg-secondary" title="Heading"><Heading2 className="h-4 w-4" /></button>
-                  <button onClick={insertLink} className="p-1.5 rounded hover:bg-secondary" title="Insert Link"><Link2 className="h-4 w-4" /></button>
-                  <button onClick={insertImage} className="p-1.5 rounded hover:bg-secondary" title="Insert Image"><ImageIcon className="h-4 w-4" /></button>
-                  <button onClick={() => insertFormat("<ul>\n  <li>", "</li>\n</ul>")} className="p-1.5 rounded hover:bg-secondary" title="List"><List className="h-4 w-4" /></button>
-                </div>
-                <textarea
-                  ref={contentRef}
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Write your blog post here. Use HTML for formatting or use the toolbar above."
-                  rows={20}
-                  className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none resize-y font-mono leading-relaxed"
-                />
-              </div>
-
-              <details className="rounded-lg border border-border bg-card p-4">
-                <summary className="cursor-pointer text-sm font-medium text-foreground">SEO Settings</summary>
-                <div className="mt-3 space-y-3">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Meta Title</label>
-                    <input type="text" value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)}
-                      placeholder="SEO title (auto-generated if empty)"
-                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
+          <div className="grid gap-8 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-6">
+              {preview ? (
+                <div className="rounded-3xl border border-border bg-card p-8 md:p-12">
+                  {coverImageUrl && <img src={coverImageUrl} alt={title} className="w-full rounded-2xl mb-8 max-h-96 object-cover" />}
+                  <div className="mb-4 flex items-center gap-2">
+                    <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">
+                      {categories.find(c => c.slug === category)?.name}
+                    </span>
                   </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">Meta Description</label>
-                    <textarea value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)}
-                      placeholder="SEO description (auto-generated if empty)"
-                      rows={2}
-                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none resize-none" />
+                  <h1 className="font-display text-4xl font-bold text-foreground">{title || "Untitled Post"}</h1>
+                  <div
+                    className="mt-10 prose prose-sm max-w-none text-foreground leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: content || "<p className='text-muted-foreground italic'>No content yet...</p>" }}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="rounded-2xl border border-border bg-card p-6">
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-muted-foreground">Post Title</label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => handleTitleChange(e.target.value)}
+                      placeholder="Enter a catchy title..."
+                      className="w-full bg-transparent text-3xl font-bold text-foreground placeholder:text-muted-foreground focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="rounded-2xl border border-border bg-card p-6">
+                    <div className="mb-4 flex items-center justify-between">
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Content</label>
+                      <div className="flex gap-1 rounded-lg border border-border bg-background p-1">
+                        <button onClick={() => insertFormat("<strong>", "</strong>")} className="p-1.5 rounded hover:bg-secondary" title="Bold"><Bold className="h-4 w-4" /></button>
+                        <button onClick={() => insertFormat("<em>", "</em>")} className="p-1.5 rounded hover:bg-secondary" title="Italic"><Italic className="h-4 w-4" /></button>
+                        <button onClick={() => insertFormat("<h2>", "</h2>")} className="p-1.5 rounded hover:bg-secondary" title="Heading"><Heading2 className="h-4 w-4" /></button>
+                        <button onClick={() => insertFormat("<a href='#' target='_blank'>", "</a>")} className="p-1.5 rounded hover:bg-secondary" title="Link"><Link2 className="h-4 w-4" /></button>
+                        <button onClick={insertImage} className="p-1.5 rounded hover:bg-secondary" title="Image"><ImageIcon className="h-4 w-4" /></button>
+                        <button onClick={() => insertFormat("<ul>\n  <li>", "</li>\n</ul>")} className="p-1.5 rounded hover:bg-secondary" title="List"><List className="h-4 w-4" /></button>
+                      </div>
+                    </div>
+                    <textarea
+                      ref={contentRef}
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      placeholder="Start writing your masterpiece..."
+                      rows={25}
+                      className="w-full bg-transparent text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none resize-y font-mono"
+                    />
                   </div>
                 </div>
-              </details>
+              )}
             </div>
-          )}
+
+            <div className="space-y-6">
+              {/* Settings Panel */}
+              <div className="rounded-2xl border border-border bg-card p-6">
+                <h3 className="mb-4 font-display text-sm font-bold text-foreground flex items-center gap-2">
+                  <LayoutIcon className="h-4 w-4 text-primary" /> Post Settings
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category</label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                    >
+                      {categories.map((c) => (
+                        <option key={c.slug} value={c.slug}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">URL Slug</label>
+                    <input
+                      type="text"
+                      value={slug}
+                      onChange={(e) => setSlug(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono text-foreground focus:border-primary focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Cover Image URL</label>
+                    <input
+                      type="text"
+                      value={coverImageUrl}
+                      onChange={(e) => setCoverImageUrl(e.target.value)}
+                      placeholder="https://..."
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* AI SEO Panel */}
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="font-display text-sm font-bold text-foreground flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" /> AI SEO Optimizer
+                  </h3>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleAIOptimize}
+                    disabled={optimizing}
+                    className="h-8 text-primary hover:bg-primary/10"
+                  >
+                    {optimizing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
+                    Optimize
+                  </Button>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Meta Title</label>
+                    <input
+                      type="text"
+                      value={metaTitle}
+                      onChange={(e) => setMetaTitle(e.target.value)}
+                      placeholder="SEO Title"
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Meta Description</label>
+                    <textarea
+                      value={metaDescription}
+                      onChange={(e) => setMetaDescription(e.target.value)}
+                      placeholder="SEO Description"
+                      rows={3}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Excerpt</label>
+                    <textarea
+                      value={excerpt}
+                      onChange={(e) => setExcerpt(e.target.value)}
+                      placeholder="Post summary"
+                      rows={3}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none resize-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </Layout>

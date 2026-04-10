@@ -41,9 +41,6 @@ const OverviewTab = ({ project }: Props) => {
                 <LayoutDashboard className="h-5 w-5 text-primary" />
                 <h2 className="font-display text-lg font-semibold text-foreground">Project Overview</h2>
               </div>
-              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary capitalize">
-                {project.status || "Active"}
-              </span>
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2">

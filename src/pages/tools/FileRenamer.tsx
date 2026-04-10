@@ -1,12 +1,12 @@
 import { useState, useCallback } from "react";
 import { Upload, Download, FileIcon, X, Wand2, Loader2, RefreshCw } from "lucide-react";
+import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import FAQSection from "@/components/FAQSection";
 import { Button } from "@/components/ui/button";
 import * as pdfjsLib from "pdfjs-dist";
 import exifr from "exifr";
-import { fmtTs } from "@/components/workspace/types";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
@@ -72,7 +72,7 @@ const extractPdfText = async (file: File): Promise<string> => {
     for (let i = 1; i <= maxPages; i++) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
-      const pageText = content.items.map((item: any) => item.str).join(" ");
+      const pageText = content.items.map((item: any) => (item as any).str).join(" ");
       fullText += pageText + " ";
     }
     return fullText.substring(0, 10000);
@@ -107,7 +107,7 @@ const extractImageMetadata = async (file: File) => {
   }
 };
 
-const detectFileType = (text: string): string | null => {
+const detectDocType = (text: string): string | null => {
   const patterns: [RegExp, string][] = [
     [/invoice\s*(no|number|#|:|id)/i, "Invoice"],
     [/total\s*(amount|due|payable|balance)/i, "Invoice"],
@@ -187,15 +187,25 @@ const cleanRawName = (name: string): string =>
     .replace(/\b(copy|final|v\d+|draft|new|old|untitled|document|image|img|dsc|dcim|scan|screenshot|screen\s*shot|capture|photo|vid|video|audio|recording|download|downloaded|attachment|whatsapp|telegram|signal)\b/gi, "")
     .replace(/\s+/g, " ").trim();
 
+const analyzeImage = async (file: File) => {
+  // Simple stub for image analysis
+  const name = file.name.toLowerCase();
+  return {
+    isScreenshot: name.includes("screenshot") || name.includes("screen shot") || name.includes("capture")
+  };
+};
+
 const smartRename = async (file: File): Promise<{ name: string; type: string; category: string }> => {
   const ext = file.name.includes(".") ? "." + file.name.split(".").pop()!.toLowerCase() : "";
   const extClean = ext.replace(".", "");
   const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
   const fileTypeLabel = FILE_TYPE_LABELS[extClean] || "File";
   const category = getTypeCategory(extClean);
+  
   const isImage = ["jpg","jpeg","png","gif","webp","bmp","tiff","heic","heif","raw","cr2","nef","svg"].includes(extClean);
   const isVideo = ["mp4","mov","avi","mkv","wmv","webm"].includes(extClean);
   const isAudio = ["mp3","wav","flac","aac","ogg","m4a"].includes(extClean);
+  const isDoc = ["pdf","doc","docx","txt","rtf","odt","md","html","json","xml"].includes(extClean);
 
   const parts: string[] = [];
   let detectedType = fileTypeLabel;
@@ -225,7 +235,6 @@ const smartRename = async (file: File): Promise<{ name: string; type: string; ca
     else if (meta.description) {
       parts.push(...meta.description.split(/\s+/).slice(0, 3).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()));
     }
-    // Fallback: use cleaned original filename (no dimensions, no camera, no date)
     if (parts.length === 0) {
       const cleaned = cleanRawName(nameWithoutExt);
       if (cleaned.length > 1) {
@@ -293,16 +302,13 @@ const FileRenamerTool = () => {
 
     setFiles((prev) => [...prev, ...incoming]);
 
-    // Process all files and collect results
     const results: { file: File; name: string; type: string; category: string }[] = [];
     for (const entry of incoming) {
       const result = await smartRename(entry.original);
       results.push({ file: entry.original, ...result });
     }
 
-    // Now add numbering per category across ALL files (existing + new)
     setFiles((prev) => {
-      // Count existing files per category
       const categoryCounts: Record<string, number> = {};
       for (const f of prev) {
         if (f.status === "done" && f.typeCategory) {
@@ -318,7 +324,6 @@ const FileRenamerTool = () => {
         categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
         const num = categoryCounts[cat];
 
-        // Insert category number into the name
         const ext = result.file.name.includes(".") ? "." + result.file.name.split(".").pop()!.toLowerCase() : "";
         const nameWithoutExt = result.name.replace(/\.[^/.]+$/, "");
         const numberedName = `${cat}-${num}-${nameWithoutExt}${ext}`;
@@ -346,7 +351,6 @@ const FileRenamerTool = () => {
     setFiles((prev) => prev.map((f, i) => (i === index ? { ...f, status: "processing" } : f)));
     const result = await smartRename(file.original);
     const cat = result.category;
-    // Find the current number for this file's position in its category
     let num = 0;
     for (let i = 0; i <= index; i++) {
       if (files[i]?.typeCategory === cat || i === index) num++;
@@ -380,7 +384,6 @@ const FileRenamerTool = () => {
 
       <section className="section-padding">
         <div className="container-tight max-w-4xl">
-          {/* Hero */}
           <div className="mb-8 text-center">
             <h1 className="font-display text-4xl font-bold text-foreground md:text-5xl">Smart File Renamer</h1>
             <p className="mt-4 text-lg text-muted-foreground">
@@ -388,7 +391,6 @@ const FileRenamerTool = () => {
             </p>
           </div>
 
-          {/* Drop Zone */}
           <div
             onDrop={handleDrop}
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -403,14 +405,14 @@ const FileRenamerTool = () => {
               <span className="rounded-full bg-secondary px-3 py-1">Auto‑numbered</span>
               <span className="rounded-full bg-secondary px-3 py-1">100% Private</span>
             </div>
-            <input              type="file"
+            <input
+              type="file"
               multiple
               onChange={(e) => e.target.files && handleFiles(e.target.files)}
               className="absolute inset-0 cursor-pointer opacity-0"
             />
           </div>
 
-          {/* Processed Files */}
           {files.length > 0 && (
             <div className="mt-8">
               <div className="flex items-center justify-between mb-4">
@@ -444,7 +446,8 @@ const FileRenamerTool = () => {
                           <Loader2 className="h-4 w-4 animate-spin text-primary" /> Reading content & analyzing...
                         </div>
                       ) : (
-                        <input                          type="text"
+                        <input
+                          type="text"
                           value={f.newName}
                           onChange={(e) => updateName(i, e.target.value)}
                           className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground focus:border-primary focus:outline-none"
@@ -471,7 +474,6 @@ const FileRenamerTool = () => {
             </div>
           )}
 
-          {/* Download All */}
           {files.length > 0 && files.every((f) => f.status === "done") && (
             <div className="mt-8 text-center rounded-2xl border border-primary/30 bg-primary/5 p-8">
               <h2 className="font-display text-xl font-bold text-foreground">Files renamed! What’s next?</h2>
@@ -484,74 +486,64 @@ const FileRenamerTool = () => {
             </div>
           )}
 
-          {/* Examples */}
-          {files.length > 0 && files.every((f) => f.status === "done") && (
-            <div className="mt-16">
-              <h2 className="font-display text-2xl font-bold text-foreground mb-6">Real Examples — Content Workflow File Management</h2>
-              <p className="text-muted-foreground text-sm mb-6">
-                See how content‑aware renaming transforms messy filenames in your editing pipeline.
+          <div className="mt-16">
+            <h2 className="font-display text-2xl font-bold text-foreground mb-6">Real Examples — Content Workflow File Management</h2>
+            <p className="text-muted-foreground text-sm mb-6">
+              See how content‑aware renaming transforms messy filenames in your editing pipeline.
+            </p>
+            <div className="space-y-3">
+              {examples.map((ex, i) => (
+                <div key={i} className="rounded-xl border border-border bg-card p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    <code className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">{ex.before}</code>
+                    <span className="text-primary font-bold hidden sm:inline">→</span>
+                    <code className="text-xs font-semibold text-foreground bg-primary/10 px-2 py-1 rounded">{ex.after}</code>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">{ex.note}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-16">
+            <h2 className="font-display text-2xl font-bold text-foreground mb-6">How It Works — Streamline Your Video Editing Workflow</h2>
+            <div className="grid gap-4 md:grid-cols-4">
+              {[
+                { step: "Drop files", desc: "Any file type — PDFs, images, videos, docs from your editing pipeline" },
+                { step: "Content analyzed", desc: "PDF text extracted, EXIF data read, type detected automatically" },
+                { step: "Smart name + number", desc: "Named from content, numbered by type (Image‑1, Video‑1)" },
+                { step: "Edit & download", desc: "Fine‑tune names and download for your client delivery workflow" },
+              ].map((s, i) => (
+                <div key={i} className="rounded-xl border border-border bg-card p-6 text-center">
+                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">{i + 1}</div>
+                  <p className="text-sm font-semibold text-foreground">{s.step}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-16">
+            <h2 className="font-display text-2xl font-bold text-foreground mb-6">About Smart File Renamer — File Management for Post Production</h2>
+            <div className="prose max-w-none text-muted-foreground space-y-3 text-sm leading-relaxed">
+              <p>
+                Giglant's Smart File Renamer is built for the freelancer workflow. It uses <strong>PDF.js</strong> to extract actual text from PDFs, <strong>EXIF metadata parsing</strong> to read camera data from photos, and <strong>intelligent pattern matching</strong> to detect 25+ document types — all essential for managing your post‑production workflow and video export workflow.
               </p>
-              <div className="space-y-3">
-                {examples.map((ex, i) => (
-                  <div key={i} className="rounded-xl border border-border bg-card p-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                      <code className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded">{ex.before}</code>
-                      <span className="text-primary font-bold hidden sm:inline">→</span>
-                      <code className="text-xs font-semibold text-foreground bg-primary/10 px-2 py-1 rounded">{ex.after}</code>
-                    </div>
-                    <p className="mt-2 text-xs text-muted-foreground">{ex.note}</p>
-                  </div>
-                ))}
-              </div>
+              <p>
+                The automatic numbering system organizes files by category (Image‑1, Image‑2, Video‑1, Video‑2, Document‑1) so your file management workflow stays clean whether you’re handling 5 files or 500.
+              </p>
+              <h3 className="font-display text-lg font-semibold text-foreground">What It Reads & Detects</h3>
+              <ul className="list-disc list-inside space-y-1">
+                <li><strong>PDFs:</strong> Full text extraction via PDF.js (first 5 pages) for your editing pipeline</li>
+                <li><strong>Text files:</strong> Direct content reading (TXT, CSV, MD, JSON, HTML)</li>
+                <li><strong>Images:</strong> EXIF data — camera, date, description for content workflow</li>
+                <li><strong>Videos & Audio:</strong> Metadata‑based naming for video editing workflow</li>
+                <li><strong>Auto‑numbering:</strong> Each file type category gets sequential numbers</li>
+                <li><strong>25+ doc types:</strong> Invoices, NDAs, Resumes, Reports, Proposals, and more</li>
+              </ul>
             </div>
           </div>
 
-          {/* How It Works */}
-          {files.length > 0 && files.every((f) => f.status === "done") && (
-            <div className="mt-16">
-              <h2 className="font-display text-2xl font-bold text-foreground mb-6">How It Works — Streamline Your Video Editing Workflow</h2>
-              <div className="grid gap-4 md:grid-cols-4">
-                {[
-                  { step: "Drop files", desc: "Any file type — PDFs, images, videos, docs from your editing pipeline" },
-                  { step: "Content analyzed", desc: "PDF text extracted, EXIF data read, type detected automatically" },
-                  { step: "Smart name + number", desc: "Named from content, numbered by type (Image‑1, Video‑1)" },
-                  { step: "Edit & download", desc: "Fine‑tune names and download for your client delivery workflow" },
-                ].map((s, i) => (
-                  <div key={i} className="rounded-xl border border-border bg-card p-6 text-center">
-                    <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">{i + 1}</div>
-                    <p className="text-sm font-semibold text-foreground">{s.step}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{s.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* About */}
-          {files.length > 0 && files.every((f) => f.status === "done") && (
-            <div className="mt-16">
-              <h2 className="font-display text-2xl font-bold text-foreground mb-6">About Smart File Renamer — File Management for Post Production</h2>
-              <div className="prose max-w-none text-muted-foreground space-y-3 text-sm leading-relaxed">
-                <p>
-                  Giglant's Smart File Renamer is built for the freelancer workflow. It uses <strong>PDF.js</strong> to extract actual text from PDFs, <strong>EXIF metadata parsing</strong> to read camera data from photos, and <strong>intelligent pattern matching</strong> to detect 25+ document types — all essential for managing your post‑production workflow and video export workflow.
-                </p>
-                <p>
-                  The automatic numbering system organizes files by category (Image‑1, Image‑2, Video‑1, Video‑2, Document‑1) so your file management workflow stays clean whether you’re handling 5 files or 500.
-                </p>
-                <h3 className="font-display text-lg font-semibold text-foreground">What It Reads & Detects</h3>
-                <ul className="list-disc list-inside space-y-1">
-                  <li><strong>PDFs:</strong> Full text extraction via PDF.js (first 5 pages) for your editing pipeline</li>
-                  <li><strong>Text files:</strong> Direct content reading (TXT, CSV, MD, JSON, HTML)</li>
-                  <li><strong>Images:</strong> EXIF data — camera, date, description for content workflow</li>
-                  <li><strong>Videos & Audio:</strong> Metadata‑based naming for video editing workflow</li>
-                  <li><strong>Auto‑numbering:</strong> Each file type category gets sequential numbers</li>
-                  <li><strong>25+ doc types:</strong> Invoices, NDAs, Resumes, Reports, Proposals, and more</li>
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {/* FAQ */}
           <FAQSection title="File Renamer FAQ — Video Editing Workflow Tool" items={faq} />
         </div>
       </section>

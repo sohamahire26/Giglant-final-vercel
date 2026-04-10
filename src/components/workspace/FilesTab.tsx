@@ -117,8 +117,8 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
           </div>
           <div className="flex-1">
             <p className="text-xs text-muted-foreground">
-              <span className="font-medium text-amber-600">Pro tip:</span> Want cleaner file names before uploading? 
-              Use our <a href="/tools/file-renamer" target="_blank" rel="noopener" className="text-amber-600 hover:underline">Smart File Renamer</a> tool to automatically rename messy files with meaningful names.
+              <span className="font-medium text-amber-600">Pro tip:</span> Want cleaner file names before uploading?
+              Use the <span className="font-semibold text-amber-600">File Renamer</span> tab in this workspace to automatically rename messy files with meaningful names.
             </p>
           </div>
         </div>

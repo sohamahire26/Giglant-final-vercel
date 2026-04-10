@@ -1,11 +1,25 @@
-import { CheckSquare, Square, ClipboardCopy, HelpCircle, Info, MessageSquare } from "lucide-react";
+import { CheckSquare, Square, ClipboardCopy, HelpCircle, Info, MessageSquare, ListChecks, Zap, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import FAQSection from "@/components/FAQSection";
 import type { ProjectFile, FileComment } from "./types";
 import { fmtTs } from "./types";
 
 const db = supabase as any;
+
+const faq = [
+  { question: "How is the checklist generated?", answer: "The checklist is automatically populated from the comments left by your client in the 'Files & Feedback' tab. Every comment becomes a task you can track." },
+  { question: "Can my client see when I resolve an item?", answer: "Yes. When you mark an item as resolved here, it updates in real-time on the client's review page, showing them that you are actively working on their feedback." },
+  { question: "What does 'Copy Checklist' do?", answer: "It copies a formatted text version of all pending and resolved tasks to your clipboard. You can paste this into an email or the 'Delivery' tab to show your client exactly what has been addressed." },
+  { question: "Can I add my own tasks to the checklist?", answer: "Currently, the checklist is driven by file comments. To add a custom task, simply leave a comment on the relevant file in the 'Files & Feedback' tab." },
+];
+
+const examples = [
+  { task: "Fix color grade at 01:20", status: "Pending", note: "Directly linked to a specific frame in your video." },
+  { task: "Update logo on page 4", status: "Resolved", note: "Marked as done, client sees the progress instantly." },
+  { task: "Reduce background noise", status: "Pending", note: "General feedback converted into an actionable task." },
+];
 
 interface Props {
   files: ProjectFile[];
@@ -150,27 +164,70 @@ const RevisionsTab = ({ files, comments, setComments }: Props) => {
               </li>
             </ul>
           </div>
-
-          {/* FAQ Section */}
-          <div className="rounded-2xl border border-border bg-card p-6">
-            <h3 className="font-display text-sm font-semibold text-foreground mb-4">Revision FAQ</h3>
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs font-semibold text-foreground mb-1">Can clients see this checklist?</p>
-                <p className="text-[11px] text-muted-foreground">Yes, if they have the client link, they can see which items you've marked as resolved.</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-foreground mb-1">How do I share the updates?</p>
-                <p className="text-[11px] text-muted-foreground">Use the "Copy Checklist" button and paste it into your delivery message in the "Delivery" tab.</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-foreground mb-1">What if I disagree with feedback?</p>
-                <p className="text-[11px] text-muted-foreground">It's best to discuss it with the client directly. You can leave a comment back on the file to explain your perspective.</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
+
+      {/* Real Examples */}
+      <div className="mt-16">
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">Real Examples — Revision Tracking</h2>
+        <p className="text-muted-foreground text-sm mb-6">
+          See how messy client feedback is transformed into a clean, actionable checklist.
+        </p>
+        <div className="space-y-3">
+          {examples.map((ex, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${ex.status === 'Resolved' ? 'bg-green-500/10 text-green-600' : 'bg-amber-500/10 text-amber-600'}`}>{ex.status}</span>
+                  <p className="text-sm font-medium text-foreground">{ex.task}</p>
+                </div>
+                <p className="text-xs text-muted-foreground italic">{ex.note}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* How It Works */}
+      <div className="mt-16">
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">How It Works — Stay Organized</h2>
+        <div className="grid gap-4 md:grid-cols-4">
+          {[
+            { step: "Feedback Sync", desc: "Client comments are pulled instantly from the review page." },
+            { step: "Task Creation", desc: "Each comment is converted into a trackable checklist item." },
+            { step: "Progress Tracking", desc: "Mark items as resolved to keep yourself and your client updated." },
+            { step: "Final Confirmation", desc: "Copy the completed list to confirm all changes with your client." },
+          ].map((s, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-6 text-center">
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-red-600 text-white font-bold">{i + 1}</div>
+              <p className="text-sm font-semibold text-foreground">{s.step}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* About Section */}
+      <div className="mt-16">
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">About Revisions — Accountability & Clarity</h2>
+        <div className="prose max-w-none text-muted-foreground space-y-3 text-sm leading-relaxed">
+          <p>
+            The Revisions tab is your central command for project updates. It solves the problem of feedback getting lost in long email threads or chat messages.
+          </p>
+          <p>
+            By providing a <strong>shared source of truth</strong>, you and your client are always on the same page about what has been done and what is still pending. This transparency builds trust and reduces project friction.
+          </p>
+          <h3 className="font-display text-lg font-semibold text-foreground">Why Use This Checklist?</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li><ListChecks className="inline h-3 w-3 mr-1" /> <strong>Actionable Tasks:</strong> No more guessing what the client meant.</li>
+            <li><Zap className="inline h-3 w-3 mr-1" /> <strong>Real-time Updates:</strong> Clients see your progress as you work.</li>
+            <li><History className="inline h-3 w-3 mr-1" /> <strong>Project History:</strong> Keep a record of all changes made during the project.</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* FAQ Section */}
+      <FAQSection title="Revisions FAQ — Manage Your Tasks" items={faq} />
     </div>
   );
 };

@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Plus, Trash2, ExternalLink, CheckSquare, Square, Clock, FileEdit, Info, HelpCircle, Share2 } from "lucide-react";
+import { Plus, Trash2, ExternalLink, CheckSquare, Square, Clock, FileEdit, Info, HelpCircle, Share2, Video, FileText, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import FAQSection from "@/components/FAQSection";
 import type { Project, ProjectFile, FileComment } from "./types";
 import { extractDriveFileId } from "./types";
 import { fmtTs } from "./types";
@@ -17,6 +18,19 @@ const FILE_TYPES = [
   { value: "document", label: "Document", hasTimestamp: false },
   { value: "design", label: "Design File", hasTimestamp: false },
   { value: "other", label: "Other", hasTimestamp: false },
+];
+
+const faq = [
+  { question: "How do clients leave feedback?", answer: "Clients use the 'Magic Link' you share with them. They can click anywhere on a video or audio timeline to leave a timestamped comment, or leave general comments on documents and images. No login is required for them." },
+  { question: "Is my data secure?", answer: "Yes. We don't store your actual files. We only store the Google Drive link and the comments. The files are streamed directly from Google Drive to the browser, ensuring your content stays within your controlled environment." },
+  { question: "What file types support timestamps?", answer: "Currently, Video and Audio file types support frame-accurate timestamped feedback. For other types like Images or PDFs, clients can leave standard comments." },
+  { question: "Can I use links other than Google Drive?", answer: "The workspace is optimized for Google Drive to provide the best preview experience. Ensure your Drive file is set to 'Anyone with the link' -> 'Viewer' for the preview to work correctly." },
+];
+
+const examples = [
+  { type: "Video", note: "Client clicks at 00:45 -> 'Make this transition smoother' -> Timestamp saved automatically." },
+  { type: "PDF", note: "Client leaves comment -> 'Change the font size on page 2' -> Appears in your revision checklist." },
+  { type: "Audio", note: "Client marks 02:10 -> 'The background music is too loud here' -> You see exactly where to edit." },
 ];
 
 interface Props {
@@ -95,7 +109,7 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
       {/* How to Use Section */}
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="flex items-center gap-2 mb-6">
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">i</div>
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold">i</div>
           <h2 className="font-display text-lg font-semibold text-foreground">For Freelancers — How to Use</h2>
         </div>
         <div className="grid gap-4 md:grid-cols-4">
@@ -106,7 +120,7 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
             { step: "4", title: "Copy Magic Link", desc: "Share it to your Client" },
           ].map(s => (
             <div key={s.step} className="rounded-xl border border-border bg-background p-4 text-center">
-              <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-white text-sm font-bold">{s.step}</div>
+              <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white text-sm font-bold">{s.step}</div>
               <p className="text-sm font-semibold text-foreground">{s.title}</p>
               <p className="mt-1 text-xs text-muted-foreground">{s.desc}</p>
             </div>
@@ -197,28 +211,6 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
                 })}
               </div>
             )}
-          </div>
-
-          {/* Information Section */}
-          <div className="rounded-2xl border border-border bg-card p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Info className="h-5 w-5 text-primary" />
-              <h3 className="font-display text-sm font-semibold text-foreground">File Security & Access</h3>
-            </div>
-            <ul className="space-y-3 text-xs text-muted-foreground">
-              <li className="flex gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1 shrink-0" />
-                <span>Files are loaded directly from Google Drive. We don't store your files on our servers.</span>
-              </li>
-              <li className="flex gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1 shrink-0" />
-                <span>Ensure "Anyone with the link" is enabled so your client can see the preview.</span>
-              </li>
-              <li className="flex gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1 shrink-0" />
-                <span>Clients can leave timestamped feedback on video and audio files automatically.</span>
-              </li>
-            </ul>
           </div>
         </div>
 
@@ -334,6 +326,66 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
           )}
         </div>
       </div>
+
+      {/* Real Examples */}
+      <div className="mt-16">
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">Real Examples — Feedback Workflow</h2>
+        <p className="text-muted-foreground text-sm mb-6">
+          See how timestamped feedback streamlines communication between you and your client.
+        </p>
+        <div className="space-y-3">
+          {examples.map((ex, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-3">
+                <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary uppercase">{ex.type}</span>
+                <p className="text-sm text-foreground">{ex.note}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* How It Works */}
+      <div className="mt-16">
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">How It Works — Streamline Your Review Process</h2>
+        <div className="grid gap-4 md:grid-cols-4">
+          {[
+            { step: "Add Drive Link", desc: "Paste your Google Drive link and select the file type." },
+            { step: "Client Preview", desc: "Clients see a professional preview without needing an account." },
+            { step: "Timestamped Feedback", desc: "Clients click the timeline to leave frame-accurate comments." },
+            { step: "Auto-Checklist", desc: "Comments automatically sync to your revision checklist." },
+          ].map((s, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-6 text-center">
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-red-600 text-white font-bold">{i + 1}</div>
+              <p className="text-sm font-semibold text-foreground">{s.step}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* About Section */}
+      <div className="mt-16">
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">About Files & Feedback — Professional Client Review</h2>
+        <div className="prose max-w-none text-muted-foreground space-y-3 text-sm leading-relaxed">
+          <p>
+            Giglant's Files & Feedback system is designed to eliminate the "vague feedback" problem. By integrating directly with <strong>Google Drive</strong>, we provide a seamless bridge between your storage and your client's review experience.
+          </p>
+          <p>
+            The core technology uses <strong>real-time synchronization</strong> via Supabase, meaning as soon as a client leaves a comment, it appears in your workspace. No more refreshing pages or checking emails for feedback.
+          </p>
+          <h3 className="font-display text-lg font-semibold text-foreground">Key Features</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li><Video className="inline h-3 w-3 mr-1" /> <strong>Video/Audio Timestamps:</strong> Frame-accurate feedback for precise editing.</li>
+            <li><FileText className="inline h-3 w-3 mr-1" /> <strong>Document Support:</strong> Professional previews for PDFs and images.</li>
+            <li><ShieldCheck className="inline h-3 w-3 mr-1" /> <strong>Privacy First:</strong> Files stay on your Drive; we only handle the communication layer.</li>
+            <li><Share2 className="inline h-3 w-3 mr-1" /> <strong>Magic Links:</strong> One-click access for clients with no login required.</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* FAQ Section */}
+      <FAQSection title="Files & Feedback FAQ — Streamline Your Workflow" items={faq} />
     </div>
   );
 };

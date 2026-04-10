@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { ClipboardCopy, HelpCircle, Info, MessageSquare, Send, Sparkles } from "lucide-react";
+import { ClipboardCopy, HelpCircle, Info, MessageSquare, Send, Sparkles, Target, Heart, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import FAQSection from "@/components/FAQSection";
 import type { Project } from "./types";
 
 const deliveryGen = {
@@ -18,6 +19,19 @@ const deliveryGen = {
     return `${o[t] || o.professional}\n\nI've made the requested changes to your ${w} for ${p}.\n\nPlease review the revisions using the feedback link. If anything else needs adjusting, just drop your comments there.\n\nI've addressed all the points from your last round of feedback.\n\nLooking forward to your thoughts!\n\nBest regards`;
   },
 };
+
+const faq = [
+  { question: "What is the difference between the tones?", answer: "Friendly is great for long-term clients or casual projects. Professional is the standard for business communication. Premium is designed for high-ticket clients where a more formal and polished approach is expected." },
+  { question: "Can I customize the generated message?", answer: "Yes! Once the message is generated, it appears in a text area where you can edit it freely before copying it to your clipboard." },
+  { question: "Why should I use these templates?", answer: "These templates are based on professional communication standards that build trust and reduce friction. They ensure you include all necessary information (like the review link) every time." },
+  { question: "Where should I send these messages?", answer: "You can paste these messages into WhatsApp, Slack, Email, or any other platform you use to communicate with your client." },
+];
+
+const examples = [
+  { type: "Draft", note: "Focuses on collaboration and gathering early feedback to avoid major re-edits later." },
+  { type: "Final", note: "Confident and clear, guiding the client towards final approval and project closure." },
+  { type: "Revision", note: "Shows you've listened to their feedback and addressed every point specifically." },
+];
 
 interface Props { project: Project; }
 
@@ -151,18 +165,67 @@ const DeliveryTab = ({ project }: Props) => {
               </li>
             </ul>
           </div>
-
-          {/* Pro Tip */}
-          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6">
-            <h3 className="font-display text-sm font-semibold text-primary mb-2 flex items-center gap-2">
-              <Sparkles className="h-4 w-4" /> Pro Tip
-            </h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Always include the <strong>Client Review Link</strong> in your message. It makes it incredibly easy for them to give feedback without having to search for the link you sent earlier.
-            </p>
-          </div>
         </div>
       </div>
+
+      {/* Real Examples */}
+      <div className="mt-16">
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">Real Examples — Delivery Scenarios</h2>
+        <p className="text-muted-foreground text-sm mb-6">
+          See how different delivery types help you manage client expectations at every stage.
+        </p>
+        <div className="space-y-3">
+          {examples.map((ex, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-3">
+                <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary uppercase">{ex.type}</span>
+                <p className="text-sm text-foreground">{ex.note}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* How It Works */}
+      <div className="mt-16">
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">How It Works — Professional Communication</h2>
+        <div className="grid gap-4 md:grid-cols-4">
+          {[
+            { step: "Select Stage", desc: "Choose whether you're sending a draft, final work, or revisions." },
+            { step: "Set Tone", desc: "Match your client's personality with Friendly, Professional, or Premium tones." },
+            { step: "Auto-Generate", desc: "Our system builds a psychology-backed message for you instantly." },
+            { step: "Copy & Send", desc: "Copy the message and send it via your preferred communication app." },
+          ].map((s, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-6 text-center">
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-red-600 text-white font-bold">{i + 1}</div>
+              <p className="text-sm font-semibold text-foreground">{s.step}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* About Section */}
+      <div className="mt-16">
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">About Delivery — Branding Your Business</h2>
+        <div className="prose max-w-none text-muted-foreground space-y-3 text-sm leading-relaxed">
+          <p>
+            The way you deliver your work is just as important as the work itself. A professional delivery message sets the tone for the entire project and justifies your premium rates.
+          </p>
+          <p>
+            Giglant's Delivery Generator uses <strong>proven communication frameworks</strong> to ensure your messages are clear, concise, and action-oriented. This reduces the time spent on back-and-forth emails and gets you to project approval faster.
+          </p>
+          <h3 className="font-display text-lg font-semibold text-foreground">Why Professional Delivery Matters</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li><Target className="inline h-3 w-3 mr-1" /> <strong>Clarity:</strong> Clients know exactly what they are looking at and what to do next.</li>
+            <li><Heart className="inline h-3 w-3 mr-1" /> <strong>Relationship:</strong> Consistent, professional communication builds long-term client loyalty.</li>
+            <li><ShieldCheck className="inline h-3 w-3 mr-1" /> <strong>Confidence:</strong> Presenting your work with confidence reduces the likelihood of unnecessary revisions.</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* FAQ Section */}
+      <FAQSection title="Delivery FAQ — Communicate Like a Pro" items={faq} />
     </div>
   );
 };

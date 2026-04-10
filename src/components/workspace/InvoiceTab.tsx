@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { ClipboardCopy, HelpCircle, Info, MessageSquare, Receipt, Sparkles, AlertTriangle } from "lucide-react";
+import { ClipboardCopy, HelpCircle, Info, MessageSquare, Receipt, Sparkles, AlertTriangle, DollarSign, Calendar, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import FAQSection from "@/components/FAQSection";
 import type { Project } from "./types";
 
 const invoiceGen = {
@@ -12,6 +13,19 @@ const invoiceGen = {
   final: (c: string, p: string, a: string) =>
     `Hi ${c},\n\nI wanted to follow up regarding the outstanding payment for ${p} (${a}).\n\nCould you please confirm when the payment will be processed? I'd really appreciate an update.\n\nThank you for your attention to this.`,
 };
+
+const faq = [
+  { question: "When should I send the initial invoice?", answer: "It's best to send the initial invoice immediately after the final work has been approved. This keeps the momentum going and ensures you get paid while the value of your work is fresh in the client's mind." },
+  { question: "How often should I send reminders?", answer: "A friendly reminder 3-5 days after the initial request is standard. If the payment is still pending after 7-10 days, a more firm follow-up is appropriate." },
+  { question: "Should I deliver final files before payment?", answer: "For new clients, it's highly recommended to wait for payment confirmation before delivering high-resolution or source files. This protects your work and ensures you are compensated." },
+  { question: "What if a client refuses to pay?", answer: "Always start with polite reminders. If the issue persists, refer back to your contract or agreement. Giglant's professional templates help maintain a paper trail of your requests." },
+];
+
+const examples = [
+  { type: "Initial", note: "Clear and direct, stating the amount and the work completed to avoid any confusion." },
+  { type: "Reminder", note: "Soft and friendly, assuming the client simply forgot or is busy." },
+  { type: "Final", note: "Firm and professional, requesting a specific update on the payment status." },
+];
 
 interface Props { project: Project; }
 
@@ -145,18 +159,67 @@ const InvoiceTab = ({ project }: Props) => {
               </li>
             </ul>
           </div>
-
-          {/* Warning Section */}
-          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6">
-            <h3 className="font-display text-sm font-semibold text-amber-600 mb-2 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" /> Important Note
-            </h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              While being firm is good, always maintain a polite tone. You want to get paid, but you also want to keep the door open for future work.
-            </p>
-          </div>
         </div>
       </div>
+
+      {/* Real Examples */}
+      <div className="mt-16">
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">Real Examples — Payment Scenarios</h2>
+        <p className="text-muted-foreground text-sm mb-6">
+          See how professional payment requests help you maintain cash flow without damaging client relationships.
+        </p>
+        <div className="space-y-3">
+          {examples.map((ex, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-3">
+                <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary uppercase">{ex.type}</span>
+                <p className="text-sm text-foreground">{ex.note}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* How It Works */}
+      <div className="mt-16">
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">How It Works — Get Paid Faster</h2>
+        <div className="grid gap-4 md:grid-cols-4">
+          {[
+            { step: "Enter Amount", desc: "Input the final project fee and any agreed-upon currency." },
+            { step: "Set Deadline", desc: "Optionally add a timeframe to create a professional sense of urgency." },
+            { step: "Select Stage", desc: "Choose between an initial request or follow-up reminders." },
+            { step: "Copy & Send", desc: "Copy the generated message and send it to your client." },
+          ].map((s, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-6 text-center">
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-red-600 text-white font-bold">{i + 1}</div>
+              <p className="text-sm font-semibold text-foreground">{s.step}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* About Section */}
+      <div className="mt-16">
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">About Invoicing — Managing Your Cash Flow</h2>
+        <div className="prose max-w-none text-muted-foreground space-y-3 text-sm leading-relaxed">
+          <p>
+            Invoicing is often the most awkward part of freelancing. Giglant's Invoice Generator is designed to remove that friction by providing <strong>polite but firm templates</strong> that handle the "money talk" for you.
+          </p>
+          <p>
+            By using a standardized approach, you signal to your client that you are a professional business owner. This reduces payment delays and ensures you are compensated fairly and on time for your hard work.
+          </p>
+          <h3 className="font-display text-lg font-semibold text-foreground">Why Professional Invoicing Matters</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li><DollarSign className="inline h-3 w-3 mr-1" /> <strong>Cash Flow:</strong> Faster payments mean a healthier business and less stress.</li>
+            <li><Calendar className="inline h-3 w-3 mr-1" /> <strong>Deadlines:</strong> Setting clear expectations prevents payments from slipping through the cracks.</li>
+            <li><CheckCircle className="inline h-3 w-3 mr-1" /> <strong>Professionalism:</strong> Clear, consistent requests build respect and trust with your clients.</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* FAQ Section */}
+      <FAQSection title="Invoice FAQ — Get Paid on Time" items={faq} />
     </div>
   );
 };

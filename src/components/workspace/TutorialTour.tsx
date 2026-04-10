@@ -49,10 +49,10 @@ const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) 
 
     const el = document.getElementById(step.targetId);
     if (el) {
-      // Scroll the element into view first
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Use immediate scroll for more accurate coordinate calculation
+      el.scrollIntoView({ behavior: "auto", block: "center" });
       
-      // Wait for scroll to settle
+      // Wait a bit for the DOM to settle after potential tab switches
       setTimeout(() => {
         const rect = el.getBoundingClientRect();
         const padding = 8;
@@ -68,14 +68,14 @@ const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) 
         const windowWidth = window.innerWidth;
         const windowHeight = window.innerHeight;
         const tooltipWidth = Math.min(380, windowWidth * 0.9);
-        const tooltipHeight = 200; // Estimated height
+        const tooltipHeight = 220; // Estimated height
 
         let top = newCoords.top + newCoords.height + 20;
         let left = newCoords.left + newCoords.width / 2 - tooltipWidth / 2;
 
         // Adjust if off-screen vertically
         if (top + tooltipHeight > windowHeight) {
-          top = newCoords.top - tooltipHeight - 40;
+          top = newCoords.top - tooltipHeight - 20;
         }
         
         // Ensure it's at least visible
@@ -91,7 +91,7 @@ const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) 
           width: `${tooltipWidth}px`,
           opacity: 1,
         });
-      }, 150); // Slightly longer delay to ensure tab content is rendered
+      }, 200); // Slightly longer delay to ensure tab content is rendered and layout is stable
     } else {
       // Fallback to center if element not found
       setCoords(null);

@@ -1,9 +1,10 @@
 import { useState, useCallback } from "react";
-import { Upload, Download, FileIcon, X, Wand2, Loader2, RefreshCw, Sparkles, MessageSquareText } from "lucide-react";
+import { Upload, Download, FileIcon, X, Wand2, Loader2, RefreshCw, Sparkles, FileArchive, Info, Zap, History, ListChecks } from "lucide-react";
 import FAQSection from "@/components/FAQSection";
 import { Button } from "@/components/ui/button";
 import * as pdfjsLib from "pdfjs-dist";
 import exifr from "exifr";
+import JSZip from "jszip";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
@@ -71,7 +72,7 @@ const extractImageMetadata = async (file: File) => {
   } catch { return {}; }
 };
 
-const smartRename = async (file: File, customPrompt?: string): Promise<{ name: string; type: string; category: string }> => {
+const smartRename = async (file: File): Promise<{ name: string; type: string; category: string }> => {
   const ext = file.name.includes(".") ? "." + file.name.split(".").pop()!.toLowerCase() : "";
   const extClean = ext.replace(".", "");
   const category = getTypeCategory(extClean);
@@ -87,7 +88,7 @@ const smartRename = async (file: File, customPrompt?: string): Promise<{ name: s
   }
 
   try {
-    const response = await puter.ai.chat(`Suggest a professional filename for this file. Return ONLY the filename without extension. Use hyphens. ${customPrompt ? `Additional Instructions: ${customPrompt}` : ""} Context:\n${context}`);
+    const response = await puter.ai.chat(`Suggest a professional filename for this file. Return ONLY the filename without extension. Use hyphens. Context:\n${context}`);
     const suggestedName = response.toString().trim().replace(/\.[^/.]+$/, "").replace(/\s+/g, "-");
     return { name: suggestedName + ext, type: typeLabel, category };
   } catch (err) {
@@ -95,17 +96,29 @@ const smartRename = async (file: File, customPrompt?: string): Promise<{ name: s
   }
 };
 
+const faq = [
+  { question: "How does the AI analyze my files?", answer: "It uses Puter AI to read document text (PDFs), image metadata (EXIF), and video properties to understand the content and suggest a meaningful name." },
+  { question: "Is my data safe?", answer: "Yes. Files are processed locally in your browser. Only small text snippets or metadata are sent to the AI for naming suggestions. Your actual files never leave your device." },
+  { question: "What is the numbering system?", answer: "The tool automatically groups files by category (e.g., Video, Image) and adds a sequential number to keep your project organized." },
+];
+
+const examples = [
+  { original: "IMG_8242.jpg", renamed: "Photo-1-Sunset-Beach-Malibu.jpg", note: "AI detected location and subject from metadata." },
+  { original: "draft_v1_final.pdf", renamed: "Document-1-Project-Proposal-Q4.pdf", note: "AI read the document title from the first page." },
+  { original: "sequence_01.mp4", renamed: "Video-1-Interview-Main-Angle.mp4", note: "AI analyzed the context to provide a descriptive name." },
+];
+
 const FileRenamerTab = () => {
   const [files, setFiles] = useState<RenamedFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
-  const [customPrompt, setCustomPrompt] = useState("");
+  const [zipping, setZipping] = useState(false);
 
   const handleFiles = useCallback(async (fileList: FileList) => {
     const incoming = Array.from(fileList).map((f) => ({ original: f, newName: f.name, status: "processing" as const }));
     setFiles((prev) => [...prev, ...incoming]);
     const categoryCounts: Record<string, number> = {};
     for (const entry of incoming) {
-      const result = await smartRename(entry.original, customPrompt);
+      const result = await smartRename(entry.original);
       setFiles((prev) => {
         const cat = result.category;
         categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
@@ -116,7 +129,7 @@ const FileRenamerTab = () => {
         return prev.map((f) => f.original === entry.original ? { ...f, newName: finalName, detectedType: result.type, typeCategory: cat, status: "done" as const } : f);
       });
     }
-  }, [customPrompt]);
+  }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files);
@@ -125,11 +138,26 @@ const FileRenamerTab = () => {
   const removeFile = (index: number) => setFiles((prev) => prev.filter((_, i) => i !== index));
   const updateName = (index: number, newName: string) => setFiles((prev) => prev.map((f, i) => (i === index ? { ...f, newName } : f)));
   const clearAll = () => setFiles([]);
+  
+  const downloadSingle = (f: RenamedFile) => {
+    const url = URL.createObjectURL(f.original);
+    const a = document.createElement("a"); a.href = url; a.download = f.newName; a.click(); URL.revokeObjectURL(url);
+  };
+
   const downloadAll = () => {
+    files.forEach((f) => downloadSingle(f));
+  };
+
+  const downloadZip = async () => {
+    setZipping(true);
+    const zip = new JSZip();
     files.forEach((f) => {
-      const url = URL.createObjectURL(f.original);
-      const a = document.createElement("a"); a.href = url; a.download = f.newName; a.click(); URL.revokeObjectURL(url);
+      zip.file(f.newName, f.original);
     });
+    const content = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement("a"); a.href = url; a.download = "renamed_files.zip"; a.click(); URL.revokeObjectURL(url);
+    setZipping(false);
   };
 
   return (
@@ -139,17 +167,25 @@ const FileRenamerTab = () => {
         <p className="mt-4 text-base text-muted-foreground max-w-2xl mx-auto">Drop files to get professional names with auto-numbering. Powered by Puter AI.</p>
       </div>
 
-      <div className="mb-6">
-        <label className="mb-1.5 block text-sm font-medium text-foreground flex items-center gap-2">
-          <MessageSquareText className="h-4 w-4 text-primary" /> Custom Instructions (Optional)
-        </label>
-        <input 
-          type="text" 
-          value={customPrompt} 
-          onChange={e => setCustomPrompt(e.target.value)} 
-          placeholder="e.g., Include the project date, use all lowercase, etc." 
-          className="w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" 
-        />
+      {/* How to Use Section */}
+      <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <Info className="h-5 w-5 text-primary" />
+          <h2 className="font-display text-lg font-semibold text-foreground">How to Use the AI Renamer</h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {[
+            { step: "1", title: "Upload Files", desc: "Drag and drop your messy files into the box below." },
+            { step: "2", title: "AI Analysis", desc: "AI reads metadata and content to suggest professional names." },
+            { step: "3", title: "Download", desc: "Download files individually or as a single ZIP archive." },
+          ].map(s => (
+            <div key={s.step} className="rounded-xl border border-border bg-background p-4 text-center">
+              <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white text-sm font-bold">{s.step}</div>
+              <p className="text-sm font-semibold text-foreground">{s.title}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{s.desc}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div onDrop={handleDrop} onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}
@@ -160,11 +196,15 @@ const FileRenamerTab = () => {
       </div>
       {files.length > 0 && (
         <div className="mt-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
             <h2 className="font-display text-xl font-semibold text-foreground">AI Suggestions ({files.length})</h2>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button onClick={clearAll} variant="outline" size="sm">Clear All</Button>
-              <Button onClick={downloadAll} variant="default" size="sm"><Download className="mr-1 h-4 w-4" /> Download All</Button>
+              <Button onClick={downloadAll} variant="outline" size="sm"><Download className="mr-1 h-4 w-4" /> Download All</Button>
+              <Button onClick={downloadZip} variant="default" size="sm" disabled={zipping}>
+                {zipping ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <FileArchive className="mr-1 h-4 w-4" />}
+                Download ZIP
+              </Button>
             </div>
           </div>
           <div className="space-y-3">
@@ -182,15 +222,80 @@ const FileRenamerTab = () => {
                     <input type="text" value={f.newName} onChange={(e) => updateName(i, e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground focus:border-primary focus:outline-none" />
                   )}
                 </div>
-                <button onClick={() => removeFile(i)} className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-secondary"><X className="h-4 w-4" /></button>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => downloadSingle(f)} className="p-1.5 text-muted-foreground hover:text-primary transition-colors" title="Download"><Download className="h-4 w-4" /></button>
+                  <button onClick={() => removeFile(i)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors" title="Remove"><X className="h-4 w-4" /></button>
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
-      <FAQSection title="File Renamer FAQ" items={[{ question: "How does it work?", answer: "It uses Puter AI to analyze file content and metadata, then applies a Category-Number-Name format." }]} />
+
+      {/* Real Examples */}
+      <div className="mt-16">
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">Real Examples — AI Renaming</h2>
+        <div className="space-y-3">
+          {examples.map((ex, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground line-through">{ex.original}</span>
+                  <ArrowRight className="h-3 w-3 text-primary" />
+                  <p className="text-sm font-medium text-foreground">{ex.renamed}</p>
+                </div>
+                <p className="text-xs text-muted-foreground italic">{ex.note}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* How It Works */}
+      <div className="mt-16">
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">How It Works — Smart Organization</h2>
+        <div className="grid gap-4 md:grid-cols-4">
+          {[
+            { step: "Content Scan", desc: "AI reads the first pages of documents and image metadata." },
+            { step: "Contextual Naming", desc: "Generates a descriptive name based on what's inside the file." },
+            { step: "Auto-Numbering", desc: "Groups files by type and adds sequential numbers." },
+            { step: "Batch Export", desc: "Download everything at once in a clean, organized ZIP." },
+          ].map((s, i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-6 text-center">
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-red-600 text-white font-bold">{i + 1}</div>
+              <p className="text-sm font-semibold text-foreground">{s.step}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* About Section */}
+      <div className="mt-16">
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">About AI Renaming — Clarity & Speed</h2>
+        <div className="prose max-w-none text-muted-foreground space-y-3 text-sm leading-relaxed">
+          <p>
+            The AI File Renamer is built to solve the "final-final-v2.mp4" problem. By using <strong>Puter AI</strong>, we can understand the actual content of your files rather than just looking at the existing name.
+          </p>
+          <p>
+            This tool is essential for <strong>video editing workflows</strong> and <strong>freelancer pipelines</strong> where keeping track of hundreds of assets is the difference between a smooth project and a nightmare.
+          </p>
+          <h3 className="font-display text-lg font-semibold text-foreground">Why Use AI Renaming?</h3>
+          <ul className="list-disc list-inside space-y-1">
+            <li><ListChecks className="inline h-3 w-3 mr-1" /> <strong>Consistency:</strong> Every file follows the same professional format.</li>
+            <li><Zap className="inline h-3 w-3 mr-1" /> <strong>Speed:</strong> Rename 50 files in seconds instead of minutes.</li>
+            <li><History className="inline h-3 w-3 mr-1" /> <strong>Searchability:</strong> Find files instantly by their descriptive names.</li>
+          </ul>
+        </div>
+      </div>
+
+      <FAQSection title="File Renamer FAQ" items={faq} />
     </div>
   );
 };
+
+const ArrowRight = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+);
 
 export default FileRenamerTab;

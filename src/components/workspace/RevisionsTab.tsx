@@ -54,6 +54,12 @@ const RevisionsTab = ({ files, comments, setComments }: Props) => {
         <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">Revisions</h1>
       </div>
 
+      {/* Refresh Suggestion */}
+      <div className="mb-6 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-primary">
+        <Info className="h-4 w-4" />
+        <span>Can't see feedback? Try refreshing the page.</span>
+      </div>
+
       {/* How to Use Section */}
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="flex items-center gap-2 mb-6">

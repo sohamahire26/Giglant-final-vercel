@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
-import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle, FileEdit } from "lucide-react";
+import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle, FileEdit, RefreshCw } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
@@ -52,13 +52,11 @@ const ProjectWorkspace = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Only show tutorial if it's a newly created project
     if (location.state?.isNew) {
       setShowTutorial(true);
     }
   }, [location.state]);
 
-  // Handle tab switching during tutorial
   useEffect(() => {
     if (showTutorial) {
       switch (tutorialStep) {
@@ -104,10 +102,22 @@ const ProjectWorkspace = () => {
 
   useEffect(() => {
     if (!files.length) return;
-    const channel = supabase.channel("ws-comments")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "file_comments" }, (payload) => {
-        setComments(prev => prev.find(c => c.id === (payload.new as any).id) ? prev : [...prev, payload.new as FileComment]);
+    
+    // Listen for ALL changes to comments (Insert, Update, Delete)
+    const channel = supabase.channel("ws-comments-all")
+      .on("postgres_changes", { event: "*", schema: "public", table: "file_comments" }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const newC = payload.new as FileComment;
+          setComments(prev => prev.find(c => c.id === newC.id) ? prev : [...prev, newC]);
+        } else if (payload.eventType === 'UPDATE') {
+          const updatedC = payload.new as FileComment;
+          setComments(prev => prev.map(c => c.id === updatedC.id ? updatedC : c));
+        } else if (payload.eventType === 'DELETE') {
+          const deletedId = (payload.old as any).id;
+          setComments(prev => prev.filter(c => c.id !== deletedId));
+        }
       }).subscribe();
+      
     return () => { supabase.removeChannel(channel); };
   }, [files]);
 
@@ -157,6 +167,9 @@ const ProjectWorkspace = () => {
               {project.client_name && <p className="text-sm text-muted-foreground">Client: {project.client_name}</p>}
             </div>
             <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="text-muted-foreground border-border hover:bg-secondary">
+                <RefreshCw className="mr-1 h-3 w-3" /> Refresh
+              </Button>
               <Button variant="outline" size="sm" onClick={handleStartTutorial} className="text-primary border-primary/30 hover:bg-primary/5">
                 <HelpCircle className="mr-1 h-3 w-3" /> Guide
               </Button>

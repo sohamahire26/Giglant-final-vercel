@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Loader2, MessageSquare, Plus, Info, HelpCircle, Clock } from "lucide-react";
+import { Loader2, MessageSquare, Plus, Info, HelpCircle, Clock, RefreshCw } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,10 +71,22 @@ const ClientView = () => {
 
   useEffect(() => {
     if (!files.length) return;
-    const channel = supabase.channel("client-live")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "file_comments" }, (payload) => {
-        setComments(prev => prev.find(c => c.id === (payload.new as any).id) ? prev : [...prev, payload.new as FileComment]);
+    
+    // Listen for ALL changes to comments (Insert, Update, Delete)
+    const channel = supabase.channel("client-live-all")
+      .on("postgres_changes", { event: "*", schema: "public", table: "file_comments" }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const newC = payload.new as FileComment;
+          setComments(prev => prev.find(c => c.id === newC.id) ? prev : [...prev, newC]);
+        } else if (payload.eventType === 'UPDATE') {
+          const updatedC = payload.new as FileComment;
+          setComments(prev => prev.map(c => c.id === updatedC.id ? updatedC : c));
+        } else if (payload.eventType === 'DELETE') {
+          const deletedId = (payload.old as any).id;
+          setComments(prev => prev.filter(c => c.id !== deletedId));
+        }
       }).subscribe();
+      
     return () => { supabase.removeChannel(channel); };
   }, [files]);
 
@@ -82,7 +94,6 @@ const ClientView = () => {
     const digits = val.replace(/[^0-9]/g, "");
     if (digits.length > 6) return;
 
-    // Validate tens place for minutes and seconds (must be <= 5)
     if (digits.length >= 2) {
       const s_tens = parseInt(digits[digits.length - 2], 10);
       if (s_tens > 5) return;
@@ -108,8 +119,22 @@ const ClientView = () => {
     if (!newComment.trim() || !selectedFile) return;
     const ts = parseTs(newTimestamp);
     
-    await db.from("file_comments")
-      .insert({ file_id: selectedFile.id, timestamp_seconds: ts, comment: newComment.trim(), author_name: authorName.trim() || "Client", is_client: true });
+    const { data, error } = await db.from("file_comments")
+      .insert({ 
+        file_id: selectedFile.id, 
+        timestamp_seconds: ts, 
+        comment: newComment.trim(), 
+        author_name: authorName.trim() || "Client", 
+        is_client: true 
+      })
+      .select()
+      .single();
+    
+    if (!error && data) {
+      // Update state immediately for "milliseconds" feel
+      setComments(prev => prev.find(c => c.id === data.id) ? prev : [...prev, data]);
+    }
+    
     setNewComment("");
     setNewTimestamp("");
   };
@@ -163,9 +188,14 @@ const ClientView = () => {
             <h1 className="font-display text-xl font-bold text-foreground">{project?.name}</h1>
             {project?.client_name && <p className="text-sm text-muted-foreground">For: {project.client_name}</p>}
           </div>
-          <Button variant="outline" size="sm" onClick={handleStartTutorial} className="text-primary border-primary/30 hover:bg-primary/5">
-            <HelpCircle className="mr-1 h-3 w-3" /> Guide
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="text-muted-foreground border-border hover:bg-secondary">
+              <RefreshCw className="mr-1 h-3 w-3" /> Refresh
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleStartTutorial} className="text-primary border-primary/30 hover:bg-primary/5">
+              <HelpCircle className="mr-1 h-3 w-3" /> Guide
+            </Button>
+          </div>
         </div>
       </div>
 

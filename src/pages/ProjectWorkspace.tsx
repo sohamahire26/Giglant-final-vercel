@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
-import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle, FileEdit, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle, FileEdit, RefreshCw } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,6 @@ const ProjectWorkspace = () => {
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
-  const [isSynced, setIsSynced] = useState(false);
   const { toast } = useToast();
 
   const loadData = useCallback(async () => {
@@ -105,9 +104,7 @@ const ProjectWorkspace = () => {
           setComments(prev => prev.filter(c => c.id !== oldC.id));
         }
       })
-      .subscribe((status) => {
-        setIsSynced(status === 'SUBSCRIBED');
-      });
+      .subscribe();
       
     return () => { supabase.removeChannel(channel); };
   }, [files, id, toast]);
@@ -145,13 +142,7 @@ const ProjectWorkspace = () => {
         <div className="container-tight">
           <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
             <div>
-              <div className="flex items-center gap-3">
-                <h1 className="font-display text-2xl font-bold text-foreground">{project.name}</h1>
-                <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${isSynced ? "bg-green-500/10 text-green-600" : "bg-amber-500/10 text-amber-600"}`}>
-                  {isSynced ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
-                  {isSynced ? "Live Sync Active" : "Connecting..."}
-                </div>
-              </div>
+              <h1 className="font-display text-2xl font-bold text-foreground">{project.name}</h1>
               {project.client_name && <p className="text-sm text-muted-foreground">Client: {project.client_name}</p>}
             </div>
             <div className="flex items-center gap-2">

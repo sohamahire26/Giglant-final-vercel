@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Loader2, MessageSquare, Plus, Info, HelpCircle, Clock, RefreshCw } from "lucide-react";
+import { Loader2, MessageSquare, Plus, Info, HelpCircle, Clock, RefreshCw, Bell } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import TutorialTour, { TourStep } from "@/components/workspace/TutorialTour";
 import { fmtTs, parseTs } from "@/components/workspace/types";
 import type { ProjectFile, FileComment } from "@/components/workspace/types";
@@ -44,6 +45,7 @@ const ClientView = () => {
   const [authorName, setAuthorName] = useState("");
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (localStorage.getItem("giglant_client_tutorial_dismissed") !== "true") {
@@ -51,44 +53,57 @@ const ClientView = () => {
     }
   }, []);
 
-  useEffect(() => {
+  const loadData = async () => {
     if (!token) { setNotFound(true); setLoading(false); return; }
-    const load = async () => {
-      const { data: proj } = await db.from("projects").select("*").eq("share_token", token).single();
-      if (!proj) { setNotFound(true); setLoading(false); return; }
-      setProject(proj);
-      const { data: f } = await db.from("project_files").select("*").eq("project_id", proj.id).order("sort_order");
-      setFiles(f || []);
-      if (f?.length) {
-        const { data: c } = await db.from("file_comments").select("*").in("file_id", f.map((x: ProjectFile) => x.id)).order("created_at");
-        setComments(c || []);
-        setSelectedFile(f[0]);
-      }
-      setLoading(false);
-    };
-    load();
+    const { data: proj } = await db.from("projects").select("*").eq("share_token", token).single();
+    if (!proj) { setNotFound(true); setLoading(false); return; }
+    setProject(proj);
+    const { data: f } = await db.from("project_files").select("*").eq("project_id", proj.id).order("sort_order");
+    setFiles(f || []);
+    if (f?.length) {
+      const { data: c } = await db.from("file_comments").select("*").in("file_id", f.map((x: ProjectFile) => x.id)).order("created_at");
+      setComments(c || []);
+      if (!selectedFile) setSelectedFile(f[0]);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadData();
   }, [token]);
 
   useEffect(() => {
     if (!files.length) return;
     
+    const fileIds = files.map(f => f.id);
+    
     // Listen for ALL changes to comments (Insert, Update, Delete)
-    const channel = supabase.channel("client-live-all")
+    const channel = supabase.channel(`client-live-${token}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "file_comments" }, (payload) => {
+        const newComment = payload.new as FileComment;
+        const oldComment = payload.old as any;
+        
+        const targetFileId = newComment?.file_id || oldComment?.file_id;
+        if (!fileIds.includes(targetFileId)) return;
+
         if (payload.eventType === 'INSERT') {
-          const newC = payload.new as FileComment;
-          setComments(prev => prev.find(c => c.id === newC.id) ? prev : [...prev, newC]);
+          setComments(prev => prev.find(c => c.id === newComment.id) ? prev : [...prev, newComment]);
+          if (!newComment.is_client) {
+            toast({ 
+              title: "New Update from Freelancer!", 
+              description: "The freelancer just left a comment or update. Click to refresh.",
+              action: <Button variant="outline" size="sm" onClick={() => loadData()}><RefreshCw className="mr-1 h-3 w-3" /> Refresh</Button>
+            });
+          }
         } else if (payload.eventType === 'UPDATE') {
-          const updatedC = payload.new as FileComment;
-          setComments(prev => prev.map(c => c.id === updatedC.id ? updatedC : c));
+          setComments(prev => prev.map(c => c.id === newComment.id ? newComment : c));
         } else if (payload.eventType === 'DELETE') {
-          const deletedId = (payload.old as any).id;
-          setComments(prev => prev.filter(c => c.id !== deletedId));
+          setComments(prev => prev.filter(c => c.id !== oldComment.id));
         }
       }).subscribe();
       
     return () => { supabase.removeChannel(channel); };
-  }, [files]);
+  }, [files, token]);
 
   const handleTimestampChange = (val: string) => {
     const digits = val.replace(/[^0-9]/g, "");
@@ -131,7 +146,6 @@ const ClientView = () => {
       .single();
     
     if (!error && data) {
-      // Update state immediately for "milliseconds" feel
       setComments(prev => prev.find(c => c.id === data.id) ? prev : [...prev, data]);
     }
     
@@ -189,7 +203,7 @@ const ClientView = () => {
             {project?.client_name && <p className="text-sm text-muted-foreground">For: {project.client_name}</p>}
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="text-muted-foreground border-border hover:bg-secondary">
+            <Button variant="outline" size="sm" onClick={() => loadData()} className="text-muted-foreground border-border hover:bg-secondary">
               <RefreshCw className="mr-1 h-3 w-3" /> Refresh
             </Button>
             <Button variant="outline" size="sm" onClick={handleStartTutorial} className="text-primary border-primary/30 hover:bg-primary/5">

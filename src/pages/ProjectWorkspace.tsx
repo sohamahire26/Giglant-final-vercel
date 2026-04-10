@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
-import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle, FileEdit, RefreshCw } from "lucide-react";
+import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle, FileEdit, RefreshCw, Bell } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
@@ -83,43 +83,55 @@ const ProjectWorkspace = () => {
     }
   }, [tutorialStep, showTutorial]);
 
-  useEffect(() => {
+  const loadData = async () => {
     if (!id) return;
-    const load = async () => {
-      const { data: proj } = await db.from("projects").select("*").eq("id", id).single();
-      if (!proj) { setLoading(false); return; }
-      setProject(proj);
-      const { data: f } = await db.from("project_files").select("*").eq("project_id", id).order("sort_order");
-      setFiles(f || []);
-      if (f?.length) {
-        const { data: c } = await db.from("file_comments").select("*").in("file_id", f.map((x: ProjectFile) => x.id)).order("created_at");
-        setComments(c || []);
-      }
-      setLoading(false);
-    };
-    load();
+    const { data: proj } = await db.from("projects").select("*").eq("id", id).single();
+    if (!proj) { setLoading(false); return; }
+    setProject(proj);
+    const { data: f } = await db.from("project_files").select("*").eq("project_id", id).order("sort_order");
+    setFiles(f || []);
+    if (f?.length) {
+      const { data: c } = await db.from("file_comments").select("*").in("file_id", f.map((x: ProjectFile) => x.id)).order("created_at");
+      setComments(c || []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadData();
   }, [id]);
 
   useEffect(() => {
     if (!files.length) return;
     
+    const fileIds = files.map(f => f.id);
+    
     // Listen for ALL changes to comments (Insert, Update, Delete)
-    const channel = supabase.channel("ws-comments-all")
+    const channel = supabase.channel(`ws-comments-${id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "file_comments" }, (payload) => {
+        const newComment = payload.new as FileComment;
+        const oldComment = payload.old as any;
+        
+        // Only process if the comment belongs to one of our files
+        const targetFileId = newComment?.file_id || oldComment?.file_id;
+        if (!fileIds.includes(targetFileId)) return;
+
         if (payload.eventType === 'INSERT') {
-          const newC = payload.new as FileComment;
-          setComments(prev => prev.find(c => c.id === newC.id) ? prev : [...prev, newC]);
+          setComments(prev => prev.find(c => c.id === newComment.id) ? prev : [...prev, newComment]);
+          toast({ 
+            title: "New Feedback Received!", 
+            description: "A client just left a comment. Click to refresh if it doesn't appear.",
+            action: <Button variant="outline" size="sm" onClick={() => loadData()}><RefreshCw className="mr-1 h-3 w-3" /> Refresh</Button>
+          });
         } else if (payload.eventType === 'UPDATE') {
-          const updatedC = payload.new as FileComment;
-          setComments(prev => prev.map(c => c.id === updatedC.id ? updatedC : c));
+          setComments(prev => prev.map(c => c.id === newComment.id ? newComment : c));
         } else if (payload.eventType === 'DELETE') {
-          const deletedId = (payload.old as any).id;
-          setComments(prev => prev.filter(c => c.id !== deletedId));
+          setComments(prev => prev.filter(c => c.id !== oldComment.id));
         }
       }).subscribe();
       
     return () => { supabase.removeChannel(channel); };
-  }, [files]);
+  }, [files, id]);
 
   const handleDeleteProject = async () => {
     if (!project || !confirm("Delete this project and all its data? This cannot be undone.")) return;
@@ -167,7 +179,7 @@ const ProjectWorkspace = () => {
               {project.client_name && <p className="text-sm text-muted-foreground">Client: {project.client_name}</p>}
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="text-muted-foreground border-border hover:bg-secondary">
+              <Button variant="outline" size="sm" onClick={() => loadData()} className="text-muted-foreground border-border hover:bg-secondary">
                 <RefreshCw className="mr-1 h-3 w-3" /> Refresh
               </Button>
               <Button variant="outline" size="sm" onClick={handleStartTutorial} className="text-primary border-primary/30 hover:bg-primary/5">

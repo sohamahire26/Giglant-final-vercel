@@ -5,8 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import FAQSection from "@/components/FAQSection";
 import type { Project, ProjectFile, FileComment } from "./types";
-import { extractDriveFileId } from "./types";
-import { fmtTs } from "./types";
+import { extractDriveFileId, parseTs, fmtTs } from "./types";
 
 const db = supabase as any;
 
@@ -73,13 +72,21 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
     if (selectedFile?.id === fileId) setSelectedFile(null);
   };
 
+  const handleTimestampChange = (val: string) => {
+    let clean = val.replace(/[^0-9]/g, "");
+    if (clean.length > 4) clean = clean.slice(0, 4);
+    
+    if (clean.length === 4) {
+      setNewTimestamp(clean.slice(0, 2) + ":" + clean.slice(2));
+    } else {
+      setNewTimestamp(val);
+    }
+  };
+
   const handleAddComment = async () => {
     if (!newComment.trim() || !selectedFile) return;
-    let ts: number | null = null;
-    if (newTimestamp.trim() && /^\d{1,2}:\d{2}$/.test(newTimestamp.trim())) {
-      const [m, s] = newTimestamp.split(":").map(Number);
-      ts = m * 60 + s;
-    }
+    const ts = parseTs(newTimestamp);
+    
     const { data, error } = await db.from("file_comments")
       .insert({ file_id: selectedFile.id, timestamp_seconds: ts, comment: newComment.trim(), author_name: authorName.trim() || "Freelancer", is_client: false })
       .select().single();
@@ -250,7 +257,7 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
                       <label className="mb-1.5 flex items-center gap-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                         <Clock className="h-2.5 w-2.5" /> Time (MM:SS)
                       </label>
-                      <input type="text" value={newTimestamp} onChange={e => setNewTimestamp(e.target.value)} placeholder="01:24"
+                      <input type="text" value={newTimestamp} onChange={e => handleTimestampChange(e.target.value)} placeholder="01:24"
                         className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
                     </div>
                   )}

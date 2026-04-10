@@ -52,6 +52,35 @@ export const fmtTs = (s: number | null): string => {
   return `${Math.floor(s / 60).toString().padStart(2, "0")}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
 };
 
+export const parseTs = (input: string): number | null => {
+  const clean = input.trim().replace(/[^0-9:]/g, "");
+  if (!clean) return null;
+
+  // Handle MM:SS format
+  if (clean.includes(":")) {
+    const parts = clean.split(":");
+    if (parts.length !== 2) return null;
+    const m = parseInt(parts[0], 10);
+    const s = parseInt(parts[1], 10);
+    if (isNaN(m) || isNaN(s) || s >= 60) return null;
+    return m * 60 + s;
+  }
+
+  // Handle shorthand like 0233 or 123
+  if (clean.length >= 3 && clean.length <= 4) {
+    const s = parseInt(clean.slice(-2), 10);
+    const m = parseInt(clean.slice(0, -2), 10);
+    if (isNaN(m) || isNaN(s) || s >= 60) return null;
+    return m * 60 + s;
+  }
+
+  // Handle just seconds
+  const sec = parseInt(clean, 10);
+  if (!isNaN(sec)) return sec;
+
+  return null;
+};
+
 export const getTimeRemaining = (createdAt: string) => {
   const created = new Date(createdAt).getTime();
   const expires = created + (7 * 24 * 60 * 60 * 1000);

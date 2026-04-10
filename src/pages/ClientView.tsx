@@ -7,7 +7,7 @@ import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import TutorialTour, { TourStep } from "@/components/workspace/TutorialTour";
-import { fmtTs } from "@/components/workspace/types";
+import { fmtTs, parseTs } from "@/components/workspace/types";
 import type { ProjectFile, FileComment } from "@/components/workspace/types";
 
 interface Project { id: string; name: string; client_name: string | null; share_token: string; }
@@ -78,13 +78,21 @@ const ClientView = () => {
     return () => { supabase.removeChannel(channel); };
   }, [files]);
 
+  const handleTimestampChange = (val: string) => {
+    let clean = val.replace(/[^0-9]/g, "");
+    if (clean.length > 4) clean = clean.slice(0, 4);
+    
+    if (clean.length === 4) {
+      setNewTimestamp(clean.slice(0, 2) + ":" + clean.slice(2));
+    } else {
+      setNewTimestamp(val);
+    }
+  };
+
   const handleAddComment = async () => {
     if (!newComment.trim() || !selectedFile) return;
-    let ts: number | null = null;
-    if (newTimestamp.trim() && /^\d{1,2}:\d{2}$/.test(newTimestamp.trim())) {
-      const [m, s] = newTimestamp.split(":").map(Number);
-      ts = m * 60 + s;
-    }
+    const ts = parseTs(newTimestamp);
+    
     await db.from("file_comments")
       .insert({ file_id: selectedFile.id, timestamp_seconds: ts, comment: newComment.trim(), author_name: authorName.trim() || "Client", is_client: true });
     setNewComment("");
@@ -214,7 +222,7 @@ const ClientView = () => {
                         <label className="mb-1 flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
                           <Clock className="h-2.5 w-2.5" /> Time (MM:SS)
                         </label>
-                        <input type="text" value={newTimestamp} onChange={e => setNewTimestamp(e.target.value)} placeholder="01:24"
+                        <input type="text" value={newTimestamp} onChange={e => handleTimestampChange(e.target.value)} placeholder="01:24"
                           className="w-full rounded-lg border border-border bg-background px-2 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
                       </div>
                     )}

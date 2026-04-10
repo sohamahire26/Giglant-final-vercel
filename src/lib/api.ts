@@ -9,16 +9,14 @@ const getApiBase = () => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, "");
   if (supabaseUrl) return `${supabaseUrl}/functions/v1`;
 
-  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-  if (projectId) return `https://${projectId}.supabase.co/functions/v1`;
-
-  throw new Error("API URL not configured. Missing VITE_SUPABASE_URL or VITE_SUPABASE_PROJECT_ID.");
+  const projectId = "ldizmpaqlkqmmvcjkvwb"; // Hardcoded project ID for reliability
+  return `https://${projectId}.supabase.co/functions/v1`;
 };
 
 const apiCall = async (endpoint: string, body?: any) => {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  if (apikey) headers["apikey"] = apikey;
+  const apikey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkaXptcGFxbGtxbW12Y2prdndiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NjkzMDIsImV4cCI6MjA5MTA0NTMwMn0.hLk05spyjrzAZa2sHQabfC8yCKhHVTMLWZTJxNHumHM";
+  headers["apikey"] = apikey;
 
   // Add Authorization header if user is logged in
   const { data: { session } } = await supabase.auth.getSession();
@@ -42,6 +40,9 @@ const apiCall = async (endpoint: string, body?: any) => {
 export const getBlogPosts = (category?: string) =>
   apiCall("api", { action: "get_blog_posts", category });
 
+export const getAdminPosts = () => 
+  apiCall("api", { action: "get_admin_posts" });
+
 export const getBlogPost = (category: string, slug: string) =>
   apiCall("api", { action: "get_blog_post", category, slug });
 
@@ -50,6 +51,9 @@ export const getBlogPostById = (id: string) =>
 
 export const saveBlogPost = (post: any) =>
   apiCall("api", { action: "save_blog_post", post });
+
+export const deleteBlogPost = (id: string) => 
+  apiCall("api", { action: "delete_blog_post", id });
 
 export const optimizeBlogSEO = (title: string, content: string) =>
   apiCall("api", { action: "optimize_blog_seo", title, content });

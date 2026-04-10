@@ -12,6 +12,7 @@ import Blog from "./pages/Blog";
 import BlogCategory from "./pages/BlogCategory";
 import BlogPost from "./pages/BlogPost";
 import BlogWriter from "./pages/BlogWriter";
+import BlogAdmin from "./pages/BlogAdmin";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/tools/file-renamer" element={<FileRenamer />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/write" element={<BlogWriter />} />
+            <Route path="/blog/admin" element={<BlogAdmin />} />
             <Route path="/blog/:category" element={<BlogCategory />} />
             <Route path="/blog/:category/:slug" element={<BlogPost />} />
             <Route path="/about" element={<About />} />

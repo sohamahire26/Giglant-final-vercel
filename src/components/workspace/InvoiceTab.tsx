@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClipboardCopy, Info, MessageSquare, Receipt, Sparkles, Loader2, User, Building, DollarSign, Calendar } from "lucide-react";
+import { ClipboardCopy, Info, MessageSquare, Receipt, Sparkles, Loader2, User, Building, DollarSign, Calendar, MessageSquareText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import FAQSection from "@/components/FAQSection";
@@ -16,6 +16,7 @@ const InvoiceTab = ({ project }: Props) => {
   const [invoiceType, setInvoiceType] = useState<"initial" | "reminder" | "final">("initial");
   const [invoiceAmount, setInvoiceAmount] = useState("");
   const [invoiceDeadline, setInvoiceDeadline] = useState("");
+  const [customPrompt, setCustomPrompt] = useState("");
   const [invoiceOutput, setInvoiceOutput] = useState("");
   const [generating, setGenerating] = useState(false);
   const { toast } = useToast();
@@ -31,6 +32,7 @@ const InvoiceTab = ({ project }: Props) => {
       - Project: ${project.name}
       - Amount: ${invoiceAmount || 'the agreed amount'}
       - Deadline: ${invoiceDeadline || 'as soon as possible'}
+      ${customPrompt ? `- Additional Instructions: ${customPrompt}` : ""}
       
       Tone: ${invoiceType === 'initial' ? 'polite and clear' : invoiceType === 'reminder' ? 'friendly but firm' : 'very firm and urgent'}.`;
       
@@ -104,6 +106,20 @@ const InvoiceTab = ({ project }: Props) => {
                   ))}
                 </div>
               </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground flex items-center gap-2">
+                  <MessageSquareText className="h-4 w-4 text-primary" /> Custom Instructions (Optional)
+                </label>
+                <textarea 
+                  value={customPrompt} 
+                  onChange={e => setCustomPrompt(e.target.value)} 
+                  placeholder="e.g., Mention that I've attached the timesheet, or offer a 5% discount for early payment." 
+                  rows={2}
+                  className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none resize-none" 
+                />
+              </div>
+
               <Button onClick={generate} className="w-full h-12 text-base" disabled={generating}>
                 {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                 {generating ? "AI is writing..." : "Generate AI Request"}

@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Upload, Download, FileIcon, X, Wand2, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Upload, Download, FileIcon, X, Wand2, Loader2, RefreshCw, Sparkles, MessageSquareText } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import FAQSection from "@/components/FAQSection";
@@ -77,7 +77,7 @@ const extractImageMetadata = async (file: File) => {
   }
 };
 
-const smartRename = async (file: File): Promise<{ name: string; type: string; category: string }> => {
+const smartRename = async (file: File, customPrompt?: string): Promise<{ name: string; type: string; category: string }> => {
   const ext = file.name.includes(".") ? "." + file.name.split(".").pop()!.toLowerCase() : "";
   const extClean = ext.replace(".", "");
   const category = getTypeCategory(extClean);
@@ -97,6 +97,7 @@ const smartRename = async (file: File): Promise<{ name: string; type: string; ca
     const response = await puter.ai.chat(
       `Suggest a professional, descriptive filename for this file. 
       Return ONLY the filename without extension. Use hyphens instead of spaces. 
+      ${customPrompt ? `Additional Instructions: ${customPrompt}` : ""}
       Context:\n${context}`
     );
     const suggestedName = response.toString().trim().replace(/\.[^/.]+$/, "").replace(/\s+/g, "-");
@@ -110,6 +111,7 @@ const smartRename = async (file: File): Promise<{ name: string; type: string; ca
 const FileRenamerTool = () => {
   const [files, setFiles] = useState<RenamedFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState("");
 
   const handleFiles = useCallback(async (fileList: FileList) => {
     const incoming = Array.from(fileList).map((f) => ({
@@ -123,7 +125,7 @@ const FileRenamerTool = () => {
     const categoryCounts: Record<string, number> = {};
     
     for (const entry of incoming) {
-      const result = await smartRename(entry.original);
+      const result = await smartRename(entry.original, customPrompt);
       
       setFiles((prev) => {
         const cat = result.category;
@@ -143,7 +145,7 @@ const FileRenamerTool = () => {
         } : f);
       });
     }
-  }, []);
+  }, [customPrompt]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -176,6 +178,19 @@ const FileRenamerTool = () => {
             </div>
             <h1 className="font-display text-4xl font-bold text-foreground md:text-5xl">AI Smart File Renamer</h1>
             <p className="mt-4 text-lg text-muted-foreground">Drop files to get professional names with auto-numbering.</p>
+          </div>
+
+          <div className="mb-6">
+            <label className="mb-1.5 block text-sm font-medium text-foreground flex items-center gap-2">
+              <MessageSquareText className="h-4 w-4 text-primary" /> Custom Instructions (Optional)
+            </label>
+            <input 
+              type="text" 
+              value={customPrompt} 
+              onChange={e => setCustomPrompt(e.target.value)} 
+              placeholder="e.g., Include the project date, use all lowercase, etc." 
+              className="w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" 
+            />
           </div>
 
           <div onDrop={handleDrop} onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}

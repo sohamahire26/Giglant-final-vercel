@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Upload, Download, FileIcon, X, Wand2, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Upload, Download, FileIcon, X, Wand2, Loader2, RefreshCw, Sparkles, MessageSquareText } from "lucide-react";
 import FAQSection from "@/components/FAQSection";
 import { Button } from "@/components/ui/button";
 import * as pdfjsLib from "pdfjs-dist";
@@ -71,7 +71,7 @@ const extractImageMetadata = async (file: File) => {
   } catch { return {}; }
 };
 
-const smartRename = async (file: File): Promise<{ name: string; type: string; category: string }> => {
+const smartRename = async (file: File, customPrompt?: string): Promise<{ name: string; type: string; category: string }> => {
   const ext = file.name.includes(".") ? "." + file.name.split(".").pop()!.toLowerCase() : "";
   const extClean = ext.replace(".", "");
   const category = getTypeCategory(extClean);
@@ -87,7 +87,7 @@ const smartRename = async (file: File): Promise<{ name: string; type: string; ca
   }
 
   try {
-    const response = await puter.ai.chat(`Suggest a professional filename for this file. Return ONLY the filename without extension. Use hyphens. Context:\n${context}`);
+    const response = await puter.ai.chat(`Suggest a professional filename for this file. Return ONLY the filename without extension. Use hyphens. ${customPrompt ? `Additional Instructions: ${customPrompt}` : ""} Context:\n${context}`);
     const suggestedName = response.toString().trim().replace(/\.[^/.]+$/, "").replace(/\s+/g, "-");
     return { name: suggestedName + ext, type: typeLabel, category };
   } catch (err) {
@@ -98,13 +98,14 @@ const smartRename = async (file: File): Promise<{ name: string; type: string; ca
 const FileRenamerTab = () => {
   const [files, setFiles] = useState<RenamedFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState("");
 
   const handleFiles = useCallback(async (fileList: FileList) => {
     const incoming = Array.from(fileList).map((f) => ({ original: f, newName: f.name, status: "processing" as const }));
     setFiles((prev) => [...prev, ...incoming]);
     const categoryCounts: Record<string, number> = {};
     for (const entry of incoming) {
-      const result = await smartRename(entry.original);
+      const result = await smartRename(entry.original, customPrompt);
       setFiles((prev) => {
         const cat = result.category;
         categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
@@ -115,7 +116,7 @@ const FileRenamerTab = () => {
         return prev.map((f) => f.original === entry.original ? { ...f, newName: finalName, detectedType: result.type, typeCategory: cat, status: "done" as const } : f);
       });
     }
-  }, []);
+  }, [customPrompt]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files);
@@ -137,6 +138,20 @@ const FileRenamerTab = () => {
         <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">AI Smart File Renamer</h1>
         <p className="mt-4 text-base text-muted-foreground max-w-2xl mx-auto">Drop files to get professional names with auto-numbering. Powered by Puter AI.</p>
       </div>
+
+      <div className="mb-6">
+        <label className="mb-1.5 block text-sm font-medium text-foreground flex items-center gap-2">
+          <MessageSquareText className="h-4 w-4 text-primary" /> Custom Instructions (Optional)
+        </label>
+        <input 
+          type="text" 
+          value={customPrompt} 
+          onChange={e => setCustomPrompt(e.target.value)} 
+          placeholder="e.g., Include the project date, use all lowercase, etc." 
+          className="w-full rounded-lg border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" 
+        />
+      </div>
+
       <div onDrop={handleDrop} onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}
         className={`relative rounded-2xl border-2 border-dashed p-12 text-center transition-colors ${dragOver ? "border-primary bg-primary/5" : "border-border bg-card"}`}>
         <Upload className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />

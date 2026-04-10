@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ClipboardCopy, Info, MessageSquare, Sparkles, Loader2, User, Building, Link as LinkIcon } from "lucide-react";
+import { ClipboardCopy, Info, MessageSquare, Sparkles, Loader2, User, Building, Link as LinkIcon, MessageSquareText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import FAQSection from "@/components/FAQSection";
@@ -16,6 +16,7 @@ const DeliveryTab = ({ project }: Props) => {
   const [reviewLink, setReviewLink] = useState(`${window.location.origin}/client/${project.share_token}`);
   const [deliveryType, setDeliveryType] = useState<"draft" | "final" | "revision">("final");
   const [deliveryTone, setDeliveryTone] = useState("professional");
+  const [customPrompt, setCustomPrompt] = useState("");
   const [deliveryOutput, setDeliveryOutput] = useState("");
   const [generating, setGenerating] = useState(false);
   const { toast } = useToast();
@@ -32,6 +33,7 @@ const DeliveryTab = ({ project }: Props) => {
       - Work Type: ${project.work_type}
       - Stage: ${deliveryType}
       - Review Link: ${reviewLink}
+      ${customPrompt ? `- Additional Instructions: ${customPrompt}` : ""}
       
       Make it concise, professional, and include the review link clearly.`;
       
@@ -106,6 +108,20 @@ const DeliveryTab = ({ project }: Props) => {
                   ))}
                 </div>
               </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground flex items-center gap-2">
+                  <MessageSquareText className="h-4 w-4 text-primary" /> Custom Instructions (Optional)
+                </label>
+                <textarea 
+                  value={customPrompt} 
+                  onChange={e => setCustomPrompt(e.target.value)} 
+                  placeholder="e.g., Mention that I'm going on vacation next week, or ask them to check the color grading specifically." 
+                  rows={2}
+                  className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none resize-none" 
+                />
+              </div>
+
               <Button onClick={generate} className="w-full h-12 text-base" disabled={generating}>
                 {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                 {generating ? "AI is writing..." : "Generate AI Message"}

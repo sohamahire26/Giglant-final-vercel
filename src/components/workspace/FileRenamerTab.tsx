@@ -141,7 +141,7 @@ const detectDocType = (text: string): string | null => {
 
 const extractIdentifiers = (text: string) => {
   const result: { invoiceNo?: string; company?: string; subject?: string; person?: string } = {};
-  const invMatch = text.match(/(?:invoice|po|order|receipt|ref|reference)\s*(?:no|number|#|id|:)\s*[:\s]*([A-Z0-9][\w\-]{2,20})/i);
+  const invMatch = text.match(/(?:invoice|po|order|receipt|ref|reference)\s*(?:no|number|#|id|:)\s*[:\s]*([A-Z][\w\-]{2,20})/i);
   if (invMatch) result.invoiceNo = invMatch[1];
   const subMatch = text.match(/(?:subject|re|regarding|title|project)\s*[:\-]\s*(.{5,50}?)(?:\n|$)/i);
   if (subMatch) result.subject = subMatch[1].trim();
@@ -491,7 +491,7 @@ const FileRenamerTab = () => {
             { step: "Edit & download", desc: "Fine‑tune names and download for your client delivery workflow" },
           ].map((s, i) => (
             <div key={i} className="rounded-xl border border-border bg-card p-6 text-center">
-              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">{i + 1}</div>
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-red-600 text-white font-bold">{i + 1}</div>
               <p className="text-sm font-semibold text-foreground">{s.step}</p>
               <p className="mt-1 text-xs text-muted-foreground">{s.desc}</p>
             </div>

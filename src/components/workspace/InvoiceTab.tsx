@@ -31,6 +31,11 @@ const InvoiceTab = ({ project }: Props) => {
 
   return (
     <div className="space-y-8">
+      {/* Heading */}
+      <div className="mb-8 text-center">
+        <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">Invoice</h1>
+      </div>
+
       {/* How to Use Section */}
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="flex items-center gap-2 mb-6">
@@ -44,7 +49,7 @@ const InvoiceTab = ({ project }: Props) => {
             { step: "3", title: "Copy & Request", desc: "Copy the message and send it to your client." },
           ].map(s => (
             <div key={s.step} className="rounded-xl border border-border bg-background p-4 text-center">
-              <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">{s.step}</div>
+              <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white text-sm font-bold">{s.step}</div>
               <p className="text-sm font-semibold text-foreground">{s.title}</p>
               <p className="mt-1 text-xs text-muted-foreground">{s.desc}</p>
             </div>

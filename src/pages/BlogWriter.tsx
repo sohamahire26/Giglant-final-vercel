@@ -43,7 +43,8 @@ const BlogWriter = () => {
   const [loading, setLoading] = useState(!!editId);
   const [preview, setPreview] = useState(false);
 
-  const isOwner = user?.email === OWNER_EMAIL;
+  // Case-insensitive owner check
+  const isOwner = user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
   useEffect(() => {
     if (editId && isOwner) {
@@ -169,6 +170,9 @@ const BlogWriter = () => {
               <Lock className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
               <h1 className="font-display text-2xl font-bold text-foreground">Access Denied</h1>
               <p className="mt-2 text-sm text-muted-foreground">Only the site owner can access the blog writer.</p>
+              <div className="mt-4 p-3 bg-muted rounded-lg text-[10px] font-mono text-left overflow-hidden">
+                Logged in as: {user?.email || "Not logged in"}
+              </div>
               <Button onClick={() => navigate("/login")} className="mt-6 w-full">Sign In as Owner</Button>
             </div>
           </div>

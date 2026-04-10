@@ -40,7 +40,7 @@ const OverviewTab = ({ project }: Props) => {
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(getTimeRemaining(project.created_at));
-    }, 1000);
+    }, 60000); // Update every minute instead of every second
     return () => clearInterval(timer);
   }, [project.created_at]);
 
@@ -53,7 +53,7 @@ const OverviewTab = ({ project }: Props) => {
     <div className="space-y-8">
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          {/* Deletion Timer Card */}
+          {/* Deletion Policy Card */}
           <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -63,7 +63,7 @@ const OverviewTab = ({ project }: Props) => {
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="sm" className="text-amber-700 hover:bg-amber-500/10">
-                    <ShieldAlert className="mr-1.5 h-4 w-4" /> Deletion Policy
+                    <ShieldAlert className="mr-1.5 h-4 w-4" /> Full Policy
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -94,31 +94,15 @@ const OverviewTab = ({ project }: Props) => {
               </Dialog>
             </div>
             
-            <div className="flex flex-col items-center justify-center py-4">
-              <div className="flex gap-4">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-amber-600 font-mono">{timeLeft.days}</div>
-                  <div className="text-[10px] font-bold uppercase text-muted-foreground">Days</div>
+            <div className="flex flex-col items-center justify-center py-2">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-amber-600 font-display">
+                  {timeLeft.days} {timeLeft.days === 1 ? 'Day' : 'Days'} Remaining
                 </div>
-                <div className="text-3xl font-bold text-amber-600/50">:</div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-amber-600 font-mono">{timeLeft.hours.toString().padStart(2, '0')}</div>
-                  <div className="text-[10px] font-bold uppercase text-muted-foreground">Hours</div>
-                </div>
-                <div className="text-3xl font-bold text-amber-600/50">:</div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-amber-600 font-mono">{timeLeft.minutes.toString().padStart(2, '0')}</div>
-                  <div className="text-[10px] font-bold uppercase text-muted-foreground">Mins</div>
-                </div>
-                <div className="text-3xl font-bold text-amber-600/50">:</div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-amber-600 font-mono">{timeLeft.seconds.toString().padStart(2, '0')}</div>
-                  <div className="text-[10px] font-bold uppercase text-muted-foreground">Secs</div>
-                </div>
+                <p className="mt-2 text-sm text-amber-700/80">
+                  This project and all associated data will be permanently deleted 7 days after creation.
+                </p>
               </div>
-              <p className="mt-4 text-xs text-amber-700/70 text-center">
-                This project and all feedback will be permanently deleted when the timer reaches zero.
-              </p>
             </div>
           </div>
 

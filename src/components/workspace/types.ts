@@ -51,3 +51,19 @@ export const fmtTs = (s: number | null): string => {
   if (s === null) return "";
   return `${Math.floor(s / 60).toString().padStart(2, "0")}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
 };
+
+export const getTimeRemaining = (createdAt: string) => {
+  const created = new Date(createdAt).getTime();
+  const expires = created + (7 * 24 * 60 * 60 * 1000);
+  const now = new Date().getTime();
+  const diff = expires - now;
+
+  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+  return { days, hours, minutes, seconds, expired: false };
+};

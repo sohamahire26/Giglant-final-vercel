@@ -1,21 +1,32 @@
-import { useState } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import { 
   LayoutDashboard, 
   Users, 
-  Briefcase, 
   Calendar, 
   ExternalLink, 
   Copy, 
   CheckCircle2, 
   Clock, 
-  HelpCircle, 
   Info,
   ArrowRight,
-  Share2
+  Share2,
+  AlertTriangle,
+  ShieldAlert
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import type { Project } from "./types";
+import { getTimeRemaining } from "./types";
 
 interface Props {
   project: Project;
@@ -23,7 +34,15 @@ interface Props {
 
 const OverviewTab = ({ project }: Props) => {
   const { toast } = useToast();
+  const [timeLeft, setTimeLeft] = useState(getTimeRemaining(project.created_at));
   const clientLink = `${window.location.origin}/client/${project.share_token}`;
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(getTimeRemaining(project.created_at));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [project.created_at]);
 
   const copyLink = () => {
     navigator.clipboard.writeText(clientLink);
@@ -34,6 +53,75 @@ const OverviewTab = ({ project }: Props) => {
     <div className="space-y-8">
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
+          {/* Deletion Timer Card */}
+          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-amber-600" />
+                <h2 className="font-display text-lg font-semibold text-foreground">Project Expiration</h2>
+              </div>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-amber-700 hover:bg-amber-500/10">
+                    <ShieldAlert className="mr-1.5 h-4 w-4" /> Deletion Policy
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-amber-600" />
+                      7-Day Deletion Policy
+                    </DialogTitle>
+                    <DialogDescription className="pt-4 space-y-4 text-sm leading-relaxed">
+                      <p>
+                        To ensure privacy and maintain platform performance, Giglant automatically deletes all project data exactly <strong>7 days after creation</strong>.
+                      </p>
+                      <div className="rounded-lg bg-muted p-4 space-y-2">
+                        <p className="font-semibold text-foreground">What gets deleted:</p>
+                        <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                          <li>Project workspace and metadata</li>
+                          <li>All client feedback and comments</li>
+                          <li>Revision checklists and delivery logs</li>
+                          <li>The shareable client review link</li>
+                        </ul>
+                      </div>
+                      <p className="text-amber-700 font-medium">
+                        Note: Your actual files on Google Drive are NOT affected. Only the Giglant workspace and comments are removed.
+                      </p>
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+            </div>
+            
+            <div className="flex flex-col items-center justify-center py-4">
+              <div className="flex gap-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-amber-600 font-mono">{timeLeft.days}</div>
+                  <div className="text-[10px] font-bold uppercase text-muted-foreground">Days</div>
+                </div>
+                <div className="text-3xl font-bold text-amber-600/50">:</div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-amber-600 font-mono">{timeLeft.hours.toString().padStart(2, '0')}</div>
+                  <div className="text-[10px] font-bold uppercase text-muted-foreground">Hours</div>
+                </div>
+                <div className="text-3xl font-bold text-amber-600/50">:</div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-amber-600 font-mono">{timeLeft.minutes.toString().padStart(2, '0')}</div>
+                  <div className="text-[10px] font-bold uppercase text-muted-foreground">Mins</div>
+                </div>
+                <div className="text-3xl font-bold text-amber-600/50">:</div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-amber-600 font-mono">{timeLeft.seconds.toString().padStart(2, '0')}</div>
+                  <div className="text-[10px] font-bold uppercase text-muted-foreground">Secs</div>
+                </div>
+              </div>
+              <p className="mt-4 text-xs text-amber-700/70 text-center">
+                This project and all feedback will be permanently deleted when the timer reaches zero.
+              </p>
+            </div>
+          </div>
+
           {/* Project Details Card */}
           <div className="rounded-2xl border border-border bg-card p-6">
             <div className="flex items-center justify-between mb-6">

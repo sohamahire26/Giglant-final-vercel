@@ -28,7 +28,16 @@ const Dashboard = () => {
       .eq("user_id", user?.id)
       .order("created_at", { ascending: false });
 
-    if (!error) setProjects(data || []);
+    if (!error) {
+      // Filter out projects that are older than 7 days (in case cron hasn't run)
+      const now = new Date().getTime();
+      const sevenDays = 7 * 24 * 60 * 60 * 1000;
+      const activeProjects = (data || []).filter(p => {
+        const created = new Date(p.created_at).getTime();
+        return now - created < sevenDays;
+      });
+      setProjects(activeProjects);
+    }
     setLoading(false);
   };
 

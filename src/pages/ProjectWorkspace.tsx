@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
 import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle, FileEdit, RefreshCw } from "lucide-react";
 import Layout from "@/components/Layout";
@@ -15,7 +15,7 @@ import RevisionsTab from "@/components/workspace/RevisionsTab";
 import DeliveryTab from "@/components/workspace/DeliveryTab";
 import InvoiceTab from "@/components/workspace/InvoiceTab";
 import FileRenamerTab from "@/components/workspace/FileRenamerTab";
-import TutorialTour, { TourStep } from "@/components/workspace/TutorialTour";
+import TutorialTour, { TourStep } from "@/components/workspace/TutorialTour.tsx";
 
 const db = supabase as any;
 
@@ -50,14 +50,19 @@ const ProjectWorkspace = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
   const { toast } = useToast();
+  const pollingInterval = useRef<any>(null);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (silent = false) => {
     if (!id) return;
+    if (!silent) setLoading(true);
+    
     const { data: proj } = await db.from("projects").select("*").eq("id", id).single();
     if (!proj) { setLoading(false); return; }
     setProject(proj);
+    
     const { data: f } = await db.from("project_files").select("*").eq("project_id", id).order("sort_order");
     setFiles(f || []);
+    
     if (f?.length) {
       const { data: c } = await db.from("file_comments").select("*").in("file_id", f.map((x: ProjectFile) => x.id)).order("created_at");
       setComments(c || []);
@@ -73,6 +78,15 @@ const ProjectWorkspace = () => {
 
   useEffect(() => {
     loadData();
+    
+    // Silent background polling every 30 seconds as a fail-safe
+    pollingInterval.current = setInterval(() => {
+      loadData(true);
+    }, 30000);
+
+    return () => {
+      if (pollingInterval.current) clearInterval(pollingInterval.current);
+    };
   }, [loadData]);
 
   useEffect(() => {
@@ -93,11 +107,19 @@ const ProjectWorkspace = () => {
         if (!fileIds.includes(targetFileId)) return;
 
         if (payload.eventType === 'INSERT') {
-          setComments(prev => prev.find(c => c.id === newC.id) ? prev : [...prev, newC]);
-          toast({ 
-            title: "New Feedback!", 
-            description: `${newC.author_name} left a comment: "${newC.comment.substring(0, 30)}..."`
+          setComments(prev => {
+            if (prev.find(c => c.id === newC.id)) return prev;
+            return [...prev, newC];
           });
+          
+          // Only show toast if it's from the client
+          if (newC.is_client) {
+            toast({ 
+              title: "New Feedback Received!", 
+              description: `${newC.author_name} left a comment.`,
+              action: <Button variant="outline" size="sm" onClick={() => loadData(true)}><RefreshCw className="mr-1 h-3 w-3" /> Refresh</Button>
+            });
+          }
         } else if (payload.eventType === 'UPDATE') {
           setComments(prev => prev.map(c => c.id === newC.id ? newC : c));
         } else if (payload.eventType === 'DELETE') {
@@ -107,7 +129,7 @@ const ProjectWorkspace = () => {
       .subscribe();
       
     return () => { supabase.removeChannel(channel); };
-  }, [files, id, toast]);
+  }, [files, id, toast, loadData]);
 
   const handleDeleteProject = async () => {
     if (!project || !confirm("Delete this project and all its data? This cannot be undone.")) return;

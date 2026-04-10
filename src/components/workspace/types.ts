@@ -49,34 +49,39 @@ export const detectFileType = (url: string, filename: string): string => {
 
 export const fmtTs = (s: number | null): string => {
   if (s === null) return "";
-  return `${Math.floor(s / 60).toString().padStart(2, "0")}:${Math.floor(s % 60).toString().padStart(2, "0")}`;
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = Math.floor(s % 60);
+  
+  const mmss = `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
+  if (h > 0) {
+    return `${h.toString().padStart(2, "0")}:${mmss}`;
+  }
+  return mmss;
 };
 
 export const parseTs = (input: string): number | null => {
   const clean = input.trim().replace(/[^0-9:]/g, "");
   if (!clean) return null;
 
-  // Handle MM:SS format
-  if (clean.includes(":")) {
-    const parts = clean.split(":");
-    if (parts.length !== 2) return null;
-    const m = parseInt(parts[0], 10);
-    const s = parseInt(parts[1], 10);
-    if (isNaN(m) || isNaN(s) || s >= 60) return null;
+  const parts = clean.split(":").map(p => parseInt(p, 10));
+  if (parts.some(isNaN)) return null;
+
+  if (parts.length === 3) { // HH:MM:SS
+    const [h, m, s] = parts;
+    if (m > 59 || s > 59) return null;
+    return h * 3600 + m * 60 + s;
+  }
+  
+  if (parts.length === 2) { // MM:SS
+    const [m, s] = parts;
+    if (s > 59) return null;
     return m * 60 + s;
   }
 
-  // Handle shorthand like 0233 or 123
-  if (clean.length >= 3 && clean.length <= 4) {
-    const s = parseInt(clean.slice(-2), 10);
-    const m = parseInt(clean.slice(0, -2), 10);
-    if (isNaN(m) || isNaN(s) || s >= 60) return null;
-    return m * 60 + s;
+  if (parts.length === 1) { // SS
+    return parts[0];
   }
-
-  // Handle just seconds
-  const sec = parseInt(clean, 10);
-  if (!isNaN(sec)) return sec;
 
   return null;
 };

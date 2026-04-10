@@ -1,3 +1,4 @@
+59 and support HH:MM:SS.">
 "use client";
 
 import { useState, useEffect } from "react";
@@ -79,14 +80,24 @@ const ClientView = () => {
   }, [files]);
 
   const handleTimestampChange = (val: string) => {
-    let clean = val.replace(/[^0-9]/g, "");
-    if (clean.length > 4) clean = clean.slice(0, 4);
-    
-    if (clean.length === 4) {
-      setNewTimestamp(clean.slice(0, 2) + ":" + clean.slice(2));
+    const digits = val.replace(/[^0-9]/g, "");
+    if (digits.length > 6) return;
+
+    // Validate tens place for minutes and seconds
+    if (digits.length >= 2 && parseInt(digits.slice(-2, -1), 10) > 5) return;
+    if (digits.length >= 4 && parseInt(digits.slice(-4, -3), 10) > 5) return;
+
+    // Format the output
+    let formatted = "";
+    if (digits.length <= 2) {
+      formatted = digits;
+    } else if (digits.length <= 4) {
+      formatted = `${digits.slice(0, -2)}:${digits.slice(-2)}`;
     } else {
-      setNewTimestamp(val);
+      formatted = `${digits.slice(0, -4)}:${digits.slice(-4, -2)}:${digits.slice(-2)}`;
     }
+    
+    setNewTimestamp(formatted);
   };
 
   const handleAddComment = async () => {
@@ -218,11 +229,11 @@ const ClientView = () => {
                   <h3 className="font-display text-sm font-semibold text-foreground mb-3">Leave Your Feedback</h3>
                   <div className="flex gap-2 items-end flex-wrap">
                     {isTimeable && (
-                      <div className="w-28">
+                      <div className="w-32">
                         <label className="mb-1 flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
-                          <Clock className="h-2.5 w-2.5" /> Time (MM:SS)
+                          <Clock className="h-2.5 w-2.5" /> Time (HH:MM:SS)
                         </label>
-                        <input type="text" value={newTimestamp} onChange={e => handleTimestampChange(e.target.value)} placeholder="01:24"
+                        <input type="text" value={newTimestamp} onChange={e => handleTimestampChange(e.target.value)} placeholder="00:01:24"
                           className="w-full rounded-lg border border-border bg-background px-2 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
                       </div>
                     )}

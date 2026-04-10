@@ -58,6 +58,13 @@ const ProjectWorkspace = () => {
     }
   }, [location.state]);
 
+  // Handle tab switching during tutorial
+  useEffect(() => {
+    if (showTutorial) {
+      if (tutorialStep === 1) setActiveTab("overview");
+    }
+  }, [tutorialStep, showTutorial]);
+
   useEffect(() => {
     if (!id) return;
     const load = async () => {
@@ -153,7 +160,7 @@ const ProjectWorkspace = () => {
           </div>
 
           <div className="min-h-[400px]">
-            {activeTab === "overview" && <OverviewTab project={project} files={files} comments={comments} />}
+            {activeTab === "overview" && <OverviewTab project={project} />}
             {activeTab === "renamer" && <FileRenamerTab />}
             {activeTab === "files" && <FilesTab project={project} files={files} setFiles={setFiles} comments={comments} setComments={setComments} selectedFile={selectedFile} setSelectedFile={setSelectedFile} />}
             {activeTab === "revisions" && <RevisionsTab files={files} comments={comments} setComments={setComments} />}

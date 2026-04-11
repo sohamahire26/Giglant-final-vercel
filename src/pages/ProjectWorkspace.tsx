@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
-import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle, FileEdit, RefreshCw } from "lucide-react";
+import { useParams, Link, useLocation, Navigate } from "react-router-dom";
+import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle, FileEdit, RefreshCw, Lock, Sparkles, ArrowRight } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import DeliveryTab from "@/components/workspace/DeliveryTab";
 import InvoiceTab from "@/components/workspace/InvoiceTab";
 import FileRenamerTab from "@/components/workspace/FileRenamerTab";
 import TutorialTour, { TourStep } from "@/components/workspace/TutorialTour.tsx";
+import { useAuth } from "@/components/AuthProvider";
 
 const db = supabase as any;
 
@@ -41,6 +42,7 @@ const tabs = [
 const ProjectWorkspace = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
+  const { user, session, profile, loading: authLoading } = useAuth();
   const [project, setProject] = useState<Project | null>(null);
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [comments, setComments] = useState<FileComment[]>([]);
@@ -79,7 +81,6 @@ const ProjectWorkspace = () => {
   useEffect(() => {
     loadData();
     
-    // Silent background polling every 30 seconds as a fail-safe
     pollingInterval.current = setInterval(() => {
       loadData(true);
     }, 30000);
@@ -112,7 +113,6 @@ const ProjectWorkspace = () => {
             return [...prev, newC];
           });
           
-          // Only show toast if it's from the client
           if (newC.is_client) {
             toast({ 
               title: "New Feedback Received!", 
@@ -137,7 +137,8 @@ const ProjectWorkspace = () => {
     window.location.href = "/dashboard";
   };
 
-  if (loading) return <Layout><div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
+  if (authLoading) return <Layout><div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
+  if (!session) return <Navigate to="/login" replace />;
 
   if (!project) return (
     <Layout><div className="flex min-h-[60vh] items-center justify-center flex-col gap-4">
@@ -145,6 +146,12 @@ const ProjectWorkspace = () => {
       <Button asChild><Link to="/projects/new">Create New Project</Link></Button>
     </div></Layout>
   );
+
+  const isPro = profile?.plan_type === 'pro';
+  const created = new Date(project.created_at).getTime();
+  const now = new Date().getTime();
+  const diffDays = (now - created) / (1000 * 60 * 60 * 24);
+  const isLocked = !isPro && diffDays > 7;
 
   return (
     <Layout>
@@ -164,7 +171,10 @@ const ProjectWorkspace = () => {
         <div className="container-tight">
           <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h1 className="font-display text-2xl font-bold text-foreground">{project.name}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="font-display text-2xl font-bold text-foreground">{project.name}</h1>
+                {isLocked && <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">LOCKED</span>}
+              </div>
               {project.client_name && <p className="text-sm text-muted-foreground">Client: {project.client_name}</p>}
             </div>
             <div className="flex items-center gap-2">
@@ -193,13 +203,39 @@ const ProjectWorkspace = () => {
             ))}
           </div>
 
-          <div className="min-h-[400px]">
-            {activeTab === "overview" && <OverviewTab project={project} />}
-            {activeTab === "renamer" && <FileRenamerTab />}
-            {activeTab === "files" && <FilesTab project={project} files={files} setFiles={setFiles} comments={comments} setComments={setComments} selectedFile={selectedFile} setSelectedFile={setSelectedFile} />}
-            {activeTab === "revisions" && <RevisionsTab files={files} comments={comments} setComments={setComments} />}
-            {activeTab === "delivery" && <DeliveryTab project={project} />}
-            {activeTab === "invoice" && <InvoiceTab project={project} />}
+          <div className="relative min-h-[400px]">
+            {isLocked && activeTab !== "overview" && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center rounded-2xl bg-background/60 backdrop-blur-sm">
+                <div className="max-w-md rounded-3xl border border-amber-500/20 bg-card p-8 text-center shadow-2xl">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/10 text-amber-600">
+                    <Lock size={32} />
+                  </div>
+                  <h2 className="font-display text-2xl font-bold text-foreground">Project Locked</h2>
+                  <p className="mt-3 text-muted-foreground">
+                    Free projects are locked after 7 days. You can still view the overview, but editing and other tools are disabled.
+                  </p>
+                  <div className="mt-8 flex flex-col gap-3">
+                    <Button asChild className="w-full py-6 text-lg font-bold shadow-lg shadow-primary/20">
+                      <Link to="/pricing">
+                        <Sparkles className="mr-2 h-5 w-5" /> Upgrade to Pro
+                      </Link>
+                    </Button>
+                    <Button variant="outline" onClick={() => setActiveTab("overview")} className="w-full">
+                      View Overview
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className={isLocked && activeTab !== "overview" ? "pointer-events-none blur-[2px]" : ""}>
+              {activeTab === "overview" && <OverviewTab project={project} />}
+              {activeTab === "renamer" && <FileRenamerTab />}
+              {activeTab === "files" && <FilesTab project={project} files={files} setFiles={setFiles} comments={comments} setComments={setComments} selectedFile={selectedFile} setSelectedFile={setSelectedFile} />}
+              {activeTab === "revisions" && <RevisionsTab files={files} comments={comments} setComments={setComments} />}
+              {activeTab === "delivery" && <DeliveryTab project={project} />}
+              {activeTab === "invoice" && <InvoiceTab project={project} />}
+            </div>
           </div>
         </div>
       </section>

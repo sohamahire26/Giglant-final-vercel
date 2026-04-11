@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { Upload, Download, FileIcon, X, Wand2, Loader2, RefreshCw, Sparkles, FileArchive, CheckCircle2, Info, Zap, History, ListChecks } from "lucide-react";
+import { Upload, Download, FileIcon, X, Wand2, Loader2, RefreshCw, Sparkles, FileArchive, CheckCircle2, Info, Zap, History, ListChecks, ArrowRight, LayoutDashboard } from "lucide-react";
+import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import FAQSection from "@/components/FAQSection";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import * as pdfjsLib from "pdfjs-dist";
 import exifr from "exifr";
 import JSZip from "jszip";
+import { useAuth } from "@/components/AuthProvider";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
@@ -111,6 +113,7 @@ const examples = [
 ];
 
 const FileRenamerTool = () => {
+  const { session } = useAuth();
   const [files, setFiles] = useState<RenamedFile[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [zipping, setZipping] = useState(false);
@@ -174,6 +177,23 @@ const FileRenamerTool = () => {
             <h1 className="font-display text-4xl font-bold text-foreground md:text-5xl">AI Smart File Renamer</h1>
             <p className="mt-4 text-lg text-muted-foreground">Drop files to get professional names with auto-numbering. Powered by Puter AI.</p>
           </div>
+
+          {!session && (
+            <div className="mb-12 rounded-3xl bg-foreground p-8 text-center text-background md:p-12">
+              <h2 className="font-display text-2xl font-bold">Unlock Full Project Workspaces</h2>
+              <p className="mt-3 text-background/70">
+                Renaming is just the start. Sign up to create project workspaces, get timestamped client feedback, and manage revisions.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-4">
+                <Button asChild variant="hero">
+                  <Link to="/login">Get Started Free</Link>
+                </Button>
+                <Button asChild variant="hero-outline">
+                  <Link to="/pricing">View Plans</Link>
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* How to Use Section */}
           <div className="mb-12 rounded-2xl border border-border bg-card p-6">
@@ -256,6 +276,7 @@ const FileRenamerTool = () => {
                     <p className="text-xs text-muted-foreground italic">{ex.note}</p>
                   </div>
                 </div>
+              </div>
               ))}
             </div>
           </div>
@@ -304,9 +325,5 @@ const FileRenamerTool = () => {
     </Layout>
   );
 };
-
-const ArrowRight = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-);
 
 export default FileRenamerTool;

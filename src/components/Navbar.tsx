@@ -18,6 +18,7 @@ const Navbar = () => {
     { name: "Home", href: "/" },
     { name: session ? "Dashboard" : "Projects", href: session ? "/dashboard" : "/projects/new" },
     { name: "Tools", href: "/tools", children: tools },
+    { name: "Pricing", href: "/pricing" },
     { name: "Blog", href: "/blog" },
   ];
 

@@ -29,7 +29,7 @@ const Navbar = () => {
           <img src={logo} alt="Giglant" className="h-40 w-auto" />
         </Link>
 
-        {/* Desktop */}
+        {/* Desktop Navigation */}
         <div className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) =>
             link.children ? (

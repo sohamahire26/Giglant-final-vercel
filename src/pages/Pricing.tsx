@@ -39,7 +39,7 @@ const PricingPage = () => {
       ],
       cta: session ? "Current Plan" : "Sign Up Free",
       href: session ? "/dashboard" : "/login",
-      variant: profile?.plan_type === 'free' ? "secondary" : "default" as const,
+      variant: (profile?.plan_type === 'free' ? "secondary" : "default") as any,
       highlight: true,
     },
     {

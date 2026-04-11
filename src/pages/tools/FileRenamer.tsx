@@ -276,7 +276,6 @@ const FileRenamerTool = () => {
                     <p className="text-xs text-muted-foreground italic">{ex.note}</p>
                   </div>
                 </div>
-              </div>
               ))}
             </div>
           </div>

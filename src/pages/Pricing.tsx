@@ -24,21 +24,33 @@ const PricingPage = () => {
     if (tierName !== "Pro") return;
 
     setLoading(tierName);
+    console.log("Initiating checkout for:", tierName);
     try {
       // Your Lemon Squeezy IDs
       const STORE_ID = "342733";
       const VARIANT_ID = "1519635";
 
+      console.log("Calling edge function 'create-checkout' with:", { STORE_ID, VARIANT_ID });
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { 
+        body: {
           variantId: VARIANT_ID,
           storeId: STORE_ID
         }
       });
 
-      if (error) throw error;
+      console.log("Edge function response:", { data, error });
+
+      if (error) {
+        console.error("Edge function error:", error);
+        throw error;
+      }
+      
       if (data?.url) {
+        console.log("Redirecting to:", data.url);
         window.location.href = data.url;
+      } else {
+        console.error("No URL returned in data:", data);
+        throw new Error("No checkout URL returned from server");
       }
     } catch (error: any) {
       console.error('Error creating checkout:', error);
@@ -48,8 +60,10 @@ const PricingPage = () => {
         variant: "destructive",
       });
     } finally {
+      console.log("Setting loading to null");
       setLoading(null);
     }
+
   };
 
   const tiers = [

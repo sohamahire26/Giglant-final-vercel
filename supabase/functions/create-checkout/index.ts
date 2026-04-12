@@ -7,6 +7,8 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  console.log("[create-checkout] Request received:", req.method)
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -19,76 +21,116 @@ serve(async (req) => {
     // Get the user from the auth header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+      console.error("[create-checkout] No authorization header")
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+        status: 401, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      })
     }
+    
     const token = authHeader.replace('Bearer ', '')
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
 
     if (authError || !user) {
-      return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+      console.error("[create-checkout] Auth error or no user:", authError)
+      return new Response(JSON.stringify({ error: 'Unauthorized', details: authError }), { 
+        status: 401, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      })
     }
 
-    const { variantId, storeId } = await req.json()
+    const body = await req.json()
+    const { variantId, storeId } = body
+    console.log("[create-checkout] Payload:", { variantId, storeId, userId: user.id })
 
     if (!variantId || !storeId) {
-      return new Response('Missing variantId or storeId', { status: 400, headers: corsHeaders })
+      console.error("[create-checkout] Missing variantId or storeId")
+      return new Response(JSON.stringify({ error: 'Missing variantId or storeId' }), { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      })
     }
 
     const apiKey = Deno.env.get('LEMON_SQUEEZY_API_KEY')
     if (!apiKey) {
-      return new Response('Lemon Squeezy API key not configured', { status: 500, headers: corsHeaders })
+      console.error("[create-checkout] LEMON_SQUEEZY_API_KEY not found in env")
+      return new Response(JSON.stringify({ error: 'Lemon Squeezy API key not configured' }), { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      })
     }
 
-    // Create checkout via Lemon Squeezy API
-    const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/vnd.api+json',
-        'Content-Type': 'application/vnd.api+json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        data: {
-          type: 'checkouts',
-          attributes: {
-            checkout_data: {
-              custom: {
-                user_id: user.id
-              },
-              email: user.email
-            }
-          },
-          relationships: {
-            store: {
-              data: {
-                type: 'stores',
-                id: storeId.toString()
+    console.log("[create-checkout] Calling Lemon Squeezy API...")
+    
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
+    try {
+      const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/vnd.api+json',
+          'Content-Type': 'application/vnd.api+json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          data: {
+            type: 'checkouts',
+            attributes: {
+              checkout_data: {
+                custom: {
+                  user_id: user.id
+                },
+                email: user.email
               }
             },
-            variant: {
-              data: {
-                type: 'variants',
-                id: variantId.toString()
+            relationships: {
+              store: {
+                data: {
+                  type: 'stores',
+                  id: storeId.toString()
+                }
+              },
+              variant: {
+                data: {
+                  type: 'variants',
+                  id: variantId.toString()
+                }
               }
             }
           }
-        }
+        })
       })
-    })
 
-    const checkoutData = await response.json()
+      clearTimeout(timeoutId)
+      const checkoutData = await response.json()
 
-    if (!response.ok) {
-      console.error('[create-checkout] Lemon Squeezy error:', checkoutData)
-      return new Response(JSON.stringify(checkoutData), { status: response.status, headers: corsHeaders })
+      if (!response.ok) {
+        console.error('[create-checkout] Lemon Squeezy error response:', checkoutData)
+        return new Response(JSON.stringify(checkoutData), { 
+          status: response.status, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        })
+      }
+
+      console.log("[create-checkout] Checkout created successfully")
+      return new Response(JSON.stringify({ url: checkoutData.data.attributes.url }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      })
+    } catch (fetchError) {
+      if (fetchError.name === 'AbortError') {
+        console.error("[create-checkout] Lemon Squeezy API request timed out")
+        return new Response(JSON.stringify({ error: 'Lemon Squeezy API request timed out' }), { 
+          status: 504, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        })
+      }
+      throw fetchError
     }
-
-    return new Response(JSON.stringify({ url: checkoutData.data.attributes.url }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    })
   } catch (error) {
-    console.error('[create-checkout] Error:', error.message)
+    console.error('[create-checkout] Catch block error:', error.message)
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,

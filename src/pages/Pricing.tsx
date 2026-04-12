@@ -1,14 +1,56 @@
 "use client";
 
-import { Check, Sparkles, Zap, ShieldCheck, ArrowRight } from "lucide-react";
+import { Check, Sparkles, Zap, ShieldCheck, ArrowRight, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const PricingPage = () => {
   const { session, profile } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const handleSubscribe = async (tierName: string) => {
+    if (!session) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (tierName !== "Pro") return;
+
+    setLoading(tierName);
+    try {
+      // Replace these with your actual Lemon Squeezy IDs from your dashboard
+      const STORE_ID = "131445"; // Your Store ID
+      const VARIANT_ID = "634567"; // Your Variant ID (e.g. for Pro plan)
+
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { 
+          variantId: VARIANT_ID,
+          storeId: STORE_ID
+        }
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (error: any) {
+      console.error('Error creating checkout:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to initiate checkout. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(null);
+    }
+  };
 
   const tiers = [
     {
@@ -56,7 +98,7 @@ const PricingPage = () => {
         "Priority support"
       ],
       cta: "Upgrade to Pro",
-      href: "#", // Link will be added later
+      href: "#",
       variant: "default" as const,
       isPro: true,
     }
@@ -111,17 +153,35 @@ const PricingPage = () => {
                   ))}
                 </ul>
 
-                <Button 
-                  asChild 
-                  variant={tier.variant} 
-                  className={`w-full py-6 text-base font-bold ${tier.highlight ? "shadow-lg shadow-primary/20" : ""}`}
-                  disabled={tier.name === "Free" && profile?.plan_type === 'free'}
-                >
-                  <Link to={tier.href}>
-                    {tier.cta}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
+                {tier.name === "Pro" ? (
+                  <Button 
+                    onClick={() => handleSubscribe(tier.name)}
+                    variant={tier.variant} 
+                    className={`w-full py-6 text-base font-bold ${tier.highlight ? "shadow-lg shadow-primary/20" : ""}`}
+                    disabled={loading === tier.name || profile?.plan_type === 'pro'}
+                  >
+                    {loading === tier.name ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        {profile?.plan_type === 'pro' ? "Current Plan" : tier.cta}
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Button 
+                    asChild 
+                    variant={tier.variant} 
+                    className={`w-full py-6 text-base font-bold ${tier.highlight ? "shadow-lg shadow-primary/20" : ""}`}
+                    disabled={tier.name === "Free" && profile?.plan_type === 'free'}
+                  >
+                    <Link to={tier.href}>
+                      {tier.cta}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                )}
               </div>
             ))}
           </div>

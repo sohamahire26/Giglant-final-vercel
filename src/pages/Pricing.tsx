@@ -32,24 +32,39 @@ const PricingPage = () => {
       const STORE_ID = "342733";
       const VARIANT_ID = "1519635";
 
-      console.log("Invoking create-checkout function...");
+      console.log("Calling edge function 'create-checkout'...");
       
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession) throw new Error("No active session found. Please log in again.");
+
+      // Using direct fetch to avoid potential issues with the built-in invoke method in some environments
+      const response = await fetch(`https://ldizmpaqlkqmmvcjkvwb.supabase.co/functions/v1/create-checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentSession.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkaXptcGFxbGtxbW12Y2prdndiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NjkzMDIsImV4cCI6MjA5MTA0NTMwMn0.hLk05spyjrzAZa2sHQabfC8yCKhHVTMLWZTJxNHumHM"
+        },
+        body: JSON.stringify({
           variantId: VARIANT_ID,
           storeId: STORE_ID
-        }
+        })
       });
 
-      console.log("Function response:", { data, error });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Edge function error response:", errorData);
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
 
-      if (error) throw error;
+      const data = await response.json();
+      console.log("Edge function response data:", data);
       
       if (data?.url) {
         console.log("Redirecting to checkout URL:", data.url);
         window.location.href = data.url;
       } else {
-        throw new Error("No checkout URL returned");
+        throw new Error("No checkout URL returned from the server.");
       }
     } catch (error: any) {
       console.error('Checkout error:', error);

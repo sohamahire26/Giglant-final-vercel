@@ -28,38 +28,42 @@ const PricingPage = () => {
     }
 
     setLoading(tierName);
-    console.log("[Pricing] Starting checkout process for Pro...");
     
     try {
       const STORE_ID = "342733";
       const VARIANT_ID = "1519635";
 
+      // Explicitly get the session to ensure we have the latest token
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      if (!token) {
+        throw new Error("You must be logged in to subscribe.");
+      }
+
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           variantId: VARIANT_ID,
           storeId: STORE_ID
+        },
+        headers: {
+          Authorization: `Bearer ${token}`
         }
       });
 
-      if (error) {
-        console.error("[Pricing] Function invocation error:", error);
-        throw error;
-      }
+      if (error) throw error;
 
       if (data?.url) {
-        console.log("[Pricing] Redirecting to checkout:", data.url);
         window.location.href = data.url;
-        // We don't reset loading here because we're navigating away
       } else {
-        console.error("[Pricing] No URL in response:", data);
-        throw new Error("The checkout service didn't return a valid URL. Please try again.");
+        throw new Error("The checkout service didn't return a valid URL.");
       }
     } catch (error: any) {
-      console.error('[Pricing] Checkout error details:', error);
-      setLoading(null); // Reset loading immediately on error
+      console.error('[Pricing] Checkout error:', error);
+      setLoading(null);
       toast({
         title: "Subscription Error",
-        description: error.message || "Could not start checkout. Please check your connection and try again.",
+        description: error.message || "Could not start checkout. Please try again.",
         variant: "destructive",
       });
     }

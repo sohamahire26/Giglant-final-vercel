@@ -15,22 +15,21 @@ serve(async (req) => {
     console.log("[create-checkout] Request received");
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // Initialize client with the user's own auth header
-    // This allows us to use supabase.auth.getUser() reliably
+    // Use service role key to verify the user token
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
     }
 
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    // Get the user from the token
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    // Extract the JWT token
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verify the user with the token
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
     if (authError || !user) {
       console.error("[create-checkout] Auth error:", authError?.message);
@@ -46,7 +45,7 @@ serve(async (req) => {
     const apiKey = Deno.env.get('LEMON_SQUEEZY_API_KEY');
 
     if (!apiKey) {
-      throw new Error('Lemon Squeezy API key not configured in Supabase secrets');
+      throw new Error('Lemon Squeezy API key not configured');
     }
 
     const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
@@ -66,7 +65,6 @@ serve(async (req) => {
               },
               email: user.email
             },
-            // Redirect back to dashboard after successful payment
             product_options: {
               redirect_url: `${req.headers.get('origin')}/dashboard?payment=success`,
             }

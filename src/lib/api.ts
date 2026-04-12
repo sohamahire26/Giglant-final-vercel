@@ -6,13 +6,13 @@ import { supabase } from "@/integrations/supabase/client";
  */
 
 const getApiBase = () => {
-  const projectId = "ldizmpaqlkqmmvcjkvwb"; // Hardcoded project ID for reliability
-  return `https://${projectId}.supabase.co/functions/v1`;
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  return `${url}/functions/v1`;
 };
 
 const apiCall = async (endpoint: string, body?: any) => {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const apikey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkaXptcGFxbGtxbW12Y2prdndiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NjkzMDIsImV4cCI6MjA5MTA0NTMwMn0.hLk05spyjrzAZa2sHQabfC8yCKhHVTMLWZTJxNHumHM";
+  const apikey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   headers["apikey"] = apikey;
 
   // Add Authorization header if user is logged in

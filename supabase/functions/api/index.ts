@@ -23,7 +23,6 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")?.trim();
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
-    const groqApiKey = Deno.env.get("GROQ_API_KEY")?.trim();
 
     if (!supabaseUrl || !supabaseKey) {
       throw new Error("Database not configured.");
@@ -72,7 +71,6 @@ Deno.serve(async (req) => {
       }
 
       case "get_blog_post_by_id": {
-        // Only owner can see unpublished posts by ID
         if (userEmail !== OWNER_EMAIL) {
           return json({ error: "Unauthorized" }, 401);
         }
@@ -101,40 +99,14 @@ Deno.serve(async (req) => {
         return json(result.data);
       }
 
-      case "optimize_blog_seo": {
+      case "delete_blog_post": {
         if (userEmail !== OWNER_EMAIL) {
           return json({ error: "Unauthorized" }, 401);
         }
-        if (!groqApiKey) throw new Error("Groq API key not configured.");
-
-        const { title, content } = body;
-        const prompt = `You are an SEO expert for Giglant, a platform for video editors and freelancers. 
-        Analyze the following blog post and provide:
-        1. A compelling Meta Title (max 60 chars)
-        2. A high-converting Meta Description (max 160 chars)
-        3. A concise Excerpt (max 200 chars)
-        
-        Return ONLY a JSON object with keys: meta_title, meta_description, excerpt.
-        
-        Title: ${title}
-        Content: ${content.substring(0, 2000)}`;
-
-        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${groqApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "llama-3.1-70b-versatile",
-            messages: [{ role: "user", content: prompt }],
-            response_format: { type: "json_object" },
-          }),
-        });
-
-        const groqData = await groqRes.json();
-        const seo = JSON.parse(groqData.choices[0].message.content);
-        return json(seo);
+        const { id } = body;
+        const { error } = await supabase.from("blog_posts").delete().eq("id", id);
+        if (error) throw error;
+        return json({ success: true });
       }
 
       default:

@@ -22,9 +22,13 @@ const PricingPage = () => {
     }
 
     if (tierName !== "Pro") return;
+    if (profile?.plan_type === 'pro') {
+      toast({ title: "Already Pro", description: "You are already on the Pro plan." });
+      return;
+    }
 
     setLoading(tierName);
-    console.log("Starting checkout process for Pro...");
+    console.log("[Pricing] Starting checkout process for Pro...");
     
     try {
       const STORE_ID = "342733";
@@ -38,29 +42,26 @@ const PricingPage = () => {
       });
 
       if (error) {
-        console.error("Function invocation error:", error);
+        console.error("[Pricing] Function invocation error:", error);
         throw error;
       }
 
       if (data?.url) {
-        console.log("Redirecting to checkout:", data.url);
+        console.log("[Pricing] Redirecting to checkout:", data.url);
         window.location.href = data.url;
+        // We don't reset loading here because we're navigating away
       } else {
-        throw new Error("No checkout URL returned from server");
+        console.error("[Pricing] No URL in response:", data);
+        throw new Error("The checkout service didn't return a valid URL. Please try again.");
       }
     } catch (error: any) {
-      console.error('Checkout error details:', error);
+      console.error('[Pricing] Checkout error details:', error);
+      setLoading(null); // Reset loading immediately on error
       toast({
         title: "Subscription Error",
-        description: error.message || "Could not start checkout. Please try again.",
+        description: error.message || "Could not start checkout. Please check your connection and try again.",
         variant: "destructive",
       });
-      setLoading(null); // Reset loading immediately on error
-    } finally {
-      // We don't reset loading here if we're redirecting, 
-      // but we do it in the catch block for errors.
-      // If it's still loading after a few seconds, something is wrong.
-      setTimeout(() => setLoading(null), 10000); 
     }
   };
 

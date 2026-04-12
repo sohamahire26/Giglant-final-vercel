@@ -7,49 +7,46 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    console.log("[create-checkout] Function started");
+    console.log("[create-checkout] Request received");
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    // Get user from auth header
+    // Initialize client with the user's own auth header
+    // This allows us to use supabase.auth.getUser() reliably
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      console.error("[create-checkout] Missing Authorization header");
-      return new Response(JSON.stringify({ error: 'No authorization header' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      throw new Error('No authorization header');
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    // Get the user from the token
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
 
     if (authError || !user) {
-      console.error("[create-checkout] Auth error:", authError);
-      return new Response(JSON.stringify({ error: 'Invalid token', details: authError }), {
+      console.error("[create-checkout] Auth error:", authError?.message);
+      return new Response(JSON.stringify({ error: 'Authentication failed', details: authError?.message }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    const { variantId, storeId } = await req.json();
-    console.log("[create-checkout] Creating checkout for user:", user.id, "variant:", variantId);
+    console.log("[create-checkout] Authenticated user:", user.email);
 
+    const { variantId, storeId } = await req.json();
     const apiKey = Deno.env.get('LEMON_SQUEEZY_API_KEY');
+
     if (!apiKey) {
-      console.error("[create-checkout] LEMON_SQUEEZY_API_KEY is not set");
-      return new Response(JSON.stringify({ error: 'Lemon Squeezy API key not configured' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      throw new Error('Lemon Squeezy API key not configured in Supabase secrets');
     }
 
     const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
@@ -68,6 +65,10 @@ serve(async (req) => {
                 user_id: user.id
               },
               email: user.email
+            },
+            // Redirect back to dashboard after successful payment
+            product_options: {
+              redirect_url: `${req.headers.get('origin')}/dashboard?payment=success`,
             }
           },
           relationships: {
@@ -91,21 +92,20 @@ serve(async (req) => {
     const result = await response.json();
 
     if (!response.ok) {
-      console.error("[create-checkout] Lemon Squeezy API error:", result);
+      console.error("[create-checkout] Lemon Squeezy error:", result);
       return new Response(JSON.stringify(result), {
         status: response.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log("[create-checkout] Checkout created successfully");
     return new Response(JSON.stringify({ url: result.data.attributes.url }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
-    console.error("[create-checkout] Unexpected error:", error.message);
+    console.error("[create-checkout] Error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

@@ -16,10 +16,7 @@ const PricingPage = () => {
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleSubscribe = async (tierName: string) => {
-    console.log("handleSubscribe called for:", tierName);
-    
     if (!session) {
-      console.log("No session, redirecting to login");
       window.location.href = "/login";
       return;
     }
@@ -27,54 +24,43 @@ const PricingPage = () => {
     if (tierName !== "Pro") return;
 
     setLoading(tierName);
+    console.log("Starting checkout process for Pro...");
     
     try {
       const STORE_ID = "342733";
       const VARIANT_ID = "1519635";
 
-      console.log("Calling edge function 'create-checkout'...");
-      
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession) throw new Error("No active session found. Please log in again.");
-
-      // Using direct fetch to avoid potential issues with the built-in invoke method in some environments
-      const response = await fetch(`https://ldizmpaqlkqmmvcjkvwb.supabase.co/functions/v1/create-checkout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentSession.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkaXptcGFxbGtxbW12Y2prdndiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NjkzMDIsImV4cCI6MjA5MTA0NTMwMn0.hLk05spyjrzAZa2sHQabfC8yCKhHVTMLWZTJxNHumHM"
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: {
           variantId: VARIANT_ID,
           storeId: STORE_ID
-        })
+        }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Edge function error response:", errorData);
-        throw new Error(errorData.error || `Server error: ${response.status}`);
+      if (error) {
+        console.error("Function invocation error:", error);
+        throw error;
       }
 
-      const data = await response.json();
-      console.log("Edge function response data:", data);
-      
       if (data?.url) {
-        console.log("Redirecting to checkout URL:", data.url);
+        console.log("Redirecting to checkout:", data.url);
         window.location.href = data.url;
       } else {
-        throw new Error("No checkout URL returned from the server.");
+        throw new Error("No checkout URL returned from server");
       }
     } catch (error: any) {
-      console.error('Checkout error:', error);
+      console.error('Checkout error details:', error);
       toast({
         title: "Subscription Error",
         description: error.message || "Could not start checkout. Please try again.",
         variant: "destructive",
       });
+      setLoading(null); // Reset loading immediately on error
     } finally {
-      setLoading(null);
+      // We don't reset loading here if we're redirecting, 
+      // but we do it in the catch block for errors.
+      // If it's still loading after a few seconds, something is wrong.
+      setTimeout(() => setLoading(null), 10000); 
     }
   };
 

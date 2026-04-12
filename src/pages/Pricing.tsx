@@ -25,9 +25,9 @@ const PricingPage = () => {
 
     setLoading(tierName);
     try {
-      // Replace these with your actual Lemon Squeezy IDs from your dashboard
-      const STORE_ID = "131445"; // Your Store ID
-      const VARIANT_ID = "634567"; // Your Variant ID (e.g. for Pro plan)
+      // Your Lemon Squeezy IDs
+      const STORE_ID = "342733";
+      const VARIANT_ID = "1519635";
 
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { 

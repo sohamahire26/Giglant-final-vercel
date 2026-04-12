@@ -10,6 +10,7 @@ interface Profile {
   last_name: string | null;
   plan_type: 'free' | 'pro';
   subscription_id: string | null;
+  is_admin: boolean;
 }
 
 interface AuthContextType {

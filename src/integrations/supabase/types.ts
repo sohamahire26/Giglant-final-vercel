@@ -61,6 +61,9 @@ export type Database = {
           last_name: string | null
           avatar_url: string | null
           updated_at: string
+          plan_type: 'free' | 'pro'
+          subscription_id: string | null
+          is_admin: boolean
         }
         Insert: {
           id: string
@@ -68,6 +71,9 @@ export type Database = {
           last_name?: string | null
           avatar_url?: string | null
           updated_at?: string
+          plan_type?: 'free' | 'pro'
+          subscription_id?: string | null
+          is_admin?: boolean
         }
         Update: {
           id?: string
@@ -75,6 +81,9 @@ export type Database = {
           last_name?: string | null
           avatar_url?: string | null
           updated_at?: string
+          plan_type?: 'free' | 'pro'
+          subscription_id?: string | null
+          is_admin?: boolean
         }
         Relationships: [
           {

@@ -26,7 +26,7 @@ const BlogWriter = () => {
   const editId = searchParams.get("edit");
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const contentRef = useRef<HTMLTextAreaElement>(null);
 
   const [title, setTitle] = useState("");
@@ -44,7 +44,7 @@ const BlogWriter = () => {
   const [preview, setPreview] = useState(false);
 
   // Case-insensitive owner check
-  const isOwner = user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const isOwner = profile?.is_admin || user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
   useEffect(() => {
     if (editId && isOwner) {

@@ -15,11 +15,11 @@ const OWNER_EMAIL = "Sohamahire26@gmail.com";
 const BlogAdmin = () => {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const isOwner = user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const isOwner = profile?.is_admin || user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
   useEffect(() => {
     if (isOwner) {

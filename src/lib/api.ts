@@ -51,6 +51,3 @@ export const saveBlogPost = (post: any) =>
 
 export const deleteBlogPost = (id: string) => 
   apiCall("api", { action: "delete_blog_post", id });
-
-export const optimizeBlogSEO = (title: string, content: string) =>
-  apiCall("api", { action: "optimize_blog_seo", title, content });

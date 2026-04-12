@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Save, Eye, ArrowLeft, Loader2, Lock, ImageIcon, Bold, Italic, Heading2, Link2, List, Sparkles, Layout as LayoutIcon, FileText } from "lucide-react";
+import { Save, Eye, ArrowLeft, Loader2, Lock, ImageIcon, Bold, Italic, Heading2, Link2, List, Layout as LayoutIcon, FileText, Search } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
-import { saveBlogPost, getBlogPostById, optimizeBlogSEO } from "@/lib/api";
+import { saveBlogPost, getBlogPostById } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -39,11 +39,9 @@ const BlogWriter = () => {
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [published, setPublished] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [optimizing, setOptimizing] = useState(false);
   const [loading, setLoading] = useState(!!editId);
   const [preview, setPreview] = useState(false);
 
-  // Case-insensitive owner check
   const isOwner = profile?.is_admin || user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
   useEffect(() => {
@@ -76,25 +74,6 @@ const BlogWriter = () => {
   const handleTitleChange = (val: string) => {
     setTitle(val);
     if (!editId) setSlug(generateSlug(val));
-  };
-
-  const handleAIOptimize = async () => {
-    if (!title || !content) {
-      toast({ title: "Missing content", description: "Add a title and some content first.", variant: "destructive" });
-      return;
-    }
-    setOptimizing(true);
-    try {
-      const seo = await optimizeBlogSEO(title, content);
-      setMetaTitle(seo.meta_title);
-      setMetaDescription(seo.meta_description);
-      setExcerpt(seo.excerpt);
-      toast({ title: "SEO Optimized!", description: "Meta tags and excerpt have been updated by AI." });
-    } catch (err: any) {
-      toast({ title: "Optimization failed", description: err.message, variant: "destructive" });
-    } finally {
-      setOptimizing(false);
-    }
   };
 
   const insertFormat = (before: string, after: string = "") => {
@@ -165,7 +144,7 @@ const BlogWriter = () => {
       <Layout>
         <SEOHead title="Access Denied — Giglant" description="You do not have permission to access this page." />
         <section className="section-padding">
-          <div className="container-tight max-w-md">
+          <div className="container-tight max-md">
             <div className="rounded-2xl border border-border bg-card p-8 text-center">
               <Lock className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
               <h1 className="font-display text-2xl font-bold text-foreground">Access Denied</h1>
@@ -306,22 +285,12 @@ const BlogWriter = () => {
                 </div>
               </div>
 
-              {/* AI SEO Panel */}
-              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6">
+              {/* Manual SEO Panel */}
+              <div className="rounded-2xl border border-border bg-card p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="font-display text-sm font-bold text-foreground flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" /> AI SEO Optimizer
+                    <Search className="h-4 w-4 text-primary" /> SEO Settings
                   </h3>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleAIOptimize}
-                    disabled={optimizing}
-                    className="h-8 text-primary hover:bg-primary/10"
-                  >
-                    {optimizing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1" />}
-                    Optimize
-                  </Button>
                 </div>
                 <div className="space-y-4">
                   <div>

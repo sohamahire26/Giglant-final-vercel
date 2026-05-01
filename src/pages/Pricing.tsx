@@ -75,7 +75,7 @@ const PricingPage = () => {
       price: "$0",
       description: "Quick tools for one-off tasks.",
       features: [
-        "AI File Renamer access",
+        "File Renamer access",
         "No account required",
         "Browser-based processing",
         "Standard support"
@@ -94,7 +94,7 @@ const PricingPage = () => {
         "Client review magic link",
         "Timestamped feedback",
         "Revision checklist",
-        "AI Delivery assistant"
+        "Delivery assistant"
       ],
       cta: session ? "Current Plan" : "Sign Up Free",
       href: session ? "/dashboard" : "/login",
@@ -109,8 +109,8 @@ const PricingPage = () => {
       features: [
         "Unlimited Project workspaces",
         "60-day project active window",
-        "Priority AI processing",
-        "Advanced AI Invoice assistant",
+        "Priority processing",
+        "Advanced Invoice assistant",
         "Custom branding (Coming soon)",
         "Priority support"
       ],
@@ -135,7 +135,7 @@ const PricingPage = () => {
     <Layout>
       <SEOHead 
         title="Pricing — Giglant Video Editing Workflow Tools" 
-        description="Choose the right plan for your freelance workflow. From free AI tools to unlimited project workspaces." 
+        description="Choose the right plan for your freelance workflow. From free tools to unlimited project workspaces." 
       />
       <section className="section-padding hero-bg">
         <div className="container-tight">
@@ -232,8 +232,8 @@ const PricingPage = () => {
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <Sparkles className="h-6 w-6" />
               </div>
-              <h4 className="font-display font-bold">AI Powered</h4>
-              <p className="mt-2 text-sm text-muted-foreground">Smart assistants for every part of your workflow.</p>
+              <h4 className="font-display font-bold">Professional Tools</h4>
+              <p className="mt-2 text-sm text-muted-foreground">Assistants for every part of your workflow.</p>
             </div>
           </div>
         </div>

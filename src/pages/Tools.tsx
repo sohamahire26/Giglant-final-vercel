@@ -5,7 +5,7 @@ import SEOHead from "@/components/SEOHead";
 import FAQSection from "@/components/FAQSection";
 
 const tools = [
-  { name: "File Renamer", description: "Smart file renaming with auto-detection and numbering. Organize your editing pipeline — stop naming files v1-final-final2.", icon: FileEdit, href: "/tools/file-renamer" },
+  { name: "File Renamer", description: "Professional file renaming with auto-detection and numbering. Organize your editing pipeline — stop naming files v1-final-final2.", icon: FileEdit, href: "/tools/file-renamer" },
 ];
 
 const toolsFAQ = [
@@ -18,7 +18,7 @@ const ToolsPage = () => (
   <Layout>
     <SEOHead
       title="Free Online Tools for Video Editing Workflow & Freelancers | Giglant"
-      description="Browse Giglant's free tools for video editing workflow, freelancer workflow, and post production. Smart file renaming to streamline your editing pipeline."
+      description="Browse Giglant's free tools for video editing workflow, freelancer workflow, and post production. Professional file renaming to streamline your editing pipeline."
     />
     <section className="section-padding">
       <div className="container-tight">

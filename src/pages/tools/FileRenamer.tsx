@@ -101,15 +101,15 @@ const smartRename = async (file: File): Promise<{ name: string; type: string; ca
 };
 
 const faq = [
-  { question: "How does the AI analyze my files?", answer: "It uses Puter AI to read document text (PDFs), image metadata (EXIF), and video properties to understand the content and suggest a meaningful name." },
-  { question: "Is my data safe?", answer: "Yes. Files are processed locally in your browser. Only small text snippets or metadata are sent to the AI for naming suggestions. Your actual files never leave your device." },
+  { question: "How does the renamer analyze my files?", answer: "It analyzes document text (PDFs), image metadata (EXIF), and video properties to understand the content and suggest a meaningful name." },
+  { question: "Is my data safe?", answer: "Yes. Files are processed locally in your browser. Only small text snippets or metadata are sent for naming suggestions. Your actual files never leave your device." },
   { question: "What is the numbering system?", answer: "The tool automatically groups files by category (e.g., Video, Image) and adds a sequential number to keep your project organized." },
 ];
 
 const examples = [
-  { original: "IMG_8242.jpg", renamed: "Photo-1-Sunset-Beach-Malibu.jpg", note: "AI detected location and subject from metadata." },
-  { original: "draft_v1_final.pdf", renamed: "Document-1-Project-Proposal-Q4.pdf", note: "AI read the document title from the first page." },
-  { original: "sequence_01.mp4", renamed: "Video-1-Interview-Main-Angle.mp4", note: "AI analyzed the context to provide a descriptive name." },
+  { original: "IMG_8242.jpg", renamed: "Photo-1-Sunset-Beach-Malibu.jpg", note: "Detected location and subject from metadata." },
+  { original: "draft_v1_final.pdf", renamed: "Document-1-Project-Proposal-Q4.pdf", note: "Read the document title from the first page." },
+  { original: "sequence_01.mp4", renamed: "Video-1-Interview-Main-Angle.mp4", note: "Analyzed the context to provide a descriptive name." },
 ];
 
 const FileRenamerTool = () => {
@@ -167,15 +167,15 @@ const FileRenamerTool = () => {
 
   return (
     <Layout>
-      <SEOHead title="AI File Renamer — Giglant" description="AI-powered file renaming with automatic numbering and content analysis." />
+      <SEOHead title="File Renamer — Giglant" description="Professional file renaming with automatic numbering and content analysis." />
       <section className="section-padding">
         <div className="container-tight max-w-4xl">
           <div className="mb-12 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Sparkles className="h-8 w-8" />
             </div>
-            <h1 className="font-display text-4xl font-bold text-foreground md:text-5xl">AI Smart File Renamer</h1>
-            <p className="mt-4 text-lg text-muted-foreground">Drop files to get professional names with auto-numbering. Powered by Puter AI.</p>
+            <h1 className="font-display text-4xl font-bold text-foreground md:text-5xl">File Renamer</h1>
+            <p className="mt-4 text-lg text-muted-foreground">Drop files to get professional names with auto-numbering. Powered by Puter.</p>
           </div>
 
           {!session && (
@@ -199,12 +199,12 @@ const FileRenamerTool = () => {
           <div className="mb-12 rounded-2xl border border-border bg-card p-6">
             <div className="flex items-center gap-2 mb-6">
               <Info className="h-5 w-5 text-primary" />
-              <h2 className="font-display text-lg font-semibold text-foreground">How to Use the AI Renamer</h2>
+              <h2 className="font-display text-lg font-semibold text-foreground">How to Use the Renamer</h2>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
               {[
                 { step: "1", title: "Upload Files", desc: "Drag and drop your messy files into the box below." },
-                { step: "2", title: "AI Analysis", desc: "AI reads metadata and content to suggest professional names." },
+                { step: "2", title: "Analysis", desc: "Reads metadata and content to suggest professional names." },
                 { step: "3", title: "Download", desc: "Download files individually or as a single ZIP archive." },
               ].map(s => (
                 <div key={s.step} className="rounded-xl border border-border bg-background p-4 text-center">
@@ -226,7 +226,7 @@ const FileRenamerTool = () => {
           {files.length > 0 && (
             <div className="mt-8">
               <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-                <h2 className="font-display text-xl font-semibold text-foreground">AI Suggestions ({files.length})</h2>
+                <h2 className="font-display text-xl font-semibold text-foreground">Suggestions ({files.length})</h2>
                 <div className="flex gap-2 flex-wrap">
                   <Button onClick={clearAll} variant="outline" size="sm">Clear All</Button>
                   <Button onClick={downloadAll} variant="outline" size="sm"><Download className="mr-1 h-4 w-4" /> Download All</Button>
@@ -246,7 +246,7 @@ const FileRenamerTool = () => {
                         {f.detectedType && f.status === "done" && <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">{f.detectedType}</span>}
                       </div>
                       {f.status === "processing" ? (
-                        <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin text-primary" /> AI is analyzing...</div>
+                        <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin text-primary" /> Analyzing...</div>
                       ) : (
                         <input type="text" value={f.newName} onChange={(e) => updateName(i, e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground focus:border-primary focus:outline-none" />
                       )}
@@ -263,7 +263,7 @@ const FileRenamerTool = () => {
 
           {/* Real Examples */}
           <div className="mt-16">
-            <h2 className="font-display text-2xl font-bold text-foreground mb-6">Real Examples — AI Renaming</h2>
+            <h2 className="font-display text-2xl font-bold text-foreground mb-6">Real Examples — File Renaming</h2>
             <div className="space-y-3">
               {examples.map((ex, i) => (
                 <div key={i} className="rounded-xl border border-border bg-card p-4">
@@ -282,10 +282,10 @@ const FileRenamerTool = () => {
 
           {/* How It Works */}
           <div className="mt-16">
-            <h2 className="font-display text-2xl font-bold text-foreground mb-6">How It Works — Smart Organization</h2>
+            <h2 className="font-display text-2xl font-bold text-foreground mb-6">How It Works — Organization</h2>
             <div className="grid gap-4 md:grid-cols-4">
               {[
-                { step: "Content Scan", desc: "AI reads the first pages of documents and image metadata." },
+                { step: "Content Scan", desc: "Reads the first pages of documents and image metadata." },
                 { step: "Contextual Naming", desc: "Generates a descriptive name based on what's inside the file." },
                 { step: "Auto-Numbering", desc: "Groups files by type and adds sequential numbers." },
                 { step: "Batch Export", desc: "Download everything at once in a clean, organized ZIP." },
@@ -301,15 +301,15 @@ const FileRenamerTool = () => {
 
           {/* About Section */}
           <div className="mt-16">
-            <h2 className="font-display text-2xl font-bold text-foreground mb-6">About AI Renaming — Clarity & Speed</h2>
+            <h2 className="font-display text-2xl font-bold text-foreground mb-6">About File Renaming — Clarity & Speed</h2>
             <div className="prose max-w-none text-muted-foreground space-y-3 text-sm leading-relaxed">
               <p>
-                The AI File Renamer is built to solve the "final-final-v2.mp4" problem. By using <strong>Puter AI</strong>, we can understand the actual content of your files rather than just looking at the existing name.
+                The File Renamer is built to solve the "final-final-v2.mp4" problem. By using consistent naming conventions, you can keep your project assets organized and professional.
               </p>
               <p>
                 This tool is essential for <strong>video editing workflows</strong> and <strong>freelancer pipelines</strong> where keeping track of hundreds of assets is the difference between a smooth project and a nightmare.
               </p>
-              <h3 className="font-display text-lg font-semibold text-foreground">Why Use AI Renaming?</h3>
+              <h3 className="font-display text-lg font-semibold text-foreground">Why Use File Renaming?</h3>
               <ul className="list-disc list-inside space-y-1">
                 <li><ListChecks className="inline h-3 w-3 mr-1" /> <strong>Consistency:</strong> Every file follows the same professional format.</li>
                 <li><Zap className="inline h-3 w-3 mr-1" /> <strong>Speed:</strong> Rename 50 files in seconds instead of minutes.</li>

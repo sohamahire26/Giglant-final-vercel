@@ -13,18 +13,18 @@ const aboutFAQ = [
 const AboutPage = () => (
   <Layout>
     <SEOHead
-      title="About Giglant — Smart Tools for Video Editing & Freelancer Workflow"
-      description="Learn about Giglant's mission to build smart, free tools for video editing workflow, freelancer workflow, post production, and file management. Built for editors, designers, and creators."
+      title="About Giglant — Professional Tools for Video Editing & Freelancer Workflow"
+      description="Learn about Giglant's mission to build professional, free tools for video editing workflow, freelancer workflow, post production, and file management. Built for editors, designers, and creators."
     />
     <section className="section-padding">
       <div className="container-tight max-w-3xl">
         <div className="mb-8 text-center">
           <img src={logo} alt="Giglant — Video Editing Workflow Tools" className="mx-auto mb-6 h-40 w-auto" />
           <h1 className="font-display text-4xl font-bold text-foreground md:text-5xl">About Giglant</h1>
-          <p className="mt-4 text-lg text-muted-foreground">Smart tools for your video editing workflow. Work faster. Deliver better.</p>
+          <p className="mt-4 text-lg text-muted-foreground">Professional tools for your video editing workflow. Work faster. Deliver better.</p>
         </div>
         <div className="space-y-6 text-muted-foreground leading-relaxed">
-          <p>Giglant is a collection of smart online tools built for video editors, graphic designers, and freelancers who want to optimize their <strong className="text-foreground">video editing workflow</strong> and work more efficiently.</p>
+          <p>Giglant is a collection of professional online tools built for video editors, graphic designers, and freelancers who want to optimize their <strong className="text-foreground">video editing workflow</strong> and work more efficiently.</p>
           <p>We provide simple workflow utilities like file renaming tools, video review platforms, and editing support tools designed to remove repetitive work from your <strong className="text-foreground">editing pipeline</strong> and save time in your <strong className="text-foreground">post production workflow</strong>.</p>
           <p>Giglant focuses on practical tools that help creators manage files, speed up editing tasks, streamline <strong className="text-foreground">client delivery workflow</strong>, and improve their daily <strong className="text-foreground">content workflow</strong>. The platform is built to grow with more useful tools for freelancers, creators, and digital professionals.</p>
           <h2 className="font-display text-2xl font-bold text-foreground pt-4">Our Mission</h2>

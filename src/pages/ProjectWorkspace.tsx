@@ -58,18 +58,35 @@ const ProjectWorkspace = () => {
     if (!id) return;
     if (!silent) setLoading(true);
     
-    const { data: proj } = await db.from("projects").select("*").eq("id", id).single();
-    if (!proj) { setLoading(false); return; }
-    setProject(proj);
-    
-    const { data: f } = await db.from("project_files").select("*").eq("project_id", id).order("sort_order");
-    setFiles(f || []);
-    
-    if (f?.length) {
-      const { data: c } = await db.from("file_comments").select("*").in("file_id", f.map((x: ProjectFile) => x.id)).order("created_at");
-      setComments(c || []);
+    try {
+      const { data: proj, error: projError } = await db.from("projects").select("*").eq("id", id).single();
+      if (projError || !proj) {
+        console.error("Error loading project:", projError);
+        setLoading(false);
+        return;
+      }
+      setProject(proj);
+      
+      const { data: f, error: filesError } = await db.from("project_files").select("*").eq("project_id", id).order("sort_order");
+      if (filesError) {
+        console.error("Error loading files:", filesError);
+      } else {
+        setFiles(f || []);
+        
+        if (f?.length) {
+          const { data: c, error: commentsError } = await db.from("file_comments").select("*").in("file_id", f.map((x: ProjectFile) => x.id)).order("created_at");
+          if (commentsError) {
+            console.error("Error loading comments:", commentsError);
+          } else {
+            setComments(c || []);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Unexpected error loading workspace data:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [id]);
 
   useEffect(() => {
@@ -137,7 +154,7 @@ const ProjectWorkspace = () => {
     window.location.href = "/dashboard";
   };
 
-  if (authLoading) return <Layout><div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
+  if (authLoading || (loading && !project)) return <Layout><div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
   if (!session) return <Navigate to="/login" replace />;
 
   if (!project) return (

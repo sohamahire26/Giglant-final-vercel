@@ -19,7 +19,10 @@ const Dashboard = () => {
     let mounted = true;
 
     const fetchProjects = async () => {
-      if (!user) return;
+      if (!user) {
+        if (!authLoading) setLoading(false);
+        return;
+      }
       
       try {
         const { data, error } = await supabase
@@ -30,21 +33,13 @@ const Dashboard = () => {
 
         if (!mounted) return;
 
-        if (!error) {
-          const now = new Date().getTime();
-          const isPro = profile?.plan_type === 'pro';
-          const expiryDays = isPro ? 60 : 15;
-          const expiryMs = expiryDays * 24 * 60 * 60 * 1000;
-
-          // Filter out projects that have exceeded their deletion window
-          const activeProjects = (data || []).filter(p => {
-            const created = new Date(p.created_at).getTime();
-            return now - created < expiryMs;
-          });
-          setProjects(activeProjects);
+        if (error) {
+          console.error("Error fetching projects:", error);
+        } else {
+          setProjects(data || []);
         }
       } catch (err) {
-        console.error("Error fetching projects:", err);
+        console.error("Unexpected error fetching projects:", err);
       } finally {
         if (mounted) {
           setLoading(false);
@@ -52,24 +47,20 @@ const Dashboard = () => {
       }
     };
 
-    if (user) {
-      fetchProjects();
-    } else if (!authLoading && !session) {
-      setLoading(false);
+    if (!authLoading) {
+      if (session) {
+        fetchProjects();
+      } else {
+        setLoading(false);
+      }
     }
-
-    // Safety timeout for local loading state
-    const timeout = setTimeout(() => {
-      if (mounted) setLoading(false);
-    }, 5000);
 
     return () => {
       mounted = false;
-      clearTimeout(timeout);
     };
-  }, [user, authLoading, session, profile]);
+  }, [user, authLoading, session]);
 
-  if (authLoading) {
+  if (authLoading || (loading && session)) {
     return (
       <Layout>
         <div className="flex min-h-[60vh] items-center justify-center">
@@ -138,9 +129,7 @@ const Dashboard = () => {
             />
           </div>
 
-          {loading ? (
-            <div className="flex py-20 justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-          ) : filteredProjects.length > 0 ? (
+          {filteredProjects.length > 0 ? (
             <div className="grid gap-4">
               {filteredProjects.map((project) => {
                 const created = new Date(project.created_at).getTime();

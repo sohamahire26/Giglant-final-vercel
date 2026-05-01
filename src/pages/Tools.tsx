@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
-import { FileEdit, ArrowRight } from "lucide-react";
+import { FileEdit, ArrowRight, Receipt } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import FAQSection from "@/components/FAQSection";
 
 const tools = [
   { name: "File Renamer", description: "Professional file renaming with auto-detection and numbering. Organize your editing pipeline — stop naming files v1-final-final2.", icon: FileEdit, href: "/tools/file-renamer" },
+  { name: "Payment Generator", description: "Create professional payment requests and reminders using deterministic templates. Get paid faster with clear communication.", icon: Receipt, href: "/tools/payment-generator" },
 ];
 
 const toolsFAQ = [
@@ -18,7 +19,7 @@ const ToolsPage = () => (
   <Layout>
     <SEOHead
       title="Free Online Tools for Video Editing Workflow & Freelancers | Giglant"
-      description="Browse Giglant's free tools for video editing workflow, freelancer workflow, and post production. Professional file renaming to streamline your editing pipeline."
+      description="Browse Giglant's free tools for video editing workflow, freelancer workflow, and post production. Professional file renaming and payment request tools."
     />
     <section className="section-padding">
       <div className="container-tight">

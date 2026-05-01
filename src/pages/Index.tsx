@@ -10,7 +10,7 @@ import { useAuth } from "@/components/AuthProvider";
 const tools = [
   { name: "File Renamer", description: "Professional file renaming with numbering. Organize your editing pipeline instantly.", icon: FileEdit, href: "/tools/file-renamer", color: "bg-primary/10 text-primary" },
   { name: "Delivery Assistant", description: "Generate professional hand-off messages for your clients.", icon: Send, href: "/dashboard", color: "bg-primary/10 text-primary" },
-  { name: "Payment Generator", description: "Create polite but firm payment requests and reminders.", icon: Receipt, href: "/dashboard", color: "bg-primary/10 text-primary" },
+  { name: "Payment Generator", description: "Create polite but firm payment requests and reminders.", icon: Receipt, href: "/tools/payment-generator", color: "bg-primary/10 text-primary" },
 ];
 
 const homeFAQ = [

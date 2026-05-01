@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ToolsPage from "./pages/Tools";
 import FileRenamer from "./pages/tools/FileRenamer";
+import PaymentGenerator from "./pages/tools/PaymentGenerator";
 import Blog from "./pages/Blog";
 import BlogCategory from "./pages/BlogCategory";
 import BlogPost from "./pages/BlogPost";
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/tools" element={<ToolsPage />} />
             <Route path="/tools/file-renamer" element={<FileRenamer />} />
+            <Route path="/tools/payment-generator" element={<PaymentGenerator />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/write" element={<BlogWriter />} />
             <Route path="/blog/admin" element={<BlogAdmin />} />

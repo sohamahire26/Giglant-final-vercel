@@ -16,35 +16,69 @@ const Dashboard = () => {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
+    let mounted = true;
+
+    const fetchProjects = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from("projects")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+
+        if (!mounted) return;
+
+        if (!error) {
+          const now = new Date().getTime();
+          const isPro = profile?.plan_type === 'pro';
+          const expiryDays = isPro ? 60 : 15;
+          const expiryMs = expiryDays * 24 * 60 * 60 * 1000;
+
+          // Filter out projects that have exceeded their deletion window
+          const activeProjects = (data || []).filter(p => {
+            const created = new Date(p.created_at).getTime();
+            return now - created < expiryMs;
+          });
+          setProjects(activeProjects);
+        }
+      } catch (err) {
+        console.error("Error fetching projects:", err);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
     if (user) {
       fetchProjects();
+    } else if (!authLoading && !session) {
+      setLoading(false);
     }
-  }, [user]);
 
-  const fetchProjects = async () => {
-    const { data, error } = await supabase
-      .from("projects")
-      .select("*")
-      .eq("user_id", user?.id)
-      .order("created_at", { ascending: false });
+    // Safety timeout for local loading state
+    const timeout = setTimeout(() => {
+      if (mounted) setLoading(false);
+    }, 5000);
 
-    if (!error) {
-      const now = new Date().getTime();
-      const isPro = profile?.plan_type === 'pro';
-      const expiryDays = isPro ? 60 : 15;
-      const expiryMs = expiryDays * 24 * 60 * 60 * 1000;
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+    };
+  }, [user, authLoading, session, profile]);
 
-      // Filter out projects that have exceeded their deletion window
-      const activeProjects = (data || []).filter(p => {
-        const created = new Date(p.created_at).getTime();
-        return now - created < expiryMs;
-      });
-      setProjects(activeProjects);
-    }
-    setLoading(false);
-  };
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
-  if (authLoading) return <Layout><div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
   if (!session) return <Navigate to="/login" replace />;
 
   const filteredProjects = projects.filter(p => 

@@ -29,7 +29,7 @@ const Footer = () => (
             <img src={logo} alt="Giglant — Video Editing Workflow Tools" className="h-40 w-auto" />
           </Link>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Smart tools for video editing workflow, freelancer workflow, and post production. Streamline your editing pipeline and client delivery workflow.
+            Professional tools for video editing workflow, freelancer workflow, and post production. Streamline your editing pipeline and client delivery workflow.
           </p>
         </div>
         {Object.entries(footerLinks).map(([category, links]) => (
@@ -49,7 +49,7 @@ const Footer = () => (
       </div>
       <div className="mt-12 border-t border-border pt-8 text-center">
         <p className="text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Giglant. Smart tools for video editing workflow, freelancer workflow, and content workflow. All rights reserved.
+          © {new Date().getFullYear()} Giglant. Professional tools for video editing workflow, freelancer workflow, and content workflow. All rights reserved.
         </p>
       </div>
     </div>

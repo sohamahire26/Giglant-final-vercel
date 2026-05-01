@@ -1,164 +1,199 @@
-"use client";
-
 import { useState } from "react";
-import { ClipboardCopy, Info, MessageSquare, Sparkles, Loader2, User, Building, Link as LinkIcon, MessageSquareText, HelpCircle } from "lucide-react";
+import { MessageSquare, Copy, Mail, Info, CheckCircle2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import FAQSection from "@/components/FAQSection";
-import type { Project } from "./types";
 
-declare const puter: any;
-
-interface Props { project: Project; }
-
-const DELIVERY_TYPE_INFO = {
-  draft: "Use this for early versions. It sets expectations that the work is in progress and you're looking for initial direction.",
-  final: "Use this when the project is complete. It sounds polished, conclusive, and ready for official sign-off.",
-  revision: "Use this when sending updates based on feedback. It highlights that you've specifically addressed their notes."
-};
-
-const DeliveryTab = ({ project }: Props) => {
-  const [userName, setUserName] = useState("");
-  const [clientName, setClientName] = useState(project.client_name || "");
-  const [companyName, setCompanyName] = useState("");
-  const [reviewLink, setReviewLink] = useState(`${window.location.origin}/client/${project.share_token}`);
-  const [deliveryType, setDeliveryType] = useState<"draft" | "final" | "revision">("final");
-  const [deliveryTone, setDeliveryTone] = useState("professional");
-  const [customPrompt, setCustomPrompt] = useState("");
-  const [deliveryOutput, setDeliveryOutput] = useState("");
-  const [generating, setGenerating] = useState(false);
+const DeliveryTab = () => {
   const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    client_name: "",
+    project_name: "",
+    delivery_link: "",
+    notes: ""
+  });
 
-  const generate = async () => {
-    setGenerating(true);
-    try {
-      const prompt = `Generate a professional ${deliveryTone} delivery message.
-      Context:
-      - Freelancer Name: ${userName || 'the freelancer'}
-      - Client Name: ${clientName || 'Client'}
-      - Company: ${companyName || 'their company'}
-      - Project: ${project.name}
-      - Work Type: ${project.work_type}
-      - Stage: ${deliveryType}
-      - Review Link: ${reviewLink}
-      ${customPrompt ? `- Additional Instructions: ${customPrompt}` : ""}
-      
-      Make it concise, professional, and include the review link clearly.`;
-      
-      const response = await puter.ai.chat(prompt);
-      setDeliveryOutput(response.toString().trim());
-    } catch (err) {
-      toast({ title: "AI Generation failed", variant: "destructive" });
-    } finally {
-      setGenerating(false);
+  const [output, setOutput] = useState<{ subject: string; body: string } | null>(null);
+
+  const generateMessage = () => {
+    if (!formData.client_name || !formData.project_name) {
+      toast({
+        title: "Missing Fields",
+        description: "Please fill in Client Name and Project Name.",
+        variant: "destructive"
+      });
+      return;
     }
+
+    const subject = `Project Delivery: ${formData.project_name}`;
+    const body = `Hi ${formData.client_name},
+
+I'm excited to share that the work for ${formData.project_name} is ready for your review!
+
+${formData.delivery_link ? `You can access the files here: ${formData.delivery_link}\n` : ""}
+${formData.notes ? `\nNotes:\n${formData.notes}\n` : ""}
+Please let me know if you have any questions or if there's anything else you need.
+
+Best regards,`;
+
+    setOutput({ subject, body });
+    toast({
+      title: "Message Generated",
+      description: "Your delivery message is ready."
+    });
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: `${label} copied to clipboard.`
+    });
+  };
+
+  const openInGmail = () => {
+    if (!output) return;
+    const mailtoUrl = `mailto:?subject=${encodeURIComponent(output.subject)}&body=${encodeURIComponent(output.body)}`;
+    window.open(mailtoUrl, "_blank");
   };
 
   return (
     <div className="space-y-8">
       <div className="mb-8 text-center">
-        <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">AI Delivery Assistant</h1>
+        <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">Delivery Assistant</h1>
+        <p className="mt-4 text-base text-muted-foreground max-w-2xl mx-auto">
+          Craft professional messages to accompany your project deliveries.
+        </p>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <div className="rounded-2xl border border-border bg-card p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <h2 className="font-display text-lg font-semibold text-foreground">Message Details</h2>
-            </div>
-            
-            <div className="grid gap-4 md:grid-cols-2 mb-6">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase">Your Name</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <input type="text" value={userName} onChange={e => setUserName(e.target.value)} placeholder="Your Name" className="w-full rounded-lg border border-border bg-background pl-9 pr-4 py-2 text-sm focus:border-primary focus:outline-none" />
-                </div>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase">Client Name</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <input type="text" value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Client Name" className="w-full rounded-lg border border-border bg-background pl-9 pr-4 py-2 text-sm focus:border-primary focus:outline-none" />
-                </div>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase">Company</label>
-                <div className="relative">
-                  <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Company Name" className="w-full rounded-lg border border-border bg-background pl-9 pr-4 py-2 text-sm focus:border-primary focus:outline-none" />
-                </div>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase">Review Link</label>
-                <div className="relative">
-                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <input type="text" value={reviewLink} onChange={e => setReviewLink(e.target.value)} placeholder="Review Link" className="w-full rounded-lg border border-border bg-background pl-9 pr-4 py-2 text-sm focus:border-primary focus:outline-none" />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-foreground">Delivery Type</label>
-                <div className="flex flex-wrap gap-2">
-                  {(["draft", "final", "revision"] as const).map(key => (
-                    <button key={key} onClick={() => setDeliveryType(key)} className={`rounded-lg px-4 py-2 text-sm font-medium capitalize transition-all ${deliveryType === key ? "bg-primary text-primary-foreground shadow-md" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}>{key}</button>
-                  ))}
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground flex items-start gap-1.5 italic">
-                  <HelpCircle className="h-3 w-3 mt-0.5 shrink-0" />
-                  {DELIVERY_TYPE_INFO[deliveryType]}
-                </p>
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-foreground">Message Tone</label>
-                <div className="flex flex-wrap gap-2">
-                  {["friendly", "professional", "premium", "urgent"].map(t => (
-                    <button key={t} onClick={() => setDeliveryTone(t)} className={`rounded-lg px-4 py-2 text-sm font-medium capitalize transition-all ${deliveryTone === t ? "bg-primary text-primary-foreground shadow-md" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"}`}>{t}</button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground flex items-center gap-2">
-                  <MessageSquareText className="h-4 w-4 text-primary" /> Custom Instructions (Optional)
-                </label>
-                <textarea 
-                  value={customPrompt} 
-                  onChange={e => setCustomPrompt(e.target.value)} 
-                  placeholder="e.g., Mention that I'm going on vacation next week, or ask them to check the color grading specifically." 
-                  rows={2}
-                  className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none resize-none" 
-                />
-              </div>
-
-              <Button onClick={generate} className="w-full h-12 text-base" disabled={generating}>
-                {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                {generating ? "AI is writing..." : "Generate AI Message"}
-              </Button>
-            </div>
-
-            {deliveryOutput && (
-              <div className="mt-8 animate-in fade-in slide-in-from-bottom-2">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-semibold text-foreground flex items-center gap-2"><MessageSquare className="h-4 w-4 text-primary" /> AI Generated Message</label>
-                  <button onClick={() => { navigator.clipboard.writeText(deliveryOutput); toast({ title: "Copied!" }); }} className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80"><ClipboardCopy className="h-3.5 w-3.5" /> Copy</button>
-                </div>
-                <textarea value={deliveryOutput} onChange={e => setDeliveryOutput(e.target.value)} className="h-64 w-full rounded-xl border border-border bg-background p-5 text-sm leading-relaxed text-foreground focus:border-primary focus:outline-none resize-none shadow-inner" />
-              </div>
-            )}
+      <div className="grid gap-8 lg:grid-cols-2">
+        <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <Send className="h-5 w-5 text-primary" />
+            <h2 className="font-display text-lg font-semibold text-foreground">Delivery Details</h2>
           </div>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Client Name *</label>
+              <Input 
+                placeholder="Jane Smith" 
+                value={formData.client_name}
+                onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Project Name *</label>
+              <Input 
+                placeholder="Logo Design / Website Revamp" 
+                value={formData.project_name}
+                onChange={(e) => setFormData({ ...formData, project_name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Delivery Link (Optional)</label>
+              <Input 
+                placeholder="https://dropbox.com/s/..." 
+                value={formData.delivery_link}
+                onChange={(e) => setFormData({ ...formData, delivery_link: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Additional Notes</label>
+              <Textarea 
+                placeholder="Mention specific files, next steps, or revision process..." 
+                className="min-h-[120px]"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <Button onClick={generateMessage} className="w-full" size="lg">
+            Generate Delivery Message
+          </Button>
         </div>
-        <div className="lg:col-span-1 space-y-6">
-          <div className="rounded-2xl border border-border bg-card p-6">
-            <div className="flex items-center gap-2 mb-4"><Info className="h-5 w-5 text-primary" /><h3 className="font-display text-sm font-semibold text-foreground">AI Benefits</h3></div>
-            <p className="text-xs text-muted-foreground leading-relaxed">AI analyzes your project context to write messages that increase client satisfaction and reduce friction.</p>
+
+        <div className="space-y-6">
+          {output ? (
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm animate-in fade-in slide-in-from-bottom-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-display text-lg font-semibold text-foreground">Generated Message</h2>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(output.subject, "Subject")}>
+                    <Copy className="mr-2 h-4 w-4" /> Subject
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => copyToClipboard(output.body, "Message")}>
+                    <Copy className="mr-2 h-4 w-4" /> Message
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="rounded-lg border border-border bg-background p-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Subject</p>
+                  <p className="text-sm font-medium text-foreground">{output.subject}</p>
+                </div>
+                <div className="rounded-lg border border-border bg-background p-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Body</p>
+                  <div className="whitespace-pre-wrap text-sm text-foreground leading-relaxed">
+                    {output.body}
+                  </div>
+                </div>
+                <Button onClick={openInGmail} className="w-full bg-[#EA4335] hover:bg-[#d33426] text-white">
+                  <Mail className="mr-2 h-4 w-4" /> Open in Gmail
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex h-full min-h-[300px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-card/50 p-12 text-center">
+              <div className="rounded-full bg-primary/10 p-4 mb-4">
+                <Send className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">No message generated yet</h3>
+              <p className="mt-2 text-sm text-muted-foreground max-w-xs">
+                Fill in the delivery details and click "Generate" to create your professional hand-off message.
+              </p>
+            </div>
+          )}
+
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Info className="h-5 w-5 text-primary" />
+              <h3 className="font-display text-sm font-semibold text-foreground">Delivery Tips</h3>
+            </div>
+            <ul className="space-y-3">
+              {[
+                "Always include a clear link to the final files.",
+                "Briefly mention the next steps (e.g., feedback period).",
+                "Keep the tone professional and appreciative.",
+                "Double-check that all requested assets are included."
+              ].map((tip, i) => (
+                <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                  <span>{tip}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>
-      <FAQSection title="Delivery FAQ" items={[{ question: "How does it work?", answer: "It uses Puter AI to craft messages based on your project details and selected tone." }]} />
+
+      <FAQSection 
+        title="Delivery FAQ" 
+        items={[
+          { 
+            question: "How does this help my workflow?", 
+            answer: "It ensures you send consistent, professional messages every time you deliver work, which builds trust and reduces back-and-forth." 
+          },
+          { 
+            question: "Can I customize the message?", 
+            answer: "Yes, you can use the 'Additional Notes' field to add specific details, or edit the message directly after copying it to your email client." 
+          }
+        ]} 
+      />
     </div>
   );
 };

@@ -38,14 +38,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    if (!error && data) {
-      setProfile(data as unknown as Profile);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (!error && data) {
+        setProfile(data as unknown as Profile);
+      }
+    } catch (err) {
+      console.error("Error fetching profile:", err);
     }
   };
 
@@ -54,24 +58,47 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id).finally(() => setLoading(false));
-      } else {
+    let mounted = true;
+
+    // Safety timeout to prevent infinite loading
+    const safetyTimeout = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn("Auth initialization timed out, forcing loading to false");
         setLoading(false);
       }
-    });
+    }, 5000);
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    const initAuth = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        if (!mounted) return;
+
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
+        
+        if (initialSession?.user) {
+          await fetchProfile(initialSession.user.id);
+        }
+      } catch (err) {
+        console.error("Auth initialization error:", err);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+          clearTimeout(safetyTimeout);
+        }
+      }
+    };
+
+    initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      if (!mounted) return;
+
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
       
-      if (session?.user) {
-        await fetchProfile(session.user.id);
+      if (currentSession?.user) {
+        await fetchProfile(currentSession.user.id);
       } else {
         setProfile(null);
       }
@@ -83,7 +110,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+      clearTimeout(safetyTimeout);
+    };
   }, []);
 
   const signOut = async () => {

@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider";
 
 const tools = [
-  { name: "File Renamer", description: "Smart file renaming with auto-detection and numbering. Organize your editing pipeline instantly.", icon: FileEdit, href: "/tools/file-renamer", color: "bg-primary/10 text-primary" },
+  { name: "File Renamer", description: "Professional file renaming with numbering. Organize your editing pipeline instantly.", icon: FileEdit, href: "/tools/file-renamer", color: "bg-primary/10 text-primary" },
+  { name: "Delivery Assistant", description: "Generate professional hand-off messages for your clients.", icon: Send, href: "/dashboard", color: "bg-primary/10 text-primary" },
+  { name: "Payment Generator", description: "Create polite but firm payment requests and reminders.", icon: Receipt, href: "/dashboard", color: "bg-primary/10 text-primary" },
 ];
 
 const homeFAQ = [
-  { question: "Is Giglant free to use?", answer: "Yes! All tools on Giglant are completely free. We build smart tools for video editing workflow, freelancer workflow, and content workflow — no hidden costs." },
+  { question: "Is Giglant free to use?", answer: "Yes! All tools on Giglant are completely free. We build professional tools for video editing workflow, freelancer workflow, and content workflow — no hidden costs." },
   { question: "Are my files safe?", answer: "Absolutely. Your files are processed directly in your browser. We don't upload, store, or access any of your files — essential for secure client delivery workflow." },
   { question: "Do I need to create an account?", answer: "You can use basic tools without an account, but creating one allows you to save projects, track revisions, and manage client feedback in a private workspace." },
 ];
@@ -28,8 +30,8 @@ const Index = () => {
   return (
     <Layout>
       <SEOHead
-        title="Giglant — Smart Tools for Video Editing Workflow & Freelancers"
-        description="Smart online tools for video editing workflow, freelancer workflow, and post production. File renaming, video review, revision tracking, and client delivery workflow tools. Free and browser-based."
+        title="Giglant — Professional Tools for Video Editing Workflow & Freelancers"
+        description="Professional online tools for video editing workflow, freelancer workflow, and post production. File renaming, video review, revision tracking, and client delivery workflow tools. Free and browser-based."
       />
 
       {/* Hero */}
@@ -44,7 +46,7 @@ const Index = () => {
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
             className="mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
-            Smart tools for your video editing workflow, freelancer workflow, and post production pipeline. Rename files, get timestamped video feedback, generate messages — all in your browser.
+            Professional tools for your video editing workflow, freelancer workflow, and post production pipeline. Rename files, get timestamped video feedback, generate messages — all in your browser.
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-8 flex flex-wrap gap-4">
             {session ? (

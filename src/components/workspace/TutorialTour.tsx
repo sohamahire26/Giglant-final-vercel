@@ -158,7 +158,7 @@ const TutorialTour = ({ steps, currentStep, onNext, onBack, onDismiss }: Props) 
               {currentStep + 1}
             </div>
             <h3 className="font-display text-base font-bold text-foreground flex items-center gap-2">
-              {step.title} {currentStep === 0 && <Sparkles className="h-4 w-4 text-amber-500" />}
+              {step.title}
             </h3>
           </div>
           

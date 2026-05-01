@@ -23,11 +23,11 @@ const db = supabase as any;
 const freelancerSteps: TourStep[] = [
   { title: "Welcome to Your Workspace! 🚀", desc: "This is where you manage your entire client project. Let's walk through the tools that will save you hours of work." },
   { targetId: "ws-share-card", title: "The Magic Link 🔗", desc: "This is your most important tool. Copy this link and send it to your client. They can view files and leave feedback instantly—no login required for them!" },
-  { targetId: "ws-renamer-tab-btn", title: "Smart File Renamer 📝", desc: "Use our free Smart File Renamer tool to clean up messy filenames before uploading. It auto-detects document types and organizes files with proper naming." },
+  { targetId: "ws-renamer-tab-btn", title: "File Renamer 📝", desc: "Use our free File Renamer tool to clean up messy filenames before uploading. It cleans up formatting and organizes files with proper naming." },
   { targetId: "ws-files-tab-btn", title: "Files & Feedback 📁", desc: "Upload your work here by pasting Google Drive links. Select the file type (Video/Audio gets timestamp feedback, others get standard comments). We'll generate a professional preview for your client." },
   { targetId: "ws-revisions-tab-btn", title: "Revision Checklist ✅", desc: "Once your client leaves feedback, it all appears here as an organized checklist. Mark items as resolved as you work through them." },
-  { targetId: "ws-delivery-tab-btn", title: "Smart Delivery ✉️", desc: "Ready to send a draft or final version? Use this to generate professional, psychology-backed messages that make you look like a pro." },
-  { targetId: "ws-invoice-tab-btn", title: "Get Paid Faster 💰", desc: "Generate polite but firm invoice messages and payment reminders. No more awkward 'where is my money' emails." },
+  { targetId: "ws-delivery-tab-btn", title: "Delivery Assistant ✉️", desc: "Ready to send a draft or final version? Use this to generate professional messages that make you look like a pro." },
+  { targetId: "ws-invoice-tab-btn", title: "Payment Generator 💰", desc: "Generate polite but firm payment requests and reminders. No more awkward 'where is my money' emails." },
 ];
 
 const tabs = [
@@ -36,7 +36,7 @@ const tabs = [
   { id: "files", label: "Files & Feedback", icon: MessageSquare },
   { id: "revisions", label: "Revisions", icon: CheckSquare },
   { id: "delivery", label: "Delivery", icon: Send },
-  { id: "invoice", label: "Invoice", icon: Receipt },
+  { id: "invoice", label: "Payment", icon: Receipt },
 ];
 
 const ProjectWorkspace = () => {

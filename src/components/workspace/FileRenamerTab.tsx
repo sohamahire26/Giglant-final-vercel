@@ -1,14 +1,8 @@
 import { useState, useCallback } from "react";
-import { Upload, Download, FileIcon, X, Wand2, Loader2, RefreshCw, Sparkles, FileArchive, Info, Zap, History, ListChecks } from "lucide-react";
+import { Upload, Download, FileIcon, X, Loader2, FileArchive, Info, Zap, History, ListChecks, ArrowRight } from "lucide-react";
 import FAQSection from "@/components/FAQSection";
 import { Button } from "@/components/ui/button";
-import * as pdfjsLib from "pdfjs-dist";
-import exifr from "exifr";
 import JSZip from "jszip";
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-
-declare const puter: any;
 
 interface RenamedFile {
   original: File;
@@ -49,63 +43,31 @@ const getTypeCategory = (ext: string): string => {
   return "File";
 };
 
-const extractPdfText = async (file: File): Promise<string> => {
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    const maxPages = Math.min(pdf.numPages, 2);
-    let fullText = "";
-    for (let i = 1; i <= maxPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const pageText = content.items.map((item: any) => (item as any).str).join(" ");
-      fullText += pageText + " ";
-    }
-    return fullText.substring(0, 1500);
-  } catch { return ""; }
-};
-
-const extractImageMetadata = async (file: File) => {
-  try {
-    const exif = await exifr.parse(file, { pick: ["Make","Model","DateTimeOriginal","ImageDescription"] });
-    return exif || {};
-  } catch { return {}; }
-};
-
-const smartRename = async (file: File): Promise<{ name: string; type: string; category: string }> => {
+const simpleRename = (file: File): { name: string; type: string; category: string } => {
   const ext = file.name.includes(".") ? "." + file.name.split(".").pop()!.toLowerCase() : "";
   const extClean = ext.replace(".", "");
   const category = getTypeCategory(extClean);
   const typeLabel = FILE_TYPE_LABELS[extClean] || "File";
 
-  let context = `Original Filename: ${file.name}\nFile Type: ${typeLabel}\nCategory: ${category}\n`;
-  if (extClean === "pdf") {
-    const text = await extractPdfText(file);
-    if (text) context += `Content Snippet: ${text}\n`;
-  } else if (["jpg","jpeg","png"].includes(extClean)) {
-    const meta = await extractImageMetadata(file);
-    if (Object.keys(meta).length) context += `Metadata: ${JSON.stringify(meta)}\n`;
-  }
-
-  try {
-    const response = await puter.ai.chat(`Suggest a professional filename for this file. Return ONLY the filename without extension. Use hyphens. Context:\n${context}`);
-    const suggestedName = response.toString().trim().replace(/\.[^/.]+$/, "").replace(/\s+/g, "-");
-    return { name: suggestedName + ext, type: typeLabel, category };
-  } catch (err) {
-    return { name: file.name, type: typeLabel, category };
-  }
+  // Simple rule-based renaming: clean up the original name
+  const baseName = file.name.replace(/\.[^/.]+$/, "")
+    .replace(/[^a-z0-9]/gi, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  
+  return { name: baseName + ext, type: typeLabel, category };
 };
 
 const faq = [
-  { question: "How does the AI analyze my files?", answer: "It uses Puter AI to read document text (PDFs), image metadata (EXIF), and video properties to understand the content and suggest a meaningful name." },
-  { question: "Is my data safe?", answer: "Yes. Files are processed locally in your browser. Only small text snippets or metadata are sent to the AI for naming suggestions. Your actual files never leave your device." },
+  { question: "How does the renamer work?", answer: "It analyzes your file extensions to categorize them and cleans up the filenames by removing special characters and replacing spaces with hyphens for better compatibility." },
+  { question: "Is my data safe?", answer: "Yes. All processing happens entirely in your browser. Your files are never uploaded to any server." },
   { question: "What is the numbering system?", answer: "The tool automatically groups files by category (e.g., Video, Image) and adds a sequential number to keep your project organized." },
 ];
 
 const examples = [
-  { original: "IMG_8242.jpg", renamed: "Photo-1-Sunset-Beach-Malibu.jpg", note: "AI detected location and subject from metadata." },
-  { original: "draft_v1_final.pdf", renamed: "Document-1-Project-Proposal-Q4.pdf", note: "AI read the document title from the first page." },
-  { original: "sequence_01.mp4", renamed: "Video-1-Interview-Main-Angle.mp4", note: "AI analyzed the context to provide a descriptive name." },
+  { original: "IMG_8242.jpg", renamed: "Photo-1-IMG-8242.jpg", note: "Categorized as Photo and cleaned up." },
+  { original: "draft v1 final.pdf", renamed: "Document-1-draft-v1-final.pdf", note: "Spaces replaced with hyphens." },
+  { original: "sequence_01.mp4", renamed: "Video-1-sequence-01.mp4", note: "Categorized as Video." },
 ];
 
 const FileRenamerTab = () => {
@@ -116,19 +78,36 @@ const FileRenamerTab = () => {
   const handleFiles = useCallback(async (fileList: FileList) => {
     const incoming = Array.from(fileList).map((f) => ({ original: f, newName: f.name, status: "processing" as const }));
     setFiles((prev) => [...prev, ...incoming]);
+    
     const categoryCounts: Record<string, number> = {};
-    for (const entry of incoming) {
-      const result = await smartRename(entry.original);
-      setFiles((prev) => {
-        const cat = result.category;
-        categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
-        const num = categoryCounts[cat];
-        const ext = result.name.includes(".") ? "." + result.name.split(".").pop() : "";
-        const namePart = result.name.replace(/\.[^/.]+$/, "");
-        const finalName = `${cat}-${num}-${namePart}${ext}`;
-        return prev.map((f) => f.original === entry.original ? { ...f, newName: finalName, detectedType: result.type, typeCategory: cat, status: "done" as const } : f);
+    
+    // Process files
+    const processed = incoming.map((entry) => {
+      const result = simpleRename(entry.original);
+      const cat = result.category;
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+      const num = categoryCounts[cat];
+      const ext = result.name.includes(".") ? "." + result.name.split(".").pop() : "";
+      const namePart = result.name.replace(/\.[^/.]+$/, "");
+      const finalName = `${cat}-${num}-${namePart}${ext}`;
+      
+      return {
+        ...entry,
+        newName: finalName,
+        detectedType: result.type,
+        typeCategory: cat,
+        status: "done" as const
+      };
+    });
+
+    setFiles((prev) => {
+      const updated = [...prev];
+      processed.forEach(p => {
+        const idx = updated.findIndex(f => f.original === p.original && f.status === "processing");
+        if (idx !== -1) updated[idx] = p;
       });
-    }
+      return updated;
+    });
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -163,20 +142,20 @@ const FileRenamerTab = () => {
   return (
     <div className="space-y-8">
       <div className="mb-8 text-center">
-        <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">AI Smart File Renamer</h1>
-        <p className="mt-4 text-base text-muted-foreground max-w-2xl mx-auto">Drop files to get professional names with auto-numbering. Powered by Puter AI.</p>
+        <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">File Renamer</h1>
+        <p className="mt-4 text-base text-muted-foreground max-w-2xl mx-auto">Drop files to get professional names with auto-numbering and clean formatting.</p>
       </div>
 
       {/* How to Use Section */}
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="flex items-center gap-2 mb-6">
           <Info className="h-5 w-5 text-primary" />
-          <h2 className="font-display text-lg font-semibold text-foreground">How to Use the AI Renamer</h2>
+          <h2 className="font-display text-lg font-semibold text-foreground">How to Use the Renamer</h2>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           {[
             { step: "1", title: "Upload Files", desc: "Drag and drop your messy files into the box below." },
-            { step: "2", title: "AI Analysis", desc: "AI reads metadata and content to suggest professional names." },
+            { step: "2", title: "Auto-Formatting", desc: "Files are categorized and names are cleaned for consistency." },
             { step: "3", title: "Download", desc: "Download files individually or as a single ZIP archive." },
           ].map(s => (
             <div key={s.step} className="rounded-xl border border-border bg-background p-4 text-center">
@@ -197,7 +176,7 @@ const FileRenamerTab = () => {
       {files.length > 0 && (
         <div className="mt-8">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-            <h2 className="font-display text-xl font-semibold text-foreground">AI Suggestions ({files.length})</h2>
+            <h2 className="font-display text-xl font-semibold text-foreground">Suggestions ({files.length})</h2>
             <div className="flex gap-2 flex-wrap">
               <Button onClick={clearAll} variant="outline" size="sm">Clear All</Button>
               <Button onClick={downloadAll} variant="outline" size="sm"><Download className="mr-1 h-4 w-4" /> Download All</Button>
@@ -217,7 +196,7 @@ const FileRenamerTab = () => {
                     {f.detectedType && f.status === "done" && <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">{f.detectedType}</span>}
                   </div>
                   {f.status === "processing" ? (
-                    <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin text-primary" /> AI is analyzing...</div>
+                    <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin text-primary" /> Processing...</div>
                   ) : (
                     <input type="text" value={f.newName} onChange={(e) => updateName(i, e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground focus:border-primary focus:outline-none" />
                   )}
@@ -234,7 +213,7 @@ const FileRenamerTab = () => {
 
       {/* Real Examples */}
       <div className="mt-16">
-        <h2 className="font-display text-2xl font-bold text-foreground mb-6">Real Examples — AI Renaming</h2>
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">Real Examples — File Renaming</h2>
         <div className="space-y-3">
           {examples.map((ex, i) => (
             <div key={i} className="rounded-xl border border-border bg-card p-4">
@@ -256,8 +235,8 @@ const FileRenamerTab = () => {
         <h2 className="font-display text-2xl font-bold text-foreground mb-6">How It Works — Smart Organization</h2>
         <div className="grid gap-4 md:grid-cols-4">
           {[
-            { step: "Content Scan", desc: "AI reads the first pages of documents and image metadata." },
-            { step: "Contextual Naming", desc: "Generates a descriptive name based on what's inside the file." },
+            { step: "Extension Analysis", desc: "Identifies file types to categorize them correctly." },
+            { step: "Name Cleaning", desc: "Removes special characters and fixes formatting." },
             { step: "Auto-Numbering", desc: "Groups files by type and adds sequential numbers." },
             { step: "Batch Export", desc: "Download everything at once in a clean, organized ZIP." },
           ].map((s, i) => (
@@ -272,15 +251,15 @@ const FileRenamerTab = () => {
 
       {/* About Section */}
       <div className="mt-16">
-        <h2 className="font-display text-2xl font-bold text-foreground mb-6">About AI Renaming — Clarity & Speed</h2>
+        <h2 className="font-display text-2xl font-bold text-foreground mb-6">About File Renaming — Clarity & Speed</h2>
         <div className="prose max-w-none text-muted-foreground space-y-3 text-sm leading-relaxed">
           <p>
-            The AI File Renamer is built to solve the "final-final-v2.mp4" problem. By using <strong>Puter AI</strong>, we can understand the actual content of your files rather than just looking at the existing name.
+            The File Renamer is built to solve the "final-final-v2.mp4" problem. By using consistent naming conventions, you can keep your project assets organized and professional.
           </p>
           <p>
             This tool is essential for <strong>video editing workflows</strong> and <strong>freelancer pipelines</strong> where keeping track of hundreds of assets is the difference between a smooth project and a nightmare.
           </p>
-          <h3 className="font-display text-lg font-semibold text-foreground">Why Use AI Renaming?</h3>
+          <h3 className="font-display text-lg font-semibold text-foreground">Why Use File Renaming?</h3>
           <ul className="list-disc list-inside space-y-1">
             <li><ListChecks className="inline h-3 w-3 mr-1" /> <strong>Consistency:</strong> Every file follows the same professional format.</li>
             <li><Zap className="inline h-3 w-3 mr-1" /> <strong>Speed:</strong> Rename 50 files in seconds instead of minutes.</li>
@@ -293,9 +272,5 @@ const FileRenamerTab = () => {
     </div>
   );
 };
-
-const ArrowRight = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-);
 
 export default FileRenamerTab;

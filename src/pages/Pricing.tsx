@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const PricingPage = () => {
-  const { session, profile } = useAuth();
+  const { session, profile, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -120,6 +120,16 @@ const PricingPage = () => {
       isPro: true,
     }
   ];
+
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

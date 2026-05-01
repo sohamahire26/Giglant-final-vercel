@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MessageSquare, Copy, Mail, History, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
+import { MessageSquare, Copy, Mail, History, Trash2, CheckCircle2, AlertCircle, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +10,7 @@ import type { Project } from "./types";
 
 type MessageType = "INITIAL" | "REMINDER" | "FINAL";
 
-interface PaymentMessage {
+interface InvoiceMessage {
   id: string;
   subject: string;
   body: string;
@@ -80,10 +80,10 @@ const InvoiceTab = ({ project }: Props) => {
   });
 
   const [output, setOutput] = useState<{ subject: string; body: string } | null>(null);
-  const [history, setHistory] = useState<PaymentMessage[]>([]);
+  const [history, setHistory] = useState<InvoiceMessage[]>([]);
 
   useEffect(() => {
-    const savedHistory = localStorage.getItem("payment_message_history");
+    const savedHistory = localStorage.getItem("invoice_message_history");
     if (savedHistory) {
       try {
         setHistory(JSON.parse(savedHistory));
@@ -94,7 +94,7 @@ const InvoiceTab = ({ project }: Props) => {
   }, []);
 
   const saveToHistory = (subject: string, body: string) => {
-    const newMessage: PaymentMessage = {
+    const newMessage: InvoiceMessage = {
       id: crypto.randomUUID(),
       subject,
       body,
@@ -104,7 +104,7 @@ const InvoiceTab = ({ project }: Props) => {
     };
     const updatedHistory = [newMessage, ...history].slice(0, 10);
     setHistory(updatedHistory);
-    localStorage.setItem("payment_message_history", JSON.stringify(updatedHistory));
+    localStorage.setItem("invoice_message_history", JSON.stringify(updatedHistory));
   };
 
   const generateMessage = () => {
@@ -136,7 +136,6 @@ const InvoiceTab = ({ project }: Props) => {
       body = body.replace("{custom_instructions}", "");
     }
 
-    // Clean up double newlines if custom instructions were empty
     body = body.replace(/\n\n\n/g, "\n\n");
 
     setOutput({ subject, body });
@@ -144,7 +143,7 @@ const InvoiceTab = ({ project }: Props) => {
     
     toast({
       title: "Message Generated",
-      description: "Your payment message is ready."
+      description: "Your invoice message is ready."
     });
   };
 
@@ -165,24 +164,23 @@ const InvoiceTab = ({ project }: Props) => {
   const deleteHistoryItem = (id: string) => {
     const updatedHistory = history.filter(item => item.id !== id);
     setHistory(updatedHistory);
-    localStorage.setItem("payment_message_history", JSON.stringify(updatedHistory));
+    localStorage.setItem("invoice_message_history", JSON.stringify(updatedHistory));
   };
 
   return (
     <div className="space-y-8">
       <div className="mb-8 text-center">
-        <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">Payment Message Generator</h1>
+        <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">Invoice Message Generator</h1>
         <p className="mt-4 text-base text-muted-foreground max-w-2xl mx-auto">
-          Generate professional payment requests and reminders using deterministic templates.
+          Generate professional invoice requests and reminders using deterministic templates.
         </p>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">
-        {/* Input Form */}
         <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <MessageSquare className="h-5 w-5 text-primary" />
-            <h2 className="font-display text-lg font-semibold text-foreground">Message Details</h2>
+            <FileText className="h-5 w-5 text-primary" />
+            <h2 className="font-display text-lg font-semibold text-foreground">Invoice Details</h2>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -255,11 +253,10 @@ const InvoiceTab = ({ project }: Props) => {
           </div>
 
           <Button onClick={generateMessage} className="w-full" size="lg">
-            Generate Message
+            Generate Invoice Message
           </Button>
         </div>
 
-        {/* Output Area */}
         <div className="space-y-6">
           {output ? (
             <div className="rounded-2xl border border-border bg-card p-6 shadow-sm animate-in fade-in slide-in-from-bottom-4">
@@ -294,16 +291,15 @@ const InvoiceTab = ({ project }: Props) => {
           ) : (
             <div className="flex h-full min-h-[300px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-card/50 p-12 text-center">
               <div className="rounded-full bg-primary/10 p-4 mb-4">
-                <MessageSquare className="h-8 w-8 text-primary" />
+                <FileText className="h-8 w-8 text-primary" />
               </div>
               <h3 className="text-lg font-semibold text-foreground">No message generated yet</h3>
               <p className="mt-2 text-sm text-muted-foreground max-w-xs">
-                Fill in the details on the left and click "Generate Message" to create your payment request.
+                Fill in the details on the left and click "Generate Message" to create your invoice request.
               </p>
             </div>
           )}
 
-          {/* History */}
           {history.length > 0 && (
             <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
@@ -336,10 +332,9 @@ const InvoiceTab = ({ project }: Props) => {
         </div>
       </div>
 
-      {/* FAQ Section */}
       <div className="mt-16">
         <FAQSection 
-          title="Payment Message FAQ" 
+          title="Invoice Message FAQ" 
           items={[
             { 
               question: "Is this using AI?", 

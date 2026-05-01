@@ -25,7 +25,7 @@ const freelancerSteps: TourStep[] = [
   { targetId: "ws-files-tab-btn", title: "Files & Feedback 📁", desc: "Upload your work here by pasting Google Drive links. Select the file type (Video/Audio gets timestamp feedback, others get standard comments). We'll generate a professional preview for your client." },
   { targetId: "ws-revisions-tab-btn", title: "Revision Checklist ✅", desc: "Once your client leaves feedback, it all appears here as an organized checklist. Mark items as resolved as you work through them." },
   { targetId: "ws-delivery-tab-btn", title: "Delivery Assistant ✉️", desc: "Ready to send a draft or final version? Use this to generate professional messages that make you look like a pro." },
-  { targetId: "ws-invoice-tab-btn", title: "Payment Generator 💰", desc: "Generate polite but firm payment requests and reminders. No more awkward 'where is my money' emails." },
+  { targetId: "ws-invoice-tab-btn", title: "Invoice Generator 💰", desc: "Generate polite but firm invoice requests and reminders. No more awkward 'where is my money' emails." },
 ];
 
 const tabs = [
@@ -34,7 +34,7 @@ const tabs = [
   { id: "files", label: "Files & Feedback", icon: MessageSquare },
   { id: "revisions", label: "Revisions", icon: CheckSquare },
   { id: "delivery", label: "Delivery", icon: Send },
-  { id: "invoice", label: "Payment", icon: Receipt },
+  { id: "invoice", label: "Invoice", icon: Receipt },
 ];
 
 const ProjectWorkspace = () => {
@@ -58,7 +58,6 @@ const ProjectWorkspace = () => {
     if (!silent) setLoading(true);
     
     try {
-      // Fetch project, files, and comments in parallel
       const [projRes, filesRes, commentsRes] = await Promise.all([
         supabase
           .from("projects")

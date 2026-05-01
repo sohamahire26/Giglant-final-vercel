@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import FAQSection from "@/components/FAQSection";
+import type { Project } from "./types";
 
 type MessageType = "INITIAL" | "REMINDER" | "FINAL";
 
@@ -16,6 +17,10 @@ interface PaymentMessage {
   timestamp: number;
   clientName: string;
   amount: string;
+}
+
+interface Props {
+  project: Project;
 }
 
 const TEMPLATES = {
@@ -62,12 +67,12 @@ Best regards,
   }
 };
 
-const InvoiceTab = () => {
+const InvoiceTab = ({ project }: Props) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     your_name: "",
-    client_name: "",
-    company: "",
+    client_name: project.client_name || "",
+    company: project.name || "",
     amount: "",
     deadline: "",
     message_type: "INITIAL" as MessageType,

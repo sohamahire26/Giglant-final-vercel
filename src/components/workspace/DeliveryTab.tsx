@@ -5,12 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import FAQSection from "@/components/FAQSection";
+import type { Project } from "./types";
 
-const DeliveryTab = () => {
+interface Props {
+  project: Project;
+}
+
+const DeliveryTab = ({ project }: Props) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    client_name: "",
-    project_name: "",
+    client_name: project.client_name || "",
+    project_name: project.name || "",
     delivery_link: "",
     notes: ""
   });

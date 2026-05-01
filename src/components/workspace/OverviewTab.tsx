@@ -13,9 +13,14 @@ import {
   ArrowRight,
   Share2,
   AlertTriangle,
-  ShieldAlert
+  ShieldAlert,
+  Edit2,
+  Save,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -30,23 +35,54 @@ import { getTimeRemaining } from "./types";
 
 interface Props {
   project: Project;
+  onUpdate?: (updates: Partial<Project>) => Promise<void>;
 }
 
-const OverviewTab = ({ project }: Props) => {
+const OverviewTab = ({ project, onUpdate }: Props) => {
   const { toast } = useToast();
   const [timeLeft, setTimeLeft] = useState(getTimeRemaining(project.created_at));
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({
+    name: project.name,
+    client_name: project.client_name || "",
+    description: project.description || ""
+  });
+  const [saving, setSaving] = useState(false);
+
   const clientLink = `${window.location.origin}/client/${project.share_token}`;
 
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(getTimeRemaining(project.created_at));
-    }, 60000); // Update every minute instead of every second
+    }, 60000);
     return () => clearInterval(timer);
   }, [project.created_at]);
 
   const copyLink = () => {
     navigator.clipboard.writeText(clientLink);
     toast({ title: "Link copied to clipboard!" });
+  };
+
+  const handleSave = async () => {
+    if (!onUpdate) return;
+    if (!editData.name.trim()) {
+      toast({ title: "Project name is required", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await onUpdate({
+        name: editData.name.trim(),
+        client_name: editData.client_name.trim() || null,
+        description: editData.description.trim() || null
+      });
+      setIsEditing(false);
+    } catch (err) {
+      // Error handled in parent
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -113,40 +149,89 @@ const OverviewTab = ({ project }: Props) => {
                 <LayoutDashboard className="h-5 w-5 text-primary" />
                 <h2 className="font-display text-lg font-semibold text-foreground">Project Overview</h2>
               </div>
+              {!isEditing ? (
+                <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+                  <Edit2 className="mr-1.5 h-4 w-4" /> Edit Details
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} disabled={saving}>
+                    <X className="mr-1.5 h-4 w-4" /> Cancel
+                  </Button>
+                  <Button size="sm" onClick={handleSave} disabled={saving}>
+                    {saving ? <Clock className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
+                    Save
+                  </Button>
+                </div>
+              )}
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Project Name</p>
-                <p className="text-sm font-semibold text-foreground">{project.name}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Work Type</p>
-                <p className="text-sm font-semibold text-foreground capitalize">{project.work_type}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Client Name</p>
-                <div className="flex items-center gap-2">
-                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                  <p className="text-sm font-semibold text-foreground">{project.client_name || "Not specified"}</p>
+            {isEditing ? (
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Project Name</label>
+                    <Input 
+                      value={editData.name} 
+                      onChange={e => setEditData({...editData, name: e.target.value})}
+                      placeholder="Project Name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Client Name</label>
+                    <Input 
+                      value={editData.client_name} 
+                      onChange={e => setEditData({...editData, client_name: e.target.value})}
+                      placeholder="Client Name"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Description</label>
+                  <Textarea 
+                    value={editData.description} 
+                    onChange={e => setEditData({...editData, description: e.target.value})}
+                    placeholder="Project Description"
+                    rows={3}
+                  />
                 </div>
               </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Created On</p>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                  <p className="text-sm font-semibold text-foreground">
-                    {new Date(project.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                  </p>
+            ) : (
+              <>
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Project Name</p>
+                    <p className="text-sm font-semibold text-foreground">{project.name}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Work Type</p>
+                    <p className="text-sm font-semibold text-foreground capitalize">{project.work_type}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Client Name</p>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                      <p className="text-sm font-semibold text-foreground">{project.client_name || "Not specified"}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Created On</p>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                      <p className="text-sm font-semibold text-foreground">
+                        {new Date(project.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {project.description && (
-              <div className="mt-6 pt-6 border-t border-border">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Description</p>
-                <p className="text-sm text-muted-foreground leading-relaxed">{project.description}</p>
-              </div>
+                {project.description && (
+                  <div className="mt-6 pt-6 border-t border-border">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Description</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{project.description}</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

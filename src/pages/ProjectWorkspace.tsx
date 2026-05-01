@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, Link, useLocation, Navigate } from "react-router-dom";
+import { useParams, Link, useLocation, Navigate, useNavigate } from "react-router-dom";
 import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle, FileEdit, RefreshCw, Lock, Sparkles, ArrowRight } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
@@ -17,8 +17,6 @@ import InvoiceTab from "@/components/workspace/InvoiceTab";
 import FileRenamerTab from "@/components/workspace/FileRenamerTab";
 import TutorialTour, { TourStep } from "@/components/workspace/TutorialTour.tsx";
 import { useAuth } from "@/components/AuthProvider";
-
-const db = supabase as any;
 
 const freelancerSteps: TourStep[] = [
   { title: "Welcome to Your Workspace! 🚀", desc: "This is where you manage your entire client project. Let's walk through the tools that will save you hours of work." },
@@ -42,6 +40,7 @@ const tabs = [
 const ProjectWorkspace = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, session, profile, loading: authLoading } = useAuth();
   const [project, setProject] = useState<Project | null>(null);
   const [files, setFiles] = useState<ProjectFile[]>([]);
@@ -58,19 +57,49 @@ const ProjectWorkspace = () => {
     if (!id) return;
     if (!silent) setLoading(true);
     
-    const { data: proj } = await db.from("projects").select("*").eq("id", id).single();
-    if (!proj) { setLoading(false); return; }
-    setProject(proj);
-    
-    const { data: f } = await db.from("project_files").select("*").eq("project_id", id).order("sort_order");
-    setFiles(f || []);
-    
-    if (f?.length) {
-      const { data: c } = await db.from("file_comments").select("*").in("file_id", f.map((x: ProjectFile) => x.id)).order("created_at");
-      setComments(c || []);
+    try {
+      const { data: proj, error: projError } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("id", id)
+        .single();
+      
+      if (projError) throw projError;
+      if (!proj) { setLoading(false); return; }
+      setProject(proj as Project);
+      
+      const { data: f, error: fError } = await supabase
+        .from("project_files")
+        .select("*")
+        .eq("project_id", id)
+        .order("sort_order");
+      
+      if (fError) throw fError;
+      setFiles(f || []);
+      
+      if (f?.length) {
+        const { data: c, error: cError } = await supabase
+          .from("file_comments")
+          .select("*")
+          .in("file_id", f.map((x: ProjectFile) => x.id))
+          .order("created_at");
+        
+        if (cError) throw cError;
+        setComments(c || []);
+      }
+    } catch (error: any) {
+      console.error("Error loading project data:", error);
+      if (!silent) {
+        toast({
+          title: "Error loading project",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, [id]);
+  }, [id, toast]);
 
   useEffect(() => {
     if (location.state?.isNew) {
@@ -96,10 +125,10 @@ const ProjectWorkspace = () => {
     const fileIds = files.map(f => f.id);
     
     const channel = supabase.channel(`ws-realtime-${id}`)
-      .on("postgres_changes", { 
-        event: "*", 
-        schema: "public", 
-        table: "file_comments" 
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "file_comments"
       }, (payload) => {
         const newC = payload.new as FileComment;
         const oldC = payload.old as any;
@@ -114,8 +143,8 @@ const ProjectWorkspace = () => {
           });
           
           if (newC.is_client) {
-            toast({ 
-              title: "New Feedback Received!", 
+            toast({
+              title: "New Feedback Received!",
               description: `${newC.author_name} left a comment.`,
               action: <Button variant="outline" size="sm" onClick={() => loadData(true)}><RefreshCw className="mr-1 h-3 w-3" /> Refresh</Button>
             });
@@ -131,10 +160,55 @@ const ProjectWorkspace = () => {
     return () => { supabase.removeChannel(channel); };
   }, [files, id, toast, loadData]);
 
+  const handleUpdateProject = async (updates: Partial<Project>) => {
+    if (!id || !project) return;
+    
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update(updates)
+        .eq("id", id);
+
+      if (error) throw error;
+      
+      setProject({ ...project, ...updates });
+      toast({
+        title: "Success",
+        description: "Project updated successfully",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+      throw err;
+    }
+  };
+
   const handleDeleteProject = async () => {
     if (!project || !confirm("Delete this project and all its data? This cannot be undone.")) return;
-    await db.from("projects").delete().eq("id", project.id);
-    window.location.href = "/dashboard";
+    
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", project.id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Project deleted successfully",
+      });
+      navigate("/dashboard");
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
   };
 
   if (authLoading) return <Layout><div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
@@ -229,7 +303,7 @@ const ProjectWorkspace = () => {
             )}
 
             <div className={isLocked && activeTab !== "overview" ? "pointer-events-none blur-[2px]" : ""}>
-              {activeTab === "overview" && <OverviewTab project={project} />}
+              {activeTab === "overview" && <OverviewTab project={project} onUpdate={handleUpdateProject} />}
               {activeTab === "renamer" && <FileRenamerTab />}
               {activeTab === "files" && <FilesTab project={project} files={files} setFiles={setFiles} comments={comments} setComments={setComments} selectedFile={selectedFile} setSelectedFile={setSelectedFile} />}
               {activeTab === "revisions" && <RevisionsTab files={files} comments={comments} setComments={setComments} />}

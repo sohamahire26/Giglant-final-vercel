@@ -1,18 +1,12 @@
 import { useState, useCallback } from "react";
-import { Upload, Download, FileIcon, X, Wand2, Loader2, RefreshCw, Sparkles, FileArchive, CheckCircle2, Info, Zap, History, ListChecks, ArrowRight, LayoutDashboard } from "lucide-react";
+import { Upload, Download, FileIcon, X, Loader2, FileArchive, Info, Zap, History, ListChecks, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import FAQSection from "@/components/FAQSection";
 import { Button } from "@/components/ui/button";
-import * as pdfjsLib from "pdfjs-dist";
-import exifr from "exifr";
 import JSZip from "jszip";
 import { useAuth } from "@/components/AuthProvider";
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-
-declare const puter: any;
 
 interface RenamedFile {
   original: File;
@@ -53,63 +47,30 @@ const getTypeCategory = (ext: string): string => {
   return "File";
 };
 
-const extractPdfText = async (file: File): Promise<string> => {
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    const maxPages = Math.min(pdf.numPages, 2);
-    let fullText = "";
-    for (let i = 1; i <= maxPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const pageText = content.items.map((item: any) => (item as any).str).join(" ");
-      fullText += pageText + " ";
-    }
-    return fullText.substring(0, 1500);
-  } catch { return ""; }
-};
-
-const extractImageMetadata = async (file: File) => {
-  try {
-    const exif = await exifr.parse(file, { pick: ["Make","Model","DateTimeOriginal","ImageDescription"] });
-    return exif || {};
-  } catch { return {}; }
-};
-
-const smartRename = async (file: File): Promise<{ name: string; type: string; category: string }> => {
+const simpleRename = (file: File): { name: string; type: string; category: string } => {
   const ext = file.name.includes(".") ? "." + file.name.split(".").pop()!.toLowerCase() : "";
   const extClean = ext.replace(".", "");
   const category = getTypeCategory(extClean);
   const typeLabel = FILE_TYPE_LABELS[extClean] || "File";
 
-  let context = `Original Filename: ${file.name}\nFile Type: ${typeLabel}\nCategory: ${category}\n`;
-  if (extClean === "pdf") {
-    const text = await extractPdfText(file);
-    if (text) context += `Content Snippet: ${text}\n`;
-  } else if (["jpg","jpeg","png"].includes(extClean)) {
-    const meta = await extractImageMetadata(file);
-    if (Object.keys(meta).length) context += `Metadata: ${JSON.stringify(meta)}\n`;
-  }
-
-  try {
-    const response = await puter.ai.chat(`Suggest a professional, descriptive filename for this file. Return ONLY the filename without extension. Use hyphens instead of spaces. Context:\n${context}`);
-    const suggestedName = response.toString().trim().replace(/\.[^/.]+$/, "").replace(/\s+/g, "-");
-    return { name: suggestedName + ext, type: typeLabel, category };
-  } catch (err) {
-    return { name: file.name, type: typeLabel, category };
-  }
+  const baseName = file.name.replace(/\.[^/.]+$/, "")
+    .replace(/[^a-z0-9]/gi, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  
+  return { name: baseName + ext, type: typeLabel, category };
 };
 
 const faq = [
-  { question: "How does the renamer analyze my files?", answer: "It analyzes document text (PDFs), image metadata (EXIF), and video properties to understand the content and suggest a meaningful name." },
-  { question: "Is my data safe?", answer: "Yes. Files are processed locally in your browser. Only small text snippets or metadata are sent for naming suggestions. Your actual files never leave your device." },
+  { question: "How does the renamer work?", answer: "It analyzes your file extensions to categorize them and cleans up the filenames by removing special characters and replacing spaces with hyphens for better compatibility." },
+  { question: "Is my data safe?", answer: "Yes. All processing happens entirely in your browser. Your files are never uploaded to any server." },
   { question: "What is the numbering system?", answer: "The tool automatically groups files by category (e.g., Video, Image) and adds a sequential number to keep your project organized." },
 ];
 
 const examples = [
-  { original: "IMG_8242.jpg", renamed: "Photo-1-Sunset-Beach-Malibu.jpg", note: "Detected location and subject from metadata." },
-  { original: "draft_v1_final.pdf", renamed: "Document-1-Project-Proposal-Q4.pdf", note: "Read the document title from the first page." },
-  { original: "sequence_01.mp4", renamed: "Video-1-Interview-Main-Angle.mp4", note: "Analyzed the context to provide a descriptive name." },
+  { original: "IMG_8242.jpg", renamed: "Photo-1-IMG-8242.jpg", note: "Categorized as Photo and cleaned up." },
+  { original: "draft v1 final.pdf", renamed: "Document-1-draft-v1-final.pdf", note: "Spaces replaced with hyphens." },
+  { original: "sequence_01.mp4", renamed: "Video-1-sequence-01.mp4", note: "Categorized as Video." },
 ];
 
 const FileRenamerTool = () => {
@@ -121,19 +82,35 @@ const FileRenamerTool = () => {
   const handleFiles = useCallback(async (fileList: FileList) => {
     const incoming = Array.from(fileList).map((f) => ({ original: f, newName: f.name, status: "processing" as const }));
     setFiles((prev) => [...prev, ...incoming]);
+    
     const categoryCounts: Record<string, number> = {};
-    for (const entry of incoming) {
-      const result = await smartRename(entry.original);
-      setFiles((prev) => {
-        const cat = result.category;
-        categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
-        const num = categoryCounts[cat];
-        const ext = result.name.includes(".") ? "." + result.name.split(".").pop() : "";
-        const namePart = result.name.replace(/\.[^/.]+$/, "");
-        const finalName = `${cat}-${num}-${namePart}${ext}`;
-        return prev.map((f) => f.original === entry.original ? { ...f, newName: finalName, detectedType: result.type, typeCategory: cat, status: "done" as const } : f);
+    
+    const processed = incoming.map((entry) => {
+      const result = simpleRename(entry.original);
+      const cat = result.category;
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+      const num = categoryCounts[cat];
+      const ext = result.name.includes(".") ? "." + result.name.split(".").pop() : "";
+      const namePart = result.name.replace(/\.[^/.]+$/, "");
+      const finalName = `${cat}-${num}-${namePart}${ext}`;
+      
+      return {
+        ...entry,
+        newName: finalName,
+        detectedType: result.type,
+        typeCategory: cat,
+        status: "done" as const
+      };
+    });
+
+    setFiles((prev) => {
+      const updated = [...prev];
+      processed.forEach(p => {
+        const idx = updated.findIndex(f => f.original === p.original && f.status === "processing");
+        if (idx !== -1) updated[idx] = p;
       });
-    }
+      return updated;
+    });
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -167,15 +144,15 @@ const FileRenamerTool = () => {
 
   return (
     <Layout>
-      <SEOHead title="File Renamer — Giglant" description="Professional file renaming with automatic numbering and content analysis." />
+      <SEOHead title="File Renamer — Giglant" description="Professional file renaming with automatic numbering and clean formatting." />
       <section className="section-padding">
         <div className="container-tight max-w-4xl">
           <div className="mb-12 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Sparkles className="h-8 w-8" />
+              <FileIcon className="h-8 w-8" />
             </div>
             <h1 className="font-display text-4xl font-bold text-foreground md:text-5xl">File Renamer</h1>
-            <p className="mt-4 text-lg text-muted-foreground">Drop files to get professional names with auto-numbering. Powered by Puter.</p>
+            <p className="mt-4 text-lg text-muted-foreground">Drop files to get professional names with auto-numbering and clean formatting.</p>
           </div>
 
           {!session && (
@@ -195,7 +172,6 @@ const FileRenamerTool = () => {
             </div>
           )}
 
-          {/* How to Use Section */}
           <div className="mb-12 rounded-2xl border border-border bg-card p-6">
             <div className="flex items-center gap-2 mb-6">
               <Info className="h-5 w-5 text-primary" />
@@ -204,7 +180,7 @@ const FileRenamerTool = () => {
             <div className="grid gap-4 md:grid-cols-3">
               {[
                 { step: "1", title: "Upload Files", desc: "Drag and drop your messy files into the box below." },
-                { step: "2", title: "Analysis", desc: "Reads metadata and content to suggest professional names." },
+                { step: "2", title: "Auto-Formatting", desc: "Files are categorized and names are cleaned for consistency." },
                 { step: "3", title: "Download", desc: "Download files individually or as a single ZIP archive." },
               ].map(s => (
                 <div key={s.step} className="rounded-xl border border-border bg-background p-4 text-center">
@@ -246,7 +222,7 @@ const FileRenamerTool = () => {
                         {f.detectedType && f.status === "done" && <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">{f.detectedType}</span>}
                       </div>
                       {f.status === "processing" ? (
-                        <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin text-primary" /> Analyzing...</div>
+                        <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin text-primary" /> Processing...</div>
                       ) : (
                         <input type="text" value={f.newName} onChange={(e) => updateName(i, e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground focus:border-primary focus:outline-none" />
                       )}
@@ -261,7 +237,6 @@ const FileRenamerTool = () => {
             </div>
           )}
 
-          {/* Real Examples */}
           <div className="mt-16">
             <h2 className="font-display text-2xl font-bold text-foreground mb-6">Real Examples — File Renaming</h2>
             <div className="space-y-3">
@@ -280,13 +255,12 @@ const FileRenamerTool = () => {
             </div>
           </div>
 
-          {/* How It Works */}
           <div className="mt-16">
-            <h2 className="font-display text-2xl font-bold text-foreground mb-6">How It Works — Organization</h2>
+            <h2 className="font-display text-2xl font-bold text-foreground mb-6">How It Works — Smart Organization</h2>
             <div className="grid gap-4 md:grid-cols-4">
               {[
-                { step: "Content Scan", desc: "Reads the first pages of documents and image metadata." },
-                { step: "Contextual Naming", desc: "Generates a descriptive name based on what's inside the file." },
+                { step: "Extension Analysis", desc: "Identifies file types to categorize them correctly." },
+                { step: "Name Cleaning", desc: "Removes special characters and fixes formatting." },
                 { step: "Auto-Numbering", desc: "Groups files by type and adds sequential numbers." },
                 { step: "Batch Export", desc: "Download everything at once in a clean, organized ZIP." },
               ].map((s, i) => (
@@ -299,7 +273,6 @@ const FileRenamerTool = () => {
             </div>
           </div>
 
-          {/* About Section */}
           <div className="mt-16">
             <h2 className="font-display text-2xl font-bold text-foreground mb-6">About File Renaming — Clarity & Speed</h2>
             <div className="prose max-w-none text-muted-foreground space-y-3 text-sm leading-relaxed">

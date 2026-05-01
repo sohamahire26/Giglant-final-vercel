@@ -58,37 +58,33 @@ const ProjectWorkspace = () => {
     if (!silent) setLoading(true);
     
     try {
-      const { data: proj, error: projError } = await supabase
-        .from("projects")
-        .select("*")
-        .eq("id", id)
-        .single();
-      
-      if (projError) throw projError;
-      if (!proj) { setLoading(false); return; }
-      setProject(proj as Project);
-      
-      const { data: f, error: fError } = await supabase
-        .from("project_files")
-        .select("*")
-        .eq("project_id", id)
-        .order("sort_order");
-      
-      if (fError) throw fError;
-      setFiles(f || []);
-      
-      if (f?.length) {
-        const { data: c, error: cError } = await supabase
-          .from("file_comments")
+      // Fetch project, files, and comments in parallel
+      const [projRes, filesRes, commentsRes] = await Promise.all([
+        supabase
+          .from("projects")
           .select("*")
-          .in("file_id", f.map((x: ProjectFile) => x.id))
-          .order("created_at");
-        
-        if (cError) throw cError;
-        setComments(c || []);
-      }
+          .eq("id", id)
+          .single(),
+        supabase
+          .from("project_files")
+          .select("*")
+          .eq("project_id", id)
+          .order("sort_order"),
+        supabase
+          .from("file_comments")
+          .select("*, project_files!inner(project_id)")
+          .eq("project_files.project_id", id)
+          .order("created_at")
+      ]);
+      
+      if (projRes.error) throw projRes.error;
+      if (!projRes.data) { setLoading(false); return; }
+      setProject(projRes.data as Project);
+      
+      setFiles(filesRes.data || []);
+      setComments(commentsRes.data || []);
     } catch (error: any) {
-      console.error("Error loading project data:", error);
+      console.error("[ProjectWorkspace] Error loading data:", error);
       if (!silent) {
         toast({
           title: "Error loading project",

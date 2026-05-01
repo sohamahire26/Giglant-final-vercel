@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -49,9 +49,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setProfile(data as unknown as Profile);
       }
     } catch (err) {
-      console.error("Error fetching profile:", err);
+      console.error("[AuthProvider] Error fetching profile:", err);
     }
-  };
+  }, []);
 
   const refreshProfile = async () => {
     if (user) await fetchProfile(user.id);
@@ -60,52 +60,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
-    // Safety timeout to prevent infinite loading
+    // Safety timeout to prevent infinite loading - reduced to 3s for better UX
     const safetyTimeout = setTimeout(() => {
       if (mounted && loading) {
-        console.warn("Auth initialization timed out, forcing loading to false");
+        console.warn("[AuthProvider] Auth initialization timed out, forcing loading to false");
         setLoading(false);
       }
-    }, 5000);
+    }, 3000);
 
-    const initAuth = async () => {
-      try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        if (!mounted) return;
-
-        setSession(initialSession);
-        setUser(initialSession?.user ?? null);
-        
-        if (initialSession?.user) {
-          await fetchProfile(initialSession.user.id);
-        }
-      } catch (err) {
-        console.error("Auth initialization error:", err);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-          clearTimeout(safetyTimeout);
-        }
-      }
-    };
-
-    initAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+    const handleAuthStateChange = async (currentSession: Session | null) => {
       if (!mounted) return;
 
       setSession(currentSession);
-      setUser(currentSession?.user ?? null);
+      const currentUser = currentSession?.user ?? null;
+      setUser(currentUser);
       
-      if (currentSession?.user) {
-        await fetchProfile(currentSession.user.id);
+      if (currentUser) {
+        await fetchProfile(currentUser.id);
       } else {
         setProfile(null);
       }
       
       setLoading(false);
+      clearTimeout(safetyTimeout);
+    };
 
-      if (event === 'PASSWORD_RECOVERY') {
+    // Initialize auth
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      handleAuthStateChange(initialSession);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        handleAuthStateChange(currentSession);
+      } else if (event === 'PASSWORD_RECOVERY') {
         window.location.href = '/reset-password';
       }
     });
@@ -115,11 +108,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       subscription.unsubscribe();
       clearTimeout(safetyTimeout);
     };
-  }, []);
+  }, [fetchProfile]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/';
+    try {
+      // Clear state immediately for instant feedback
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+      
+      // Start sign out process
+      const signOutPromise = supabase.auth.signOut();
+      
+      // Redirect immediately
+      window.location.href = '/';
+      
+      await signOutPromise;
+    } catch (error) {
+      console.error("[AuthProvider] Error during sign out:", error);
+      window.location.href = '/';
+    }
   };
 
   return (

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { Plus, FolderOpen, Clock, ChevronRight, Loader2, Search, Lock, AlertCircle, Sparkles } from "lucide-react";
+import { Plus, FolderOpen, Clock, ChevronRight, Loader2, Search, Lock, AlertCircle, Sparkles, RefreshCw, Archive } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
@@ -13,63 +13,44 @@ const Dashboard = () => {
   const { user, session, profile, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    let mounted = true;
+  const fetchProjects = useCallback(async (silent = false) => {
+    if (!user) return;
+    
+    if (!silent) setLoading(true);
+    else setIsRefreshing(true);
 
-    const fetchProjects = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from("projects")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
-        if (!mounted) return;
+      if (error) throw error;
 
-        if (!error) {
-          const now = new Date().getTime();
-          const isPro = profile?.plan_type === 'pro';
-          const expiryDays = isPro ? 60 : 15;
-          const expiryMs = expiryDays * 24 * 60 * 60 * 1000;
-
-          // Filter out projects that have exceeded their deletion window
-          const activeProjects = (data || []).filter(p => {
-            const created = new Date(p.created_at).getTime();
-            return now - created < expiryMs;
-          });
-          setProjects(activeProjects);
-        }
-      } catch (err) {
-        console.error("Error fetching projects:", err);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+      if (data) {
+        setProjects(data);
       }
-    };
+    } catch (err) {
+      console.error("[Dashboard] Error fetching projects:", err);
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  }, [user]);
 
+  useEffect(() => {
     if (user) {
       fetchProjects();
     } else if (!authLoading && !session) {
       setLoading(false);
     }
+  }, [user, authLoading, session, fetchProjects]);
 
-    // Safety timeout for local loading state
-    const timeout = setTimeout(() => {
-      if (mounted) setLoading(false);
-    }, 5000);
-
-    return () => {
-      mounted = false;
-      clearTimeout(timeout);
-    };
-  }, [user, authLoading, session, profile]);
-
-  if (authLoading) {
+  if (authLoading && projects.length === 0) {
     return (
       <Layout>
         <div className="flex min-h-[60vh] items-center justify-center">
@@ -79,7 +60,7 @@ const Dashboard = () => {
     );
   }
 
-  if (!session) return <Navigate to="/login" replace />;
+  if (!session && !authLoading) return <Navigate to="/login" replace />;
 
   const filteredProjects = projects.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) || 
@@ -87,7 +68,15 @@ const Dashboard = () => {
   );
 
   const isPro = profile?.plan_type === 'pro';
-  const projectLimitReached = !isPro && projects.length >= 1;
+  // Free users can only have 1 active project. Others are "archived" or "locked"
+  const activeProjectsCount = projects.filter(p => {
+    const created = new Date(p.created_at).getTime();
+    const now = new Date().getTime();
+    const diffDays = (now - created) / (1000 * 60 * 60 * 24);
+    return diffDays <= 30; // Consider projects active for 30 days for the limit check
+  }).length;
+
+  const projectLimitReached = !isPro && activeProjectsCount >= 1;
 
   return (
     <Layout>
@@ -102,6 +91,15 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => fetchProjects(true)} 
+                disabled={isRefreshing}
+                className="text-muted-foreground"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
               {!isPro && (
                 <Button asChild variant="outline" className="border-primary/30 text-primary hover:bg-primary/5">
                   <Link to="/pricing"><Sparkles className="mr-2 h-4 w-4" /> Upgrade to Pro</Link>
@@ -138,7 +136,7 @@ const Dashboard = () => {
             />
           </div>
 
-          {loading ? (
+          {loading && projects.length === 0 ? (
             <div className="flex py-20 justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
           ) : filteredProjects.length > 0 ? (
             <div className="grid gap-4">
@@ -146,30 +144,42 @@ const Dashboard = () => {
                 const created = new Date(project.created_at).getTime();
                 const now = new Date().getTime();
                 const diffDays = (now - created) / (1000 * 60 * 60 * 24);
-                const isLocked = !isPro && diffDays > 7;
+                
+                const isPro = profile?.plan_type === 'pro';
+                const expiryDays = isPro ? 90 : 30;
+                const isExpired = diffDays > expiryDays;
+                const isLocked = !isPro && diffDays > 7 && !isExpired;
 
                 return (
                   <Link
                     key={project.id}
                     to={`/project/${project.id}`}
                     className={`group flex items-center justify-between rounded-2xl border p-5 transition-all ${
-                      isLocked 
-                        ? "border-amber-500/20 bg-amber-500/5 opacity-80" 
+                      isExpired 
+                        ? "border-border bg-muted/50 opacity-60 grayscale" 
+                        : isLocked
+                        ? "border-amber-500/20 bg-amber-500/5"
                         : "border-border bg-card hover:border-primary/50 hover:shadow-md"
                     }`}
                   >
                     <div className="flex items-center gap-4">
                       <div className={`flex h-12 w-12 items-center justify-center rounded-xl transition-colors ${
-                        isLocked 
+                        isExpired
+                          ? "bg-muted text-muted-foreground"
+                          : isLocked 
                           ? "bg-amber-500/20 text-amber-600" 
                           : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white"
                       }`}>
-                        {isLocked ? <Lock size={24} /> : <FolderOpen size={24} />}
+                        {isExpired ? <Archive size={24} /> : isLocked ? <Lock size={24} /> : <FolderOpen size={24} />}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="font-display font-semibold text-foreground">{project.name}</h3>
-                          {isLocked && <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">LOCKED</span>}
+                          {isExpired ? (
+                            <span className="rounded-full bg-muted-foreground/20 px-2 py-0.5 text-[10px] font-bold text-muted-foreground">EXPIRED</span>
+                          ) : isLocked ? (
+                            <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">LOCKED</span>
+                          ) : null}
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1"><Clock size={12} /> {new Date(project.created_at).toLocaleDateString()}</span>

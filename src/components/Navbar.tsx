@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { Menu, X, ChevronDown, User as UserIcon } from "lucide-react";
+import { Menu, X, ChevronDown, User as UserIcon, LogOut } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "./AuthProvider";
+import { Button } from "./ui/button";
 
 const tools = [
   { name: "File Renamer", href: "/tools/file-renamer" },
@@ -13,7 +14,7 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const location = useLocation();
-  const { session } = useAuth();
+  const { session, signOut } = useAuth();
 
   const navLinks = [
     { name: "Home", href: "/" },
@@ -67,10 +68,15 @@ const Navbar = () => {
           
           <div className="ml-4 flex items-center gap-2 border-l border-border pl-4">
             {session ? (
-              <Link to="/profile" className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary/80">
-                <UserIcon size={16} />
-                Profile
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link to="/profile" className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary/80">
+                  <UserIcon size={16} />
+                  Profile
+                </Link>
+                <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-destructive">
+                  <LogOut size={16} />
+                </Button>
+              </div>
             ) : (
               <Link to="/login" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
                 Sign In
@@ -128,16 +134,29 @@ const Navbar = () => {
               </Link>
             )
           )}
-          <div className="mt-4 border-t border-border pt-4">
+          <div className="mt-4 border-t border-border pt-4 space-y-2">
             {session ? (
-              <Link
-                to="/profile"
-                onClick={() => setMobileOpen(false)}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 py-2.5 text-sm font-medium text-foreground"
-              >
-                <UserIcon size={16} />
-                Profile
-              </Link>
+              <>
+                <Link
+                  to="/profile"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 py-2.5 text-sm font-medium text-foreground"
+                >
+                  <UserIcon size={16} />
+                  Profile
+                </Link>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    signOut();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 text-destructive hover:bg-destructive/10"
+                >
+                  <LogOut size={16} />
+                  Sign Out
+                </Button>
+              </>
             ) : (
               <Link
                 to="/login"

@@ -60,14 +60,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
-    // Safety timeout to prevent infinite loading - reduced to 3s for better UX
-    const safetyTimeout = setTimeout(() => {
-      if (mounted && loading) {
-        console.warn("[AuthProvider] Auth initialization timed out, forcing loading to false");
-        setLoading(false);
-      }
-    }, 3000);
-
     const handleAuthStateChange = async (currentSession: Session | null) => {
       if (!mounted) return;
 
@@ -82,7 +74,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       setLoading(false);
-      clearTimeout(safetyTimeout);
     };
 
     // Initialize auth
@@ -106,27 +97,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      clearTimeout(safetyTimeout);
     };
   }, [fetchProfile]);
 
   const signOut = async () => {
     try {
-      // Clear state immediately for instant feedback
+      setLoading(true);
+      // Clear session from Supabase
+      await supabase.auth.signOut();
+      
+      // Clear local state
       setSession(null);
       setUser(null);
       setProfile(null);
       
-      // Start sign out process
-      const signOutPromise = supabase.auth.signOut();
-      
-      // Redirect immediately
+      // Redirect to home
       window.location.href = '/';
-      
-      await signOutPromise;
     } catch (error) {
       console.error("[AuthProvider] Error during sign out:", error);
       window.location.href = '/';
+    } finally {
+      setLoading(false);
     }
   };
 

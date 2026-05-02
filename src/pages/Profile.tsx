@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/components/AuthProvider';
-import { supabase } from '@/integrations/supabase/client';
-import Layout from '@/components/Layout';
-import SEOHead from '@/components/SEOHead';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, User as UserIcon, LogOut } from 'lucide-react';
-import { Navigate } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
+import Layout from "@/components/Layout";
+import SEOHead from "@/components/SEOHead";
+import { Button } from "@/components/ui/button";
+import { Loader2, User as UserIcon, LogOut } from "lucide-react";
+import { Navigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const Profile = () => {
   const { user, session, loading: authLoading, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -26,18 +26,18 @@ const Profile = () => {
   const getProfile = async () => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('id', user?.id)
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", user?.id)
         .single();
 
       if (error) throw error;
       if (data) {
-        setFirstName(data.first_name || '');
-        setLastName(data.last_name || '');
+        setFirstName(data.first_name || "");
+        setLastName(data.last_name || "");
       }
     } catch (error: any) {
-      console.error('Error loading profile:', error.message);
+      console.error("Error loading profile:", error.message);
     } finally {
       setLoading(false);
     }
@@ -46,7 +46,7 @@ const Profile = () => {
   const updateProfile = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.from('profiles').upsert({
+      const { error } = await supabase.from("profiles").upsert({
         id: user?.id,
         first_name: firstName,
         last_name: lastName,
@@ -62,8 +62,14 @@ const Profile = () => {
     }
   };
 
+  const handleResetPassword = () => {
+    navigate("/reset-password");
+  };
+
   if (authLoading) return <Layout><div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
   if (!session) return <Navigate to="/login" replace />;
+
+  const navigate = useNavigate();
 
   return (
     <Layout>
@@ -98,12 +104,9 @@ const Profile = () => {
                   className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none" 
                 />
               </div>
-            </div>
+            </div>            
             
-            <Button onClick={updateProfile} disabled={loading} className="w-full">
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Save Changes
-            </Button>
+            <Button onClick={updateProfile} disabled={loading} className="w-full">Save Changes</Button>
 
             <div className="pt-4 border-t border-border">
               <Button variant="outline" onClick={signOut} className="w-full text-destructive border-destructive/30 hover:bg-destructive/10">
@@ -113,6 +116,11 @@ const Profile = () => {
           </div>
         </div>
       </section>
+      <div className="mt-6 text-center">
+        <Button variant="outline" onClick={handleResetPassword} className="text-primary hover:text-primary/90">
+          Reset Password
+        </Button>
+      </div>
     </Layout>
   );
 };

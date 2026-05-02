@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Copy, Mail, History, Trash2, FileText } from "lucide-react";
+import { Copy, Mail, History, Trash2, FileText, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,6 +31,8 @@ I hope you're doing well.
 
 I'm sharing the invoice for {company}. The total amount due is \${amount}, with a deadline of {deadline}.
 
+You can view the invoice here: {invoice_link}
+
 Please let me know once the payment is processed.
 
 Best regards,  
@@ -42,6 +44,8 @@ Best regards,
 
 Just a quick reminder that the payment of \${amount} is still pending. The due date was {deadline}.
 
+You can access the invoice here: {invoice_link}
+
 Kindly process it at your earliest convenience.
 
 Best regards,  
@@ -52,6 +56,8 @@ Best regards,
     body: `Hi {client_name},
 
 This is a final follow-up regarding the pending payment of \${amount}, which was due on {deadline}.
+
+You can find the invoice here: {invoice_link}
 
 Please process this as soon as possible to avoid any disruption.
 
@@ -68,6 +74,7 @@ const InvoiceTab = ({ project }: Props) => {
     company: project.name || "",
     amount: "",
     deadline: "",
+    invoice_link: "",
     message_type: "INITIAL" as MessageType
   });
 
@@ -120,6 +127,7 @@ const InvoiceTab = ({ project }: Props) => {
       .replace("{company}", formData.company || "the project")
       .replace("{amount}", formData.amount)
       .replace("{deadline}", formData.deadline)
+      .replace("{invoice_link}", formData.invoice_link || "[Link]")
       .replace("{your_name}", formData.your_name || "Me");
 
     body = body.replace(/\n\n\n/g, "\n\n");
@@ -211,6 +219,18 @@ const InvoiceTab = ({ project }: Props) => {
               />
             </div>
             <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Invoice Link</label>
+              <div className="relative">
+                <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input 
+                  placeholder="https://..." 
+                  className="pl-10"
+                  value={formData.invoice_link}
+                  onChange={(e) => setFormData({ ...formData, invoice_link: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2 sm:col-span-2">
               <label className="text-sm font-medium text-foreground">Message Type</label>
               <Select 
                 value={formData.message_type} 

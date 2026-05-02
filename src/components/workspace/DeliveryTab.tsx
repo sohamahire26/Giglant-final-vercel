@@ -20,7 +20,7 @@ const TEMPLATES: Record<DeliveryType, string> = {
 
 I've shared the initial draft for {company}.
 
-Review Link: {review_link}
+You can review the work here: {review_link}
 
 Let me know your feedback so I can refine it further.
 
@@ -30,7 +30,7 @@ Best,
 
 The final version of {company} is ready.
 
-Access Link: {review_link}
+You can access the final files here: {review_link}
 
 Everything is polished and ready for use. Let me know if you need anything else.
 
@@ -40,7 +40,7 @@ Best regards,
 
 I've made the requested revisions to {company}.
 
-Updated Link: {review_link}
+You can see the updates here: {review_link}
 
 Let me know if this aligns with your expectations.
 

@@ -55,7 +55,23 @@ const Login = () => {
           email,
           password,
         });
-        if (error) throw error;
+        if (error) {
+          // Check if error is about invalid credentials
+          if (error.message?.includes("Invalid login") || error.message?.includes("invalid email")) {
+            toast({
+              title: "Invalid password",
+              description: "Please check your email and password.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Authentication Error",
+              description: error.message,
+              variant: "destructive",
+            });
+          }
+          throw error;
+        }
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -77,11 +93,7 @@ const Login = () => {
         }
       }
     } catch (error: any) {
-      toast({
-        title: "Authentication Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Error already toasted in the login branch
     } finally {
       setLoading(false);
     }

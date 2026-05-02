@@ -4,7 +4,6 @@ import logo from "@/assets/logo.png";
 const footerLinks = {
   Tools: [
     { name: "File Renamer", href: "/tools/file-renamer" },
-    { name: "Payment Generator", href: "/tools/payment-generator" },
   ],
   Company: [
     { name: "About", href: "/about" },

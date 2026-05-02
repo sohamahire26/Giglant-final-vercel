@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { MessageSquare, Copy, Mail, Info, CheckCircle2, Send, User, Link as LinkIcon, Building2, Sparkles, Clock, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { MessageSquare, Copy, Mail, Info, CheckCircle2, Send, User, Link as LinkIcon, Building2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import FAQSection from "@/components/FAQSection";
 import type { Project } from "./types";
@@ -21,11 +20,9 @@ const TEMPLATES: Record<DeliveryType, string> = {
 
 I've shared the initial draft for {company}.
 
-You can review it here: {review_link}
+Review Link: {review_link}
 
 Let me know your feedback so I can refine it further.
-
-{custom_instructions}
 
 Best,
 {your_name}`,
@@ -33,11 +30,9 @@ Best,
 
 The final version of {company} is ready.
 
-You can access everything here: {review_link}
+Access Link: {review_link}
 
 Everything is polished and ready for use. Let me know if you need anything else.
-
-{custom_instructions}
 
 Best regards,
 {your_name}`,
@@ -45,11 +40,9 @@ Best regards,
 
 I've made the requested revisions to {company}.
 
-You can check the updated version here: {review_link}
+Updated Link: {review_link}
 
 Let me know if this aligns with your expectations.
-
-{custom_instructions}
 
 Best,
 {your_name}`
@@ -63,8 +56,7 @@ const DeliveryTab = ({ project }: Props) => {
     company: project.name || "",
     review_link: `${window.location.origin}/client/${project.share_token}`,
     delivery_type: "FINAL" as DeliveryType,
-    tone: "PROFESSIONAL" as MessageTone,
-    custom_instructions: ""
+    tone: "PROFESSIONAL" as MessageTone
   });
 
   const [output, setOutput] = useState<{ subject: string; body: string } | null>(null);
@@ -101,13 +93,6 @@ const DeliveryTab = ({ project }: Props) => {
       .replace(/{company}/g, formData.company)
       .replace(/{review_link}/g, formData.review_link)
       .replace(/{your_name}/g, formData.your_name || "Me");
-
-    // Handle Custom Instructions
-    if (formData.custom_instructions.trim()) {
-      body = body.replace("{custom_instructions}", `\n${formData.custom_instructions.trim()}\n`);
-    } else {
-      body = body.replace("{custom_instructions}", "");
-    }
 
     // Clean up extra newlines
     body = body.replace(/\n\n\n/g, "\n\n").trim();
@@ -219,12 +204,14 @@ const DeliveryTab = ({ project }: Props) => {
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+            <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
               <Info className="h-3 w-3" />
-              {formData.delivery_type === "FINAL" && "Use this when the project is complete. It sounds polished, conclusive, and ready for official sign-off."}
-              {formData.delivery_type === "DRAFT" && "Perfect for initial concepts or rough cuts to get early feedback."}
-              {formData.delivery_type === "REVISION" && "Use this after addressing specific feedback from the client."}
-            </p>
+              <p>
+                {formData.delivery_type === "FINAL" && "Use this when the project is complete. It sounds polished, conclusive, and ready for official sign-off."}
+                {formData.delivery_type === "DRAFT" && "Perfect for initial concepts or rough cuts to get early feedback."}
+                {formData.delivery_type === "REVISION" && "Use this after addressing specific feedback from the client."}
+              </p>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -244,18 +231,6 @@ const DeliveryTab = ({ project }: Props) => {
                 </button>
               ))}
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <MessageSquare className="h-3 w-3 text-primary" /> Custom Instructions (Optional)
-            </label>
-            <Textarea 
-              placeholder="e.g., Mention that I'm going on vacation next week, or ask them to check the color grading specifically." 
-              className="min-h-[100px] resize-none"
-              value={formData.custom_instructions}
-              onChange={(e) => setFormData({ ...formData, custom_instructions: e.target.value })}
-            />
           </div>
 
           <Button onClick={generateMessage} className="w-full py-6 text-lg font-bold shadow-lg shadow-primary/20">
@@ -331,7 +306,7 @@ const DeliveryTab = ({ project }: Props) => {
           },
           { 
             question: "Can I customize the message?", 
-            answer: "Yes, you can use the 'Additional Notes' field to add specific details, or edit the message directly after copying it to your email client." 
+            answer: "Yes, you can edit the message directly after copying it to your email client or generating it here." 
           }
         ]} 
       />

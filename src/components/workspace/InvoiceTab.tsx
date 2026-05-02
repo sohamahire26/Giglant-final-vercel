@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import { MessageSquare, Copy, Mail, History, Trash2, CheckCircle2, AlertCircle, FileText } from "lucide-react";
+import { Copy, Mail, History, Trash2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import FAQSection from "@/components/FAQSection";
@@ -34,8 +33,6 @@ I'm sharing the invoice for {company}. The total amount due is \${amount}, with 
 
 Please let me know once the payment is processed.
 
-{custom_instructions}
-
 Best regards,  
 {your_name}`
   },
@@ -47,8 +44,6 @@ Just a quick reminder that the payment of \${amount} is still pending. The due d
 
 Kindly process it at your earliest convenience.
 
-{custom_instructions}
-
 Best regards,  
 {your_name}`
   },
@@ -59,8 +54,6 @@ Best regards,
 This is a final follow-up regarding the pending payment of \${amount}, which was due on {deadline}.
 
 Please process this as soon as possible to avoid any disruption.
-
-{custom_instructions}
 
 Best regards,  
 {your_name}`
@@ -75,8 +68,7 @@ const InvoiceTab = ({ project }: Props) => {
     company: project.name || "",
     amount: "",
     deadline: "",
-    message_type: "INITIAL" as MessageType,
-    custom_instructions: ""
+    message_type: "INITIAL" as MessageType
   });
 
   const [output, setOutput] = useState<{ subject: string; body: string } | null>(null);
@@ -129,12 +121,6 @@ const InvoiceTab = ({ project }: Props) => {
       .replace("{amount}", formData.amount)
       .replace("{deadline}", formData.deadline)
       .replace("{your_name}", formData.your_name || "Me");
-
-    if (formData.custom_instructions) {
-      body = body.replace("{custom_instructions}", `\n${formData.custom_instructions}\n`);
-    } else {
-      body = body.replace("{custom_instructions}", "");
-    }
 
     body = body.replace(/\n\n\n/g, "\n\n");
 
@@ -240,16 +226,6 @@ const InvoiceTab = ({ project }: Props) => {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Custom Instructions (Optional)</label>
-            <Textarea 
-              placeholder="Add any specific details or payment methods..." 
-              className="min-h-[100px]"
-              value={formData.custom_instructions}
-              onChange={(e) => setFormData({ ...formData, custom_instructions: e.target.value })}
-            />
           </div>
 
           <Button onClick={generateMessage} className="w-full" size="lg">

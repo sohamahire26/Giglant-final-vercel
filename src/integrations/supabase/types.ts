@@ -216,6 +216,56 @@ export type Database = {
         }
         Relationships: []
       }
+      support_tickets: {
+        Row: {
+          id: string
+          user_id: string
+          type: 'bug' | 'feedback' | 'contact'
+          subject: string
+          message: string
+          reply: string | null
+          status: string | null
+          tags: string[] | null
+          is_read_by_user: boolean | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: 'bug' | 'feedback' | 'contact'
+          subject: string
+          message: string
+          reply?: string | null
+          status?: string | null
+          tags?: string[] | null
+          is_read_by_user?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: 'bug' | 'feedback' | 'contact'
+          subject?: string
+          message?: string
+          reply?: string | null
+          status?: string | null
+          tags?: string[] | null
+          is_read_by_user?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

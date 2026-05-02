@@ -165,13 +165,12 @@ const Login = () => {
 
             <div className="space-y-6">
               {/* Google Button */}
-              <Button 
-                onClick={handleGoogleLogin} 
-                disabled={loading}
-                variant="default"
-                className="w-full py-8 text-lg font-semibold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:scale-[1.02] transition-all duration-200 border border-gray<dyad-write path="src/pages/Login.tsx" description="Complete the Login component with Google button and form">
-              200 border border-gray-200 bg-white hover:bg-gray-50"
-              >
+              <Button
+                              onClick={handleGoogleLogin}
+                              disabled={loading}
+                              variant="default"
+                              className="w-full py-8 text-lg font-semibold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:scale-[1.02] transition-all duration-200 border border-gray-200 bg-white hover:bg-gray-50"
+                            >
                 {loading ? (
                   <Loader2 className="mr-3 h-5 w-5 animate-spin text-gray-600" />
                 ) : (

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Mail, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, Mail, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
 
 const Login = () => {
   const { session } = useAuth();
@@ -20,6 +20,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [view, setView] = useState<"login" | "signup">("login");
   const [signUpSuccess, setSignUpSuccess] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState("");
 
   if (session) {
     return <Navigate to="/dashboard" replace />;
@@ -56,7 +57,7 @@ const Login = () => {
         });
         if (error) throw error;
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -64,15 +65,44 @@ const Login = () => {
           },
         });
         if (error) throw error;
-        setSignUpSuccess(true);
-        toast({
-          title: "Account created!",
-          description: "Please check your email to confirm your account.",
-        });
+        
+        // Check if email confirmation is required
+        if (data.user && !data.session) {
+          setSignUpSuccess(true);
+          setConfirmationEmail(email);
+          toast({
+            title: "Account created!",
+            description: "Please check your email to confirm your account.",
+          });
+        }
       }
     } catch (error: any) {
       toast({
         title: "Authentication Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!confirmationEmail) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: confirmationEmail,
+      });
+      if (error) throw error;
+      toast({
+        title: "Email resent!",
+        description: "Check your inbox for the confirmation link.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
         description: error.message,
         variant: "destructive",
       });
@@ -106,10 +136,18 @@ const Login = () => {
                 <div className="flex gap-3">
                   <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
                   <div className="text-sm text-emerald-800">
-                    <p className="font-bold">Check your inbox! 🚀</p>
+                    <p className="font-bold">Check your inbox! 🎉</p>
                     <p className="mt-1 opacity-90">
-                      If you don't see the link, please check your Spam or Promotions folder.
+                      We've sent a confirmation link to <strong>{confirmationEmail}</strong>. 
+                      Please check your inbox (and spam folder).
                     </p>
+                    <button 
+                      onClick={handleResendConfirmation}
+                      disabled={loading}
+                      className="mt-2 text-xs font-medium text-emerald-700 hover:underline disabled:opacity-50"
+                    >
+                      {loading ? "Sending..." : "Didn't receive it? Resend email"}
+                    </button>
                   </div>
                 </div>
               </div>

@@ -56,10 +56,9 @@ const Login = () => {
           password,
         });
         if (error) {
-          // Check if error is about invalid credentials
           if (error.message?.includes("Invalid login") || error.message?.includes("invalid email")) {
             toast({
-              title: "Invalid password",
+              title: "Invalid credentials",
               description: "Please check your email and password.",
               variant: "destructive",
             });
@@ -82,7 +81,6 @@ const Login = () => {
         });
         if (error) throw error;
         
-        // Check if email confirmation is required
         if (data.user && !data.session) {
           setSignUpSuccess(true);
           setConfirmationEmail(email);
@@ -148,7 +146,7 @@ const Login = () => {
                 <div className="flex gap-3">
                   <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
                   <div className="text-sm text-emerald-800">
-                    <p className="font-bold">Check your inbox! 🎉</p>
+                    <p className="font-bold">Check your inbox! 📧</p>
                     <p className="mt-1 opacity-90">
                       We've sent a confirmation link to <strong>{confirmationEmail}</strong>. 
                       Please check your inbox (and spam folder).
@@ -166,12 +164,13 @@ const Login = () => {
             )}
 
             <div className="space-y-6">
-              {/* Prominent Google Button */}
+              {/* Google Button */}
               <Button 
                 onClick={handleGoogleLogin} 
                 disabled={loading}
                 variant="default"
-                className="w-full py-8 text-lg font-semibold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:scale-[1.02] transition-all duration-200 border border-gray-200 bg-white hover:bg-gray-50"
+                className="w-full py-8 text-lg font-semibold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:scale-[1.02] transition-all duration-200 border border-gray<dyad-write path="src/pages/Login.tsx" description="Complete the Login component with Google button and form">
+              200 border border-gray-200 bg-white hover:bg-gray-50"
               >
                 {loading ? (
                   <Loader2 className="mr-3 h-5 w-5 animate-spin text-gray-600" />

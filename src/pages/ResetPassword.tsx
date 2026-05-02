@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Lock, AlertCircle, ArrowLeft } from "lucide-react";
+import { Loader2, Lock, AlertCircle, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -16,12 +16,16 @@ const ResetPassword = () => {
   const { session } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  
+  // States for "Forgot Password" (Logged out)
   const [email, setEmail] = useState("");
   const [requestSent, setRequestSent] = useState(false);
-  const [message, setMessage] = useState("");
-  const [isForgot, setIsForgot] = useState(true);
   const [confirmationEmail, setConfirmationEmail] = useState("");
-  const [confirmationSent, setConfirmationSent] = useState(false);
+
+  // States for "Change Password" (Logged in)
+  const [newPassword, setNewPassword] = useState("");
+  const [isForgot, setIsForgot] = useState(true);
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,7 +35,7 @@ const ResetPassword = () => {
     }
   }, [session]);
 
-  const handleRequestReset = async (e) => {
+  const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       toast({
@@ -43,12 +47,17 @@ const ResetPassword = () => {
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetUserByEmail(email);
+      // Correct Supabase method for sending reset link
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
       if (error) throw error;
       setConfirmationEmail(email);
-      setConfirmationSent(true);
-      setMessage("Check your inbox for a confirmation link.");
       setRequestSent(true);
+      toast({
+        title: "Reset link sent!",
+        description: "Check your inbox for the password reset link.",
+      });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -60,25 +69,25 @@ const ResetPassword = () => {
     }
   };
 
-  const handleConfirmReset = async (e) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    if (!newPassword) {
       toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address.",
+        title: "Missing password",
+        description: "Please enter a new password.",
         variant: "destructive",
       });
       return;
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password: email }); // This is wrong; need to capture new password
-      // We'll just navigate back to login after successful reset
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
       toast({
-        title: "Password reset successful!",
-        description: "You can now log in with your new password.",
+        title: "Password updated!",
+        description: "Your password has been changed successfully.",
       });
-      navigate("/login");
+      navigate("/dashboard");
     } catch (error: any) {
       toast({
         title: "Error",
@@ -90,7 +99,7 @@ const ResetPassword = () => {
     }
   };
 
-  if (loading) {
+  if (loading && !requestSent) {
     return (
       <Layout>
         <div className="flex min-h-[60vh] items-center justify-center">
@@ -100,8 +109,8 @@ const ResetPassword = () => {
     );
   }
 
+  // Scenario 1: User is logged in -> Change Password Form
   if (session && !isForgot) {
-    // User is signed in - show password change form
     return (
       <Layout>
         <SEOHead title="Change Password — Giglant" description="Update your Giglant account password." />
@@ -112,25 +121,29 @@ const ResetPassword = () => {
                 <h1 className="font-display text-2xl font-bold text-foreground">Change Password</h1>
                 <p className="mt-2 text-sm text-muted-foreground">Update your account password.</p>
               </div>
-              <form onSubmit={handleConfirmReset} className="space-y-4">
+              <form onSubmit={handleChangePassword} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="mb-1.5 block text-sm font-medium text-foreground">New Password</label>
+                  <Label htmlFor="new-password" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 ml-1">
+                    New Password
+                  </Label>
                   <Input
+                    id="new-password"
                     type="password"
                     placeholder="••••••••"
-                    value={email} // reuse email state for new password
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
                     required
                     className="w-full rounded-lg border border-border/40 bg-muted/20 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
                   />
                 </div>
                 <Button type="submit" disabled={loading} variant="secondary" className="w-full font-semibold">
-                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Save Password"}
+                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Save Password
                 </Button>
               </form>
               <div className="mt-4 text-center">
-                <Button variant="outline" onClick={() => navigate("/login")}>
-                  Back to Login
+                <Button variant="outline" onClick={() => navigate("/dashboard")}>
+                  Back to Dashboard
                 </Button>
               </div>
             </div>
@@ -140,6 +153,7 @@ const ResetPassword = () => {
     );
   }
 
+  // Scenario 2: User is logged out -> Forgot Password / Reset Request Form
   return (
     <Layout>
       <SEOHead title="Reset Password — Giglant" description="Reset your Giglant account password." />
@@ -157,25 +171,21 @@ const ResetPassword = () => {
                   Please check your inbox (and spam folder).
                 </p>
                 <Button 
-                  onClick={handleRequestReset} 
-                  disabled={loading}
+                  onClick={() => { setRequestSent(false); setEmail(""); }}
                   className="mt-4 w-full py-6 text-lg font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30"
                 >
-                  {loading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    "Resend Confirmation"
-                  )}
+                  Send Again
                 </Button>
               </div>
             ) : (
-              <div className="mb-8 text-center">
-                <h1 className="font-display text-3xl font-bold text-foreground">Reset Your Password</h1>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Enter your email address and we'll send you a link to reset your password.
-              </div>
+              <>
+                <div className="mb-8 text-center">
+                  <h1 className="font-display text-3xl font-bold text-foreground">Reset Your Password</h1>
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Enter your email address and we'll send you a link to reset your password.
+                  </p>
+                </div>
 
-              {confirmationSent ? null : (
                 <form onSubmit={handleRequestReset} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 ml-1">
@@ -200,27 +210,16 @@ const ResetPassword = () => {
                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Send Reset Link"}
                   </Button>
                 </form>
-              )}
 
-              {confirmationSent && (
-                <div className="mb-6 text-center">
-                  <p className="mt-2 text-sm text-muted-foreground">{message}</p>
-                  <Button                     onClick={() => setIsForgot(true)} 
-                    className="mt-3 w-full py-3 text-sm text-primary border border-primary/30 rounded-lg hover:bg-primary/10">
-                    Back to Login                  </Button>
-                </div>
-              )}
-
-              {isForgot && (
-                <div className="text-center">
+                <div className="mt-4 text-center">
                   <p className="mt-4 text-sm text-muted-foreground">
                     Already have an account? 
-                    <Link href="/login" className="text-primary hover:underline">
+                    <a href="/login" className="text-primary hover:underline">
                       Sign In
-                    </Link>
+                    </a>
                   </p>
                 </div>
-              )}
+              </>
             )}
           </div>
         </div>

@@ -30,39 +30,6 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           excerpt?: string | null
-          <dyad-write path="src/integrations/supabase/types.ts" description="Updating database types to include support_messages">
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
-
-export type Database = {
-  public: {
-    Tables: {
-      blog_posts: {
-        Row: {
-          category: string
-          content: string
-          cover_image_url: string | null
-          created_at: string
-          excerpt: string | null
-          id: string
-          meta_description: string | null
-          meta_title: string | null
-          published: boolean | null
-          slug: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          category: string
-          content?: string
-          cover_image_url?: string | null
-          created_at?: string
-          excerpt?: string | null
           id?: string
           meta_description?: string | null
           meta_title?: string | null

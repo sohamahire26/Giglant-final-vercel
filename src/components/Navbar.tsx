@@ -2,18 +2,22 @@
 
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, User, LogOut, LayoutDashboard, MessageSquare, Sparkles } from "lucide-react";
+import { Menu, X, User, LogOut, LayoutDashboard, MessageSquare, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "./AuthProvider";
 import { NavLink } from "./NavLink";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
+const OWNER_EMAIL = "Sohamahire26@gmail.com";
+
 const Navbar = () => {
   const { user, session, signOut, profile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const location = useLocation();
+
+  const isOwner = profile?.is_admin || user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
   useEffect(() => {
     setIsOpen(false);
@@ -76,6 +80,13 @@ const Navbar = () => {
 
           {session ? (
             <div className="flex items-center gap-4 border-l border-border pl-8">
+              {isOwner && (
+                <Link to="/admin">
+                  <Button variant="ghost" size="sm" className="gap-2 text-primary hover:bg-primary/5">
+                    <ShieldCheck size={16} /> Admin
+                  </Button>
+                </Link>
+              )}
               <Link to="/support" className="relative text-muted-foreground hover:text-primary transition-colors">
                 <MessageSquare size={20} />
                 {unreadCount > 0 && (
@@ -128,6 +139,11 @@ const Navbar = () => {
             <hr className="border-border" />
             {session ? (
               <>
+                {isOwner && (
+                  <Link to="/admin" className="flex items-center gap-2 text-lg font-medium text-primary">
+                    <ShieldCheck size={20} /> Admin Panel
+                  </Link>
+                )}
                 <Link to="/dashboard" className="flex items-center gap-2 text-lg font-medium text-foreground">
                   <LayoutDashboard size={20} /> Dashboard
                 </Link>

@@ -15,7 +15,7 @@ import Blog from "./pages/Blog";
 import BlogCategory from "./pages/BlogCategory";
 import BlogPost from "./pages/BlogPost";
 import BlogWriter from "./pages/BlogWriter";
-import BlogAdmin from "./pages/BlogAdmin";
+import Admin from "./pages/Admin";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
@@ -32,7 +32,6 @@ import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Pricing from "./pages/Pricing";
 import Support from "./pages/Support";
-import SupportAdmin from "./pages/SupportAdmin";
 import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
@@ -57,13 +56,12 @@ const App = () => (
             <Route path="/tools/payment-generator" element={<PaymentGenerator />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/write" element={<BlogWriter />} />
-            <Route path="/blog/admin" element={<BlogAdmin />} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="/blog/:category" element={<BlogCategory />} />
             <Route path="/blog/:category/:slug" element={<BlogPost />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/support" element={<Support />} />
-            <Route path="/support/admin" element={<SupportAdmin />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />

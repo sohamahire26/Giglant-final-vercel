@@ -2,40 +2,50 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { Plus, FolderOpen, Clock, ChevronRight, Loader2, Search, Lock, AlertCircle, Sparkles, RefreshCw, Archive } from "lucide-react";
+import { Plus, FolderOpen, Clock, ChevronRight, Loader2, Search, Lock, AlertCircle, Sparkles, RefreshCw, Archive, MessageSquare } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { getSupportMessages } from "@/lib/api";
 
 const Dashboard = () => {
   const { user, session, profile, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
+  const [supportMessages, setSupportMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [search, setSearch] = useState("");
 
-  const fetchProjects = useCallback(async (silent = false) => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!user) return;
     
     if (!silent) setLoading(true);
     else setIsRefreshing(true);
 
     try {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+      const [projectsRes, supportRes] = await Promise.all([
+        supabase
+          .from("projects")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false }),
+        getSupportMessages()
+      ]);
 
-      if (error) throw error;
+      if (projectsRes.error) throw projectsRes.error;
 
-      if (data) {
-        setProjects(data);
+      if (projectsRes.data) {
+        setProjects(projectsRes.data);
+      }
+      
+      if (supportRes) {
+        // Filter for user's messages (RLS handles this, but we filter for safety)
+        setSupportMessages(supportRes.filter((m: any) => m.user_id === user.id));
       }
     } catch (err) {
-      console.error("[Dashboard] Error fetching projects:", err);
+      console.error("[Dashboard] Error fetching data:", err);
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -44,11 +54,11 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (user) {
-      fetchProjects();
+      fetchData();
     } else if (!authLoading && !session) {
       setLoading(false);
     }
-  }, [user, authLoading, session, fetchProjects]);
+  }, [user, authLoading, session, fetchData]);
 
   if (authLoading && projects.length === 0) {
     return (
@@ -68,15 +78,15 @@ const Dashboard = () => {
   );
 
   const isPro = profile?.plan_type === 'pro';
-  // Free users can only have 1 active project. Others are "archived" or "locked"
   const activeProjectsCount = projects.filter(p => {
     const created = new Date(p.created_at).getTime();
     const now = new Date().getTime();
     const diffDays = (now - created) / (1000 * 60 * 60 * 24);
-    return diffDays <= 30; // Consider projects active for 30 days for the limit check
+    return diffDays <= 30;
   }).length;
 
   const projectLimitReached = !isPro && activeProjectsCount >= 1;
+  const unreadSupport = supportMessages.filter(m => m.status === 'replied').length;
 
   return (
     <Layout>
@@ -94,7 +104,7 @@ const Dashboard = () => {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => fetchProjects(true)} 
+                onClick={() => fetchData(true)} 
                 disabled={isRefreshing}
                 className="text-muted-foreground"
               >
@@ -121,6 +131,47 @@ const Dashboard = () => {
               <div>
                 <p className="text-sm font-semibold text-amber-800">Free Plan Limit Reached</p>
                 <p className="text-xs text-amber-700">You can only have 1 active project on the Free plan. Upgrade to Pro for unlimited projects and longer storage.</p>
+              </div>
+            </div>
+          )}
+
+          {supportMessages.length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                  Support Tickets
+                  {unreadSupport > 0 && (
+                    <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white animate-pulse">
+                      {unreadSupport} NEW REPLY
+                    </span>
+                  )}
+                </h2>
+                <Link to="/contact" className="text-xs font-semibold text-primary hover:underline">View All</Link>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {supportMessages.slice(0, 3).map(msg => (
+                  <Link 
+                    key={msg.id} 
+                    to="/contact" 
+                    className={`flex flex-col rounded-xl border p-4 transition-all hover:shadow-sm ${
+                      msg.status === 'replied' ? 'border-primary/30 bg-primary/5' : 'border-border bg-card'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                        msg.status === 'new' ? 'bg-amber-500 text-white' : 
+                        msg.status === 'replied' ? 'bg-blue-500 text-white' : 
+                        'bg-gray-500 text-white'
+                      }`}>
+                        {msg.status}
+                      </span>
+                      <span className="text-[9px] text-muted-foreground">{new Date(msg.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <h3 className="text-sm font-semibold text-foreground truncate">{msg.subject}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground line-clamp-1">{msg.message}</p>
+                  </Link>
+                ))}
               </div>
             </div>
           )}

@@ -71,7 +71,23 @@ const Admin = () => {
         setPosts(data || []);
       } else {
         const data = await getSupportMessages();
-        setMessages(data || []);
+        
+        // Auto-cleanup: Delete messages viewed more than 7 days ago
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.setDate(now.getDate() - 7));
+        
+        const toDelete = data.filter((m: any) => 
+          m.status === 'viewed' && 
+          m.viewed_at && 
+          new Date(m.viewed_at) < sevenDaysAgo
+        );
+
+        if (toDelete.length > 0) {
+          await Promise.all(toDelete.map((m: any) => deleteSupportMessage(m.id)));
+          setMessages(data.filter((m: any) => !toDelete.find((d: any) => d.id === m.id)));
+        } else {
+          setMessages(data || []);
+        }
       }
     } catch (err) {
       console.error(err);

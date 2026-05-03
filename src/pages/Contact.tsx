@@ -37,8 +37,16 @@ const ContactPage = () => {
     setHistoryLoading(true);
     try {
       const data = await getSupportMessages();
-      // Filter for current user's messages (though RLS handles this, we filter locally too)
-      setHistory(data.filter((m: any) => m.user_id === user?.id));
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+      
+      // Filter for current user's messages AND only those from the last 7 days
+      const filtered = data.filter((m: any) => {
+        const created = new Date(m.created_at);
+        return m.user_id === user?.id && created >= sevenDaysAgo;
+      });
+      
+      setHistory(filtered);
     } catch (err) {
       console.error(err);
     } finally {
@@ -162,6 +170,9 @@ const ContactPage = () => {
             </div>
           ) : (
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+              <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-[10px] font-bold text-amber-600 uppercase tracking-widest">
+                <Clock className="h-3 w-3" /> Note: Tickets are automatically deleted after 7 days.
+              </div>
               {historyLoading ? (
                 <div className="flex py-12 justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : history.length > 0 ? (

@@ -73,22 +73,19 @@ const Admin = () => {
         setPosts(data || []);
       } else {
         const data = await getSupportMessages();
-        console.log("[Admin] Fetched support messages:", data);
         
         if (data && data.length > 0) {
-          // Auto-cleanup: Delete messages viewed more than 7 days ago
           const now = new Date();
-          const sevenDaysAgo = new Date(now.setDate(now.getDate() - 7));
+          const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
           
-          const toDelete = data.filter((m: any) => 
-            m.status === 'viewed' && 
-            m.viewed_at && 
-            new Date(m.viewed_at) < sevenDaysAgo
-          );
+          // Identify messages older than 7 days for deletion
+          const toDelete = data.filter((m: any) => new Date(m.created_at) < sevenDaysAgo);
 
           if (toDelete.length > 0) {
+            console.log(`[Admin] Deleting ${toDelete.length} expired messages...`);
             await Promise.all(toDelete.map((m: any) => deleteSupportMessage(m.id)));
-            setMessages(data.filter((m: any) => !toDelete.find((d: any) => d.id === m.id)));
+            // Only show messages that are NOT expired
+            setMessages(data.filter((m: any) => new Date(m.created_at) >= sevenDaysAgo));
           } else {
             setMessages(data);
           }
@@ -100,7 +97,7 @@ const Admin = () => {
       console.error("[Admin] Error fetching data:", err);
       toast({
         title: "Fetch Error",
-        description: err.message || "Could not load data. Check RLS policies.",
+        description: err.message || "Could not load data.",
         variant: "destructive"
       });
     } finally {
@@ -364,7 +361,12 @@ const Admin = () => {
             )
           ) : (
             <div className="space-y-6">
-              <h2 className="font-display text-xl font-bold">Support Messages</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-xl font-bold">Support Messages</h2>
+                <div className="flex items-center gap-2 rounded-full bg-amber-500/10 px-3 py-1 text-[10px] font-bold text-amber-600">
+                  <Clock className="h-3 w-3" /> 7-DAY AUTO-DELETE ACTIVE
+                </div>
+              </div>
               {loading ? (
                 <div className="flex py-12 justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : (

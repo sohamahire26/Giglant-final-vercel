@@ -41,8 +41,16 @@ const Dashboard = () => {
       }
       
       if (supportRes) {
-        // Filter for user's messages (RLS handles this, but we filter for safety)
-        setSupportMessages(supportRes.filter((m: any) => m.user_id === user.id));
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+        
+        // Filter for user's messages AND only those from the last 7 days
+        const filtered = supportRes.filter((m: any) => {
+          const created = new Date(m.created_at);
+          return m.user_id === user.id && created >= sevenDaysAgo;
+        });
+        
+        setSupportMessages(filtered);
       }
     } catch (err) {
       console.error("[Dashboard] Error fetching data:", err);

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { Plus, FolderOpen, Clock, ChevronRight, Loader2, Search, Lock, AlertCircle, Sparkles, RefreshCw, Archive, MessageSquare, History } from "lucide-react";
+import { Plus, FolderOpen, Clock, ChevronRight, Loader2, Search, Lock, AlertCircle, Sparkles, RefreshCw, Archive } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
@@ -15,33 +15,27 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [search, setSearch] = useState("");
-  const [unreadSupport, setUnreadSupport] = useState(0);
 
-  const fetchDashboardData = useCallback(async (silent = false) => {
+  const fetchProjects = useCallback(async (silent = false) => {
     if (!user) return;
     
     if (!silent) setLoading(true);
     else setIsRefreshing(true);
 
     try {
-      const [projectsRes, supportRes] = await Promise.all([
-        supabase
-          .from("projects")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("support_tickets")
-          .select("*", { count: "exact", head: true })
-          .eq("is_read_by_user", false)
-          .not("reply", "is", null)
-      ]);
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
-      if (projectsRes.error) throw projectsRes.error;
-      if (projectsRes.data) setProjects(projectsRes.data);
-      setUnreadSupport(supportRes.count || 0);
+      if (error) throw error;
+
+      if (data) {
+        setProjects(data);
+      }
     } catch (err) {
-      console.error("[Dashboard] Error fetching data:", err);
+      console.error("[Dashboard] Error fetching projects:", err);
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -50,11 +44,11 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (user) {
-      fetchDashboardData();
+      fetchProjects();
     } else if (!authLoading && !session) {
       setLoading(false);
     }
-  }, [user, authLoading, session, fetchDashboardData]);
+  }, [user, authLoading, session, fetchProjects]);
 
   if (authLoading && projects.length === 0) {
     return (
@@ -74,11 +68,12 @@ const Dashboard = () => {
   );
 
   const isPro = profile?.plan_type === 'pro';
+  // Free users can only have 1 active project. Others are "archived" or "locked"
   const activeProjectsCount = projects.filter(p => {
     const created = new Date(p.created_at).getTime();
     const now = new Date().getTime();
     const diffDays = (now - created) / (1000 * 60 * 60 * 24);
-    return diffDays <= 30;
+    return diffDays <= 30; // Consider projects active for 30 days for the limit check
   }).length;
 
   const projectLimitReached = !isPro && activeProjectsCount >= 1;
@@ -99,7 +94,7 @@ const Dashboard = () => {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => fetchDashboardData(true)} 
+                onClick={() => fetchProjects(true)} 
                 disabled={isRefreshing}
                 className="text-muted-foreground"
               >
@@ -120,129 +115,95 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-4 mb-8">
-            <div className="lg:col-span-3 space-y-6">
-              {unreadSupport > 0 && (
-                <Link to="/support" className="flex items-center justify-between rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4 transition-all hover:bg-blue-500/10">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white">
-                      <MessageSquare size={20} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-blue-900">New Support Reply!</p>
-                      <p className="text-xs text-blue-700">You have {unreadSupport} unread response{unreadSupport > 1 ? 's' : ''} from the Giglant team.</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-blue-500" />
-                </Link>
-              )}
-
-              {projectLimitReached && (
-                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-amber-800">Free Plan Limit Reached</p>
-                    <p className="text-xs text-amber-700">You can only have 1 active project on the Free plan. Upgrade to Pro for unlimited projects and longer storage.</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Search projects or clients..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm focus:border-primary focus:outline-none shadow-sm"
-                />
-              </div>
-
-              {loading && projects.length === 0 ? (
-                <div className="flex py-20 justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-              ) : filteredProjects.length > 0 ? (
-                <div className="grid gap-4">
-                  {filteredProjects.map((project) => {
-                    const created = new Date(project.created_at).getTime();
-                    const now = new Date().getTime();
-                    const diffDays = (now - created) / (1000 * 60 * 60 * 24);
-                    
-                    const isPro = profile?.plan_type === 'pro';
-                    const expiryDays = isPro ? 90 : 30;
-                    const isExpired = diffDays > expiryDays;
-                    const isLocked = !isPro && diffDays > 7 && !isExpired;
-
-                    return (
-                      <Link
-                        key={project.id}
-                        to={`/project/${project.id}`}
-                        className={`group flex items-center justify-between rounded-2xl border p-5 transition-all ${
-                          isExpired 
-                            ? "border-border bg-muted/50 opacity-60 grayscale" 
-                            : isLocked
-                            ? "border-amber-500/20 bg-amber-50/5"
-                            : "border-border bg-card hover:border-primary/50 hover:shadow-md"
-                        }`}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className={`flex h-12 w-12 items-center justify-center rounded-xl transition-colors ${
-                            isExpired
-                              ? "bg-muted text-muted-foreground"
-                              : isLocked 
-                              ? "bg-amber-500/20 text-amber-600" 
-                              : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white"
-                          }`}>
-                            {isExpired ? <Archive size={24} /> : isLocked ? <Lock size={24} /> : <FolderOpen size={24} />}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-display font-semibold text-foreground">{project.name}</h3>
-                              {isExpired ? (
-                                <span className="rounded-full bg-muted-foreground/20 px-2 py-0.5 text-[10px] font-bold text-muted-foreground">EXPIRED</span>
-                              ) : isLocked ? (
-                                <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">LOCKED</span>
-                              ) : null}
-                            </div>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1"><Clock size={12} /> {new Date(project.created_at).toLocaleDateString()}</span>
-                              {project.client_name && <span className="rounded-full bg-secondary px-2 py-0.5">Client: {project.client_name}</span>}
-                            </div>
-                          </div>
-                        </div>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
-                      </Link>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="rounded-3xl border border-dashed border-border bg-card p-20 text-center">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                    <FolderOpen size={32} />
-                  </div>
-                  <h2 className="font-display text-xl font-bold text-foreground">No projects found</h2>
-                  <p className="mt-2 text-muted-foreground">Create your first project to start managing your workflow.</p>
-                  <Button asChild className="mt-6" variant="outline" disabled={projectLimitReached}>
-                    <Link to="/projects/new">Create Project</Link>
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            <div className="lg:col-span-1 space-y-6">
-              <div className="rounded-2xl border border-border bg-card p-6">
-                <h3 className="font-display font-bold text-foreground mb-4">Quick Support</h3>
-                <p className="text-xs text-muted-foreground mb-4">Need help with your workflow or found a bug?</p>
-                <div className="space-y-2">
-                  <Button asChild variant="outline" className="w-full justify-start gap-2">
-                    <Link to="/contact"><MessageSquare size={16} /> Contact Us</Link>
-                  </Button>
-                  <Button asChild variant="ghost" className="w-full justify-start gap-2 text-muted-foreground">
-                    <Link to="/support"><History size={16} /> Support History</Link>
-                  </Button>
-                </div>
+          {projectLimitReached && (
+            <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-amber-800">Free Plan Limit Reached</p>
+                <p className="text-xs text-amber-700">You can only have 1 active project on the Free plan. Upgrade to Pro for unlimited projects and longer storage.</p>
               </div>
             </div>
+          )}
+
+          <div className="mb-6 relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search projects or clients..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-xl border border-border bg-card py-3 pl-10 pr-4 text-sm focus:border-primary focus:outline-none shadow-sm"
+            />
           </div>
+
+          {loading && projects.length === 0 ? (
+            <div className="flex py-20 justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+          ) : filteredProjects.length > 0 ? (
+            <div className="grid gap-4">
+              {filteredProjects.map((project) => {
+                const created = new Date(project.created_at).getTime();
+                const now = new Date().getTime();
+                const diffDays = (now - created) / (1000 * 60 * 60 * 24);
+                
+                const isPro = profile?.plan_type === 'pro';
+                const expiryDays = isPro ? 90 : 30;
+                const isExpired = diffDays > expiryDays;
+                const isLocked = !isPro && diffDays > 7 && !isExpired;
+
+                return (
+                  <Link
+                    key={project.id}
+                    to={`/project/${project.id}`}
+                    className={`group flex items-center justify-between rounded-2xl border p-5 transition-all ${
+                      isExpired 
+                        ? "border-border bg-muted/50 opacity-60 grayscale" 
+                        : isLocked
+                        ? "border-amber-500/20 bg-amber-500/5"
+                        : "border-border bg-card hover:border-primary/50 hover:shadow-md"
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`flex h-12 w-12 items-center justify-center rounded-xl transition-colors ${
+                        isExpired
+                          ? "bg-muted text-muted-foreground"
+                          : isLocked 
+                          ? "bg-amber-500/20 text-amber-600" 
+                          : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white"
+                      }`}>
+                        {isExpired ? <Archive size={24} /> : isLocked ? <Lock size={24} /> : <FolderOpen size={24} />}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-display font-semibold text-foreground">{project.name}</h3>
+                          {isExpired ? (
+                            <span className="rounded-full bg-muted-foreground/20 px-2 py-0.5 text-[10px] font-bold text-muted-foreground">EXPIRED</span>
+                          ) : isLocked ? (
+                            <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">LOCKED</span>
+                          ) : null}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><Clock size={12} /> {new Date(project.created_at).toLocaleDateString()}</span>
+                          {project.client_name && <span className="rounded-full bg-secondary px-2 py-0.5">Client: {project.client_name}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="rounded-3xl border border-dashed border-border bg-card p-20 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <FolderOpen size={32} />
+              </div>
+              <h2 className="font-display text-xl font-bold text-foreground">No projects found</h2>
+              <p className="mt-2 text-muted-foreground">Create your first project to start managing your workflow.</p>
+              <Button asChild className="mt-6" variant="outline" disabled={projectLimitReached}>
+                <Link to="/projects/new">Create Project</Link>
+              </Button>
+            </div>
+          )}
         </div>
       </section>
     </Layout>

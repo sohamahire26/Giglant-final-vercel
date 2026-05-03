@@ -1,162 +1,151 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, User, LogOut, LayoutDashboard, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "./AuthProvider";
-import { NavLink } from "./NavLink";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { Menu, X, ChevronDown, User as UserIcon } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { useAuth } from "./AuthProvider";
+import { Button } from "./ui/button";
+
+const tools = [
+  { name: "File Renamer", href: "/tools/file-renamer" },
+];
 
 const Navbar = () => {
-  const { user, session, signOut } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const location = useLocation();
-
-  useEffect(() => {
-    setIsOpen(false);
-  }, [location]);
-
-  useEffect(() => {
-    if (user) {
-      const fetchUnreadCount = async () => {
-        const { count } = await supabase
-          .from("support_tickets")
-          .select("*", { count: "exact", head: true })
-          .eq("is_read_by_user", false)
-          .not("reply", "is", null);
-        
-        setUnreadCount(count || 0);
-      };
-
-      fetchUnreadCount();
-
-      const channel = supabase
-        .channel("navbar-support-notifications")
-        .on(
-          "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "support_tickets", filter: `user_id=eq.${user.id}` },
-          () => fetchUnreadCount()
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user]);
+  const { session } = useAuth();
 
   const navLinks = [
-    { name: "Tools", href: "/tools" },
+    { name: "Home", href: "/" },
+    { name: session ? "Dashboard" : "Projects", href: session ? "/dashboard" : "/projects/new" },
+    { name: "Tools", href: "/tools", children: tools },
     { name: "Pricing", href: "/pricing" },
     { name: "Blog", href: "/blog" },
   ];
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
-      <div className="container-tight flex h-16 items-center justify-between px-4">
+    <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-lg">
+      <div className="container-tight flex h-24 items-center justify-between px-4 md:px-8">
         <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="Giglant" className="h-10 w-auto" />
+          <img src={logo} alt="Giglant" className="h-40 w-auto" />
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden items-center gap-8 md:flex">
-          {navLinks.map((link) => (
-            <NavLink
-              key={link.href}
-              to={link.href}
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-              activeClassName="text-primary"
-            >
-              {link.name}
-            </NavLink>
-          ))}
-
-          {session ? (
-            <div className="flex items-center gap-4 border-l border-border pl-8">
-              <Link to="/support" className="relative text-muted-foreground hover:text-primary transition-colors">
-                <MessageSquare size={20} />
-                {unreadCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
-                    {unreadCount}
-                  </span>
-                )}
+        <div className="hidden items-center gap-1 md:flex">
+          {navLinks.map((link) =>
+            link.children ? (
+              <div key={link.name} className="relative group">
+                <Link
+                  to={link.href}
+                  className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary ${location.pathname.startsWith("/tools") ? "text-primary" : "text-foreground"}`}
+                >
+                  {link.name}
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </Link>
+                <div className="invisible absolute left-0 top-full w-60 rounded-lg border border-border bg-card p-2 opacity-0 shadow-lg transition-all group-hover:visible group-hover:opacity-100">
+                  {link.children.map((child) => (
+                    <Link
+                      key={child.href}
+                      to={child.href}
+                      className="block rounded-md px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+                    >
+                      {child.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <Link
+                key={link.name}
+                to={link.href}
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary ${location.pathname === link.href ? "text-primary" : "text-foreground"}`}
+              >
+                {link.name}
               </Link>
-              <Link to="/dashboard">
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <LayoutDashboard size={16} /> Dashboard
-                </Button>
-              </Link>
-              <Link to="/profile">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <User size={16} /> Profile
-                </Button>
-              </Link>
-              <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-destructive">
-                <LogOut size={16} />
-              </Button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-4">
-              <Link to="/login">
-                <Button variant="ghost" size="sm">Sign In</Button>
-              </Link>
-              <Link to="/login">
-                <Button size="sm" className="shadow-lg shadow-primary/20">Get Started</Button>
-              </Link>
-            </div>
+            )
           )}
+          
+          <div className="ml-4 flex items-center gap-2 border-l border-border pl-4">
+            {session ? (
+              <Link to="/profile" className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary/80">
+                <UserIcon size={16} />
+                Profile
+              </Link>
+            ) : (
+              <Link to="/login" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
+                Sign In
+              </Link>
+            )}
+          </div>
         </div>
 
-        {/* Mobile Menu Button */}
-        <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
+        {/* Mobile toggle */}
+        <button
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="rounded-lg p-2 text-foreground md:hidden hover:bg-secondary"
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
 
-      {/* Mobile Navigation */}
-      {isOpen && (
-        <div className="border-t border-border bg-background p-4 md:hidden">
-          <div className="flex flex-col gap-4">
-            {navLinks.map((link) => (
-              <Link key={link.href} to={link.href} className="text-lg font-medium text-foreground">
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="border-t border-border bg-background px-4 py-4 md:hidden">
+          {navLinks.map((link) =>
+            link.children ? (
+              <div key={link.name}>
+                <button
+                  onClick={() => setToolsOpen(!toolsOpen)}
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-secondary"
+                >
+                  {link.name}
+                  <ChevronDown className={`h-4 w-4 transition-transform ${toolsOpen ? "rotate-180" : ""}`} />
+                </button>
+                {toolsOpen && (
+                  <div className="ml-4">
+                    {link.children.map((child) => (
+                      <Link
+                        key={child.href}
+                        to={child.href}
+                        onClick={() => setMobileOpen(false)}
+                        className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-secondary"
+                      >
+                        {child.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                key={link.name}
+                to={link.href}
+                onClick={() => setMobileOpen(false)}
+                className="block rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-secondary"
+              >
                 {link.name}
               </Link>
-            ))}
-            <hr className="border-border" />
+            )
+          )}
+          <div className="mt-4 border-t border-border pt-4 space-y-2">
             {session ? (
-              <>
-                <Link to="/dashboard" className="flex items-center gap-2 text-lg font-medium text-foreground">
-                  <LayoutDashboard size={20} /> Dashboard
-                </Link>
-                <Link to="/support" className="flex items-center justify-between text-lg font-medium text-foreground">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare size={20} /> Support
-                  </div>
-                  {unreadCount > 0 && (
-                    <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-white">
-                      {unreadCount} New
-                    </span>
-                  )}
-                </Link>
-                <Link to="/profile" className="flex items-center gap-2 text-lg font-medium text-foreground">
-                  <User size={20} /> Profile
-                </Link>
-                <Button variant="destructive" onClick={signOut} className="w-full justify-start gap-2">
-                  <LogOut size={20} /> Sign Out
-                </Button>
-              </>
+              <Link
+                to="/profile"
+                onClick={() => setMobileOpen(false)}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 py-2.5 text-sm font-medium text-foreground"
+              >
+                <UserIcon size={16} />
+                Profile
+              </Link>
             ) : (
-              <div className="flex flex-col gap-2">
-                <Link to="/login">
-                  <Button variant="outline" className="w-full">Sign In</Button>
-                </Link>
-                <Link to="/login">
-                  <Button className="w-full">Get Started</Button>
-                </Link>
-              </div>
+              <Link
+                to="/login"
+                onClick={() => setMobileOpen(false)}
+                className="flex w-full items-center justify-center rounded-lg bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground"
+              >
+                Sign In
+              </Link>
             )}
           </div>
         </div>

@@ -30,6 +30,39 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           excerpt?: string | null
+          <dyad-write path="src/integrations/supabase/types.ts" description="Updating database types to include support_messages">
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  public: {
+    Tables: {
+      blog_posts: {
+        Row: {
+          category: string
+          content: string
+          cover_image_url: string | null
+          created_at: string
+          excerpt: string | null
+          id: string
+          meta_description: string | null
+          meta_title: string | null
+          published: boolean | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          content?: string
+          cover_image_url?: string | null
+          created_at?: string
+          excerpt?: string | null
           id?: string
           meta_description?: string | null
           meta_title?: string | null
@@ -53,6 +86,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      support_messages: {
+        Row: {
+          id: string
+          user_id: string
+          type: 'bug' | 'feedback' | 'contact'
+          subject: string
+          message: string
+          status: 'new' | 'replied' | 'viewed'
+          admin_reply: string | null
+          created_at: string
+          updated_at: string
+          viewed_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: 'bug' | 'feedback' | 'contact'
+          subject: string
+          message: string
+          status?: 'new' | 'replied' | 'viewed'
+          admin_reply?: string | null
+          created_at?: string
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: 'bug' | 'feedback' | 'contact'
+          subject?: string
+          message?: string
+          status?: 'new' | 'replied' | 'viewed'
+          admin_reply?: string | null
+          created_at?: string
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       profiles: {
         Row: {

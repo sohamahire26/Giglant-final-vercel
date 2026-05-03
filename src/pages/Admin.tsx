@@ -39,7 +39,6 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -64,13 +63,7 @@ const Admin = () => {
 
   const isOwner = user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
-  useEffect(() => {
-    if (isOwner) {
-      fetchData();
-    }
-  }, [isOwner, activeTab]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       if (activeTab === "blog") {
@@ -85,7 +78,13 @@ const Admin = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (isOwner) {
+      fetchData();
+    }
+  }, [isOwner, fetchData]);
 
   // Blog Logic
   const handleEditPost = async (id: string) => {
@@ -336,7 +335,6 @@ const Admin = () => {
             <div className="space-y-6">
               <h2 className="font-display text-xl font-bold">Support Messages</h2>
               {loading ? (
-                <div className="flex py-12 justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /><dyad-write path="src/pages/Admin.tsx" description="Continuing the Admin dashboard implementation">
                 <div className="flex py-12 justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
               ) : (
                 <div className="grid gap-6">

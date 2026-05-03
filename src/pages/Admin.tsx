@@ -6,7 +6,7 @@ import {
   Plus, Edit, Trash2, Loader2, ArrowLeft, FileText, Eye, 
   MessageSquare, Tag, Reply, CheckCircle2, Clock, Save, 
   Bold, Italic, Heading2, Link2, List, ImageIcon, Search,
-  LayoutDashboard, ShieldCheck, AlertCircle
+  LayoutDashboard, ShieldCheck, AlertCircle, RefreshCw
 } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
@@ -64,6 +64,8 @@ const Admin = () => {
   const isOwner = user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
   const fetchData = useCallback(async () => {
+    if (!isOwner) return;
+    
     setLoading(true);
     try {
       if (activeTab === "blog") {
@@ -71,30 +73,40 @@ const Admin = () => {
         setPosts(data || []);
       } else {
         const data = await getSupportMessages();
+        console.log("[Admin] Fetched support messages:", data);
         
-        // Auto-cleanup: Delete messages viewed more than 7 days ago
-        const now = new Date();
-        const sevenDaysAgo = new Date(now.setDate(now.getDate() - 7));
-        
-        const toDelete = data.filter((m: any) => 
-          m.status === 'viewed' && 
-          m.viewed_at && 
-          new Date(m.viewed_at) < sevenDaysAgo
-        );
+        if (data && data.length > 0) {
+          // Auto-cleanup: Delete messages viewed more than 7 days ago
+          const now = new Date();
+          const sevenDaysAgo = new Date(now.setDate(now.getDate() - 7));
+          
+          const toDelete = data.filter((m: any) => 
+            m.status === 'viewed' && 
+            m.viewed_at && 
+            new Date(m.viewed_at) < sevenDaysAgo
+          );
 
-        if (toDelete.length > 0) {
-          await Promise.all(toDelete.map((m: any) => deleteSupportMessage(m.id)));
-          setMessages(data.filter((m: any) => !toDelete.find((d: any) => d.id === m.id)));
+          if (toDelete.length > 0) {
+            await Promise.all(toDelete.map((m: any) => deleteSupportMessage(m.id)));
+            setMessages(data.filter((m: any) => !toDelete.find((d: any) => d.id === m.id)));
+          } else {
+            setMessages(data);
+          }
         } else {
-          setMessages(data || []);
+          setMessages([]);
         }
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error("[Admin] Error fetching data:", err);
+      toast({
+        title: "Fetch Error",
+        description: err.message || "Could not load data. Check RLS policies.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, isOwner, toast]);
 
   useEffect(() => {
     if (isOwner) {
@@ -266,6 +278,9 @@ const Admin = () => {
                 onClick={() => { setActiveTab("support"); setView("list"); }}
               >
                 <MessageSquare className="mr-2 h-4 w-4" /> Support
+              </Button>
+              <Button variant="ghost" size="icon" onClick={fetchData} disabled={loading}>
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               </Button>
             </div>
           </div>

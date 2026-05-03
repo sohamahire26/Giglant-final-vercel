@@ -26,7 +26,7 @@ export type Database = {
         }
         Insert: {
           category: string
-          content?: string
+          content: string
           cover_image_url?: string | null
           created_at?: string
           excerpt?: string | null
@@ -91,15 +91,7 @@ export type Database = {
           updated_at?: string
           viewed_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "support_messages_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -132,15 +124,7 @@ export type Database = {
           subscription_id?: string | null
           is_admin?: boolean
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: []
       }
       file_comments: {
         Row: {
@@ -173,15 +157,7 @@ export type Database = {
           is_resolved?: boolean | null
           timestamp_seconds?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "file_comments_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "project_files"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       project_files: {
         Row: {
@@ -198,8 +174,8 @@ export type Database = {
           created_at?: string
           drive_file_id?: string | null
           drive_url: string
-          file_type?: string
-          filename?: string
+          file_type: string
+          filename: string
           id?: string
           project_id: string
           sort_order?: number | null
@@ -214,15 +190,7 @@ export type Database = {
           project_id?: string
           sort_order?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "project_files_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       projects: {
         Row: {
@@ -278,7 +246,3 @@ export type Database = {
     }
   }
 }
-
-export type Tables<
-  T extends keyof Database['public']['Tables']
-> = Database['public']['Tables'][T]['Row']

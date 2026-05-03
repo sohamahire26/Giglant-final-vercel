@@ -6,7 +6,7 @@ import {
   Plus, Edit, Trash2, Loader2, ArrowLeft, FileText, Eye, 
   MessageSquare, Search, Send, User, Bug, Lightbulb, 
   MessageCircle, ChevronDown, ChevronUp, LayoutDashboard,
-  CheckCircle2, Clock
+  CheckCircle2, Clock, History
 } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
@@ -210,7 +210,7 @@ const Admin = () => {
                           <Link to={`/blog/${post.category}/${post.slug}`}><Eye size={18} /></Link>
                         </Button>
                         <Button variant="ghost" size="icon" asChild title="Edit">
-                          <Link to="/blog/write?edit=" + post.id><Edit size={18} /></Link>
+                          <Link to={`/blog/write?edit=${post.id}`}><Edit size={18} /></Link>
                         </Button>
                         <Button variant="ghost" size="icon" onClick={() => handleDeleteBlog(post.id)} className="text-destructive hover:bg-destructive/10" title="Delete">
                           <Trash2 size={18} />

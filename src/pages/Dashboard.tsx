@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { Plus, FolderOpen, Clock, ChevronRight, Loader2, Search, Lock, AlertCircle, Sparkles, RefreshCw, Archive, MessageSquare } from "lucide-react";
+import { Plus, FolderOpen, Clock, ChevronRight, Loader2, Search, Lock, AlertCircle, Sparkles, RefreshCw, Archive, MessageSquare, History } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
@@ -180,7 +180,7 @@ const Dashboard = () => {
                           isExpired 
                             ? "border-border bg-muted/50 opacity-60 grayscale" 
                             : isLocked
-                            ? "border-amber-500/20 bg-amber-500/5"
+                            ? "border-amber-500/20 bg-amber-50/5"
                             : "border-border bg-card hover:border-primary/50 hover:shadow-md"
                         }`}
                       >

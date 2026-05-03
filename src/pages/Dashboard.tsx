@@ -2,21 +2,36 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { Plus, FolderOpen, Clock, ChevronRight, Loader2, Search, Lock, AlertCircle, Sparkles, RefreshCw, Archive, MessageSquare } from "lucide-react";
+import { 
+  Plus, FolderOpen, Clock, ChevronRight, Loader2, Search, 
+  Lock, AlertCircle, Sparkles, RefreshCw, Archive, 
+  MessageSquare, Reply, CheckCircle2, Trash2, ExternalLink
+} from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
-import { getSupportMessages } from "@/lib/api";
+import { getSupportMessages, updateSupportMessage, deleteSupportMessage } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+
+const OWNER_EMAIL = "Sohamahire26@gmail.com";
 
 const Dashboard = () => {
   const { user, session, profile, loading: authLoading } = useAuth();
+  const { toast } = useToast();
   const [projects, setProjects] = useState<any[]>([]);
   const [supportMessages, setSupportMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [search, setSearch] = useState("");
+  
+  // Admin Reply State
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [adminReply, setAdminReply] = useState("");
+
+  const isAdmin = user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
   const fetchData = useCallback(async (silent = false) => {
     if (!user) return;
@@ -44,10 +59,14 @@ const Dashboard = () => {
         const now = new Date();
         const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
         
-        // Filter for user's messages AND only those from the last 7 days
+        // Filter: Admin sees all recent, Users see only their own recent
         const filtered = supportRes.filter((m: any) => {
           const created = new Date(m.created_at);
-          return m.user_id === user.id && created >= sevenDaysAgo;
+          const isRecent = created >= sevenDaysAgo;
+          if (!isRecent) return false;
+          
+          if (isAdmin) return true;
+          return m.user_id === user.id;
         });
         
         setSupportMessages(filtered);
@@ -58,7 +77,7 @@ const Dashboard = () => {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [user]);
+  }, [user, isAdmin]);
 
   useEffect(() => {
     if (user) {
@@ -67,6 +86,48 @@ const Dashboard = () => {
       setLoading(false);
     }
   }, [user, authLoading, session, fetchData]);
+
+  const handleReply = async (id: string) => {
+    if (!adminReply.trim()) return;
+    try {
+      await updateSupportMessage(id, { 
+        admin_reply: adminReply.trim(), 
+        status: 'replied',
+        updated_at: new Date().toISOString()
+      });
+      toast({ title: "Reply sent successfully" });
+      setReplyingTo(null);
+      setAdminReply("");
+      fetchData(true);
+    } catch (err: any) {
+      toast({ title: "Failed to reply", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleStatusUpdate = async (id: string, status: string) => {
+    try {
+      await updateSupportMessage(id, { 
+        status,
+        updated_at: new Date().toISOString(),
+        viewed_at: status === 'viewed' ? new Date().toISOString() : null
+      });
+      toast({ title: `Status updated to ${status}` });
+      fetchData(true);
+    } catch (err: any) {
+      toast({ title: "Update failed", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteMessage = async (id: string) => {
+    if (!confirm("Delete this message?")) return;
+    try {
+      await deleteSupportMessage(id);
+      setSupportMessages(prev => prev.filter(m => m.id !== id));
+      toast({ title: "Message deleted" });
+    } catch (err: any) {
+      toast({ title: "Delete failed", description: err.message, variant: "destructive" });
+    }
+  };
 
   if (authLoading && projects.length === 0) {
     return (
@@ -94,7 +155,8 @@ const Dashboard = () => {
   }).length;
 
   const projectLimitReached = !isPro && activeProjectsCount >= 1;
-  const unreadSupport = supportMessages.filter(m => m.status === 'replied').length;
+  const unreadSupport = supportMessages.filter(m => m.status === 'replied' && m.user_id === user?.id).length;
+  const adminNewTickets = supportMessages.filter(m => m.status === 'new').length;
 
   return (
     <Layout>
@@ -143,42 +205,105 @@ const Dashboard = () => {
             </div>
           )}
 
+          {/* Support Tickets Section */}
           {supportMessages.length > 0 && (
-            <div className="mb-8">
+            <div className="mb-12">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
                   <MessageSquare className="h-5 w-5 text-primary" />
-                  Support Tickets
-                  {unreadSupport > 0 && (
+                  {isAdmin ? "Support Management" : "My Support Tickets"}
+                  {isAdmin && adminNewTickets > 0 && (
                     <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white animate-pulse">
-                      {unreadSupport} NEW REPLY
+                      {adminNewTickets} NEW
+                    </span>
+                  )}
+                  {!isAdmin && unreadSupport > 0 && (
+                    <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white animate-pulse">
+                      NEW REPLY
                     </span>
                   )}
                 </h2>
-                <Link to="/contact" className="text-xs font-semibold text-primary hover:underline">View All</Link>
+                <Link to="/contact" className="text-xs font-semibold text-primary hover:underline">
+                  {isAdmin ? "Admin Panel" : "View History"}
+                </Link>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {supportMessages.slice(0, 3).map(msg => (
-                  <Link 
+              <div className="grid gap-4">
+                {supportMessages.slice(0, isAdmin ? 5 : 3).map(msg => (
+                  <div 
                     key={msg.id} 
-                    to="/contact" 
-                    className={`flex flex-col rounded-xl border p-4 transition-all hover:shadow-sm ${
-                      msg.status === 'replied' ? 'border-primary/30 bg-primary/5' : 'border-border bg-card'
+                    className={`flex flex-col rounded-2xl border p-5 transition-all ${
+                      msg.status === 'new' ? 'border-primary/30 bg-primary/5' : 'border-border bg-card'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
-                        msg.status === 'new' ? 'bg-amber-500 text-white' : 
-                        msg.status === 'replied' ? 'bg-blue-500 text-white' : 
-                        'bg-gray-500 text-white'
-                      }`}>
-                        {msg.status}
-                      </span>
-                      <span className="text-[9px] text-muted-foreground">{new Date(msg.created_at).toLocaleDateString()}</span>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                          msg.status === 'new' ? 'bg-amber-500 text-white' : 
+                          msg.status === 'replied' ? 'bg-blue-500 text-white' : 
+                          'bg-gray-500 text-white'
+                        }`}>
+                          {msg.status}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground font-medium">
+                          {new Date(msg.created_at).toLocaleString()}
+                        </span>
+                        {isAdmin && (
+                          <span className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground">
+                            User: {msg.user_id.substring(0, 8)}
+                          </span>
+                        )}
+                      </div>
+                      {isAdmin && (
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => handleStatusUpdate(msg.id, 'viewed')} title="Mark Viewed">
+                            <CheckCircle2 className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteMessage(msg.id)} className="text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                    <h3 className="text-sm font-semibold text-foreground truncate">{msg.subject}</h3>
-                    <p className="mt-1 text-xs text-muted-foreground line-clamp-1">{msg.message}</p>
-                  </Link>
+                    
+                    <h3 className="font-bold text-foreground mb-1">{msg.subject}</h3>
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{msg.message}</p>
+
+                    {msg.admin_reply && (
+                      <div className="mb-4 rounded-xl bg-muted/30 p-3 border border-border/50">
+                        <p className="text-[10px] font-bold uppercase text-primary mb-1 flex items-center gap-1">
+                          <Reply size={10} /> {isAdmin ? "Your Reply" : "Giglant Support Reply"}
+                        </p>
+                        <p className="text-sm italic text-foreground/80">"{msg.admin_reply}"</p>
+                      </div>
+                    )}
+
+                    {isAdmin && (
+                      <div className="mt-2">
+                        {replyingTo === msg.id ? (
+                          <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                            <Textarea 
+                              value={adminReply} 
+                              onChange={e => setAdminReply(e.target.value)} 
+                              placeholder="Type your reply..." 
+                              className="min-h-[80px] text-sm"
+                            />
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={() => handleReply(msg.id)}>Send Reply</Button>
+                              <Button size="sm" variant="ghost" onClick={() => setReplyingTo(null)}>Cancel</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button variant="outline" size="sm" onClick={() => { setReplyingTo(msg.id); setAdminReply(msg.admin_reply || ""); }}>
+                            <Reply className="mr-2 h-3.5 w-3.5" /> {msg.admin_reply ? "Edit Reply" : "Reply"}
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    
+                    {!isAdmin && !msg.admin_reply && (
+                      <p className="text-[10px] text-muted-foreground italic">Waiting for support response...</p>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>

@@ -51,3 +51,43 @@ export const saveBlogPost = (post: any) =>
 
 export const deleteBlogPost = (id: string) => 
   apiCall("api", { action: "delete_blog_post", id });
+
+/* ── Support ── */
+
+export const getSupportMessages = async () => {
+  const { data, error } = await supabase
+    .from('support_messages')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+};
+
+export const submitSupportMessage = async (message: any) => {
+  const { data, error } = await supabase
+    .from('support_messages')
+    .insert(message)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+export const updateSupportMessage = async (id: string, updates: any) => {
+  const { data, error } = await supabase
+    .from('support_messages')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+export const deleteSupportMessage = async (id: string) => {
+  const { error } = await supabase
+    .from('support_messages')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+};

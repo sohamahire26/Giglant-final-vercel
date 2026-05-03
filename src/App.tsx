@@ -14,8 +14,7 @@ import PaymentGenerator from "./pages/tools/PaymentGenerator";
 import Blog from "./pages/Blog";
 import BlogCategory from "./pages/BlogCategory";
 import BlogPost from "./pages/BlogPost";
-import BlogWriter from "./pages/BlogWriter";
-import BlogAdmin from "./pages/BlogAdmin";
+import Admin from "./pages/Admin";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
@@ -48,15 +47,13 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/tools" element={<ToolsPage />} />
             <Route path="/tools/file-renamer" element={<FileRenamer />} />
             <Route path="/tools/payment-generator" element={<PaymentGenerator />} />
             <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/write" element={<BlogWriter />} />
-            <Route path="/blog/admin" element={<BlogAdmin />} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="/blog/:category" element={<BlogCategory />} />
             <Route path="/blog/:category/:slug" element={<BlogPost />} />
             <Route path="/about" element={<About />} />

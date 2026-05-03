@@ -14,7 +14,6 @@ import PaymentGenerator from "./pages/tools/PaymentGenerator";
 import Blog from "./pages/Blog";
 import BlogCategory from "./pages/BlogCategory";
 import BlogPost from "./pages/BlogPost";
-import BlogWriter from "./pages/BlogWriter";
 import Admin from "./pages/Admin";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -55,7 +54,6 @@ const App = () => (
             <Route path="/tools/file-renamer" element={<FileRenamer />} />
             <Route path="/tools/payment-generator" element={<PaymentGenerator />} />
             <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/write" element={<BlogWriter />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/blog/:category" element={<BlogCategory />} />
             <Route path="/blog/:category/:slug" element={<BlogPost />} />

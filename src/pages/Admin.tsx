@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { 
   Plus, Edit, Trash2, Loader2, ArrowLeft, MessageSquare, Reply, 
   CheckCircle2, Clock, ShieldCheck, RefreshCw, Search, FileText,
-  User as UserIcon, AlertCircle, Info
+  User as UserIcon, AlertCircle, Info, Send as SendIcon
 } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
@@ -52,13 +52,12 @@ const Admin = () => {
         const data = await getBlogPosts();
         setPosts(data || []);
       } else {
-        // This now calls the Edge Function which BYPASSES RLS
         const data = await getSupportMessages();
         setMessages(data || []);
       }
     } catch (err: any) {
       console.error("[Admin] Fetch error:", err);
-      toast({ title: "Error loading data", description: "The server failed to return data. Check Edge Function logs.", variant: "destructive" });
+      toast({ title: "Error loading data", description: "The server failed to return data.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -308,7 +307,9 @@ const Admin = () => {
                               {msg.profiles ? (
                                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
                                   <UserIcon size={12} className="text-primary" />
-                                  <span className="font-semibold text-foreground">{msg.profiles.first_name} {msg.profiles.last_name || ""}</span>
+                                  <span className="font-semibold text-foreground">
+                                    {msg.profiles.first_name} {msg.profiles.last_name || ""}
+                                  </span>
                                 </div>
                               ) : (
                                 <span className="text-xs text-muted-foreground italic">Anonymous User</span>
@@ -364,7 +365,7 @@ const Admin = () => {
                             />
                             <div className="flex gap-2">
                               <Button size="sm" onClick={() => handleReply(msg.id)} className="px-6">
-                                <Send className="h-4 w-4 mr-2" /> Send Reply
+                                <SendIcon className="h-4 w-4 mr-2" /> Send Reply
                               </Button>
                               <Button size="sm" variant="ghost" onClick={() => setReplyingTo(null)}>Cancel</Button>
                             </div>
@@ -399,9 +400,5 @@ const Admin = () => {
     </Layout>
   );
 };
-
-const Send = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
-);
 
 export default Admin;

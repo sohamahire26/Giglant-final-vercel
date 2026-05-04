@@ -16,8 +16,6 @@ import { useAuth } from "@/components/AuthProvider";
 import { getSupportMessages, updateSupportMessage, deleteSupportMessage } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
-const OWNER_EMAIL = "Sohamahire26@gmail.com";
-
 const Dashboard = () => {
   const { user, session, profile, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -30,7 +28,7 @@ const Dashboard = () => {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [adminReply, setAdminReply] = useState("");
 
-  const isAdmin = user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const isAdmin = profile?.is_admin === true;
 
   const fetchData = useCallback(async (silent = false) => {
     if (!user) return;
@@ -50,14 +48,10 @@ const Dashboard = () => {
         const now = new Date();
         const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
         
-        // Filter: Admin sees all recent, Users see only their own recent
+        // Filter: Only show messages from the last 7 days
         const filtered = supportRes.filter((m: any) => {
           const created = new Date(m.created_at);
-          const isRecent = created >= sevenDaysAgo;
-          if (!isRecent) return false;
-          
-          if (isAdmin) return true;
-          return m.user_id === user.id;
+          return created >= sevenDaysAgo;
         });
         
         setSupportMessages(filtered);
@@ -69,20 +63,17 @@ const Dashboard = () => {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [user, isAdmin, toast]);
+  }, [user, toast]);
 
-  // Real-time Subscription for Support Messages
   useEffect(() => {
-    if (!user) return;
+    if (user) fetchData();
 
     const channel = supabase
-      .channel('support-realtime')
+      .channel('support-realtime-dashboard')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'support_messages' }, () => {
-        fetchData(true); // Refresh data silently when any change occurs
+        fetchData(true);
       })
       .subscribe();
-
-    fetchData();
 
     return () => {
       supabase.removeChannel(channel);
@@ -100,6 +91,7 @@ const Dashboard = () => {
       toast({ title: "Reply sent successfully" });
       setReplyingTo(null);
       setAdminReply("");
+      fetchData(true);
     } catch (err: any) {
       toast({ title: "Failed to reply", description: err.message, variant: "destructive" });
     }
@@ -109,6 +101,7 @@ const Dashboard = () => {
     try {
       await updateSupportMessage(id, { status, updated_at: new Date().toISOString() });
       toast({ title: `Status: ${status}` });
+      fetchData(true);
     } catch (err: any) {
       toast({ title: "Update failed", description: err.message, variant: "destructive" });
     }
@@ -119,13 +112,14 @@ const Dashboard = () => {
     try {
       await deleteSupportMessage(id);
       toast({ title: "Message deleted" });
+      fetchData(true);
     } catch (err: any) {
       toast({ title: "Delete failed", description: err.message, variant: "destructive" });
     }
   };
 
-  if (authLoading && projects.length === 0) return <Layout><div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-primary" /></div></Layout>;
-  if (!session && !authLoading) return <Navigate to="/login" replace />;
+  if (authLoading) return <Layout><div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-primary" /></div></Layout>;
+  if (!session) return <Navigate to="/login" replace />;
 
   const filteredProjects = projects.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || (p.client_name && p.client_name.toLowerCase().includes(search.toLowerCase())));
   const isPro = profile?.plan_type === 'pro';
@@ -148,14 +142,14 @@ const Dashboard = () => {
 
           {/* Support Section */}
           {supportMessages.length > 0 && (
-            <div className="mb-12">
+            <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-display text-lg font-bold flex items-center gap-2">
                   <MessageSquare className="h-5 w-5 text-primary" />
-                  {isAdmin ? "Support Management (Real-time)" : "My Support Tickets"}
+                  {isAdmin ? "Admin Support Center" : "My Support Tickets"}
                 </h2>
                 <div className="flex items-center gap-2 rounded-full bg-amber-500/10 px-3 py-1 text-[10px] font-bold text-amber-600 uppercase tracking-wider">
-                  <Clock className="h-3 w-3" /> 7-Day Auto-Delete
+                  <Clock className="h-3 w-3" /> 7-Day History Only
                 </div>
               </div>
               <div className="grid gap-4">
@@ -182,7 +176,7 @@ const Dashboard = () => {
                       {isAdmin && (
                         <div className="flex gap-1">
                           <Button variant="ghost" size="sm" onClick={() => handleStatusUpdate(msg.id, 'viewed')} title="Mark Viewed"><CheckCircle2 className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDeleteMessage(msg.id)} className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteMessage(msg.id)} className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       )}
                     </div>

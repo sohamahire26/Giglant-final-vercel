@@ -20,19 +20,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import NotFound from "./NotFound";
 
-const OWNER_EMAIL = "Sohamahire26@gmail.com";
-
-const categories = [
-  { slug: "editing-tips", name: "Editing Tips" },
-  { slug: "freelance-tips", name: "Freelance Tips" },
-  { slug: "client-workflow", name: "Client Workflow" },
-  { slug: "file-management", name: "File Management" },
-  { slug: "productivity", name: "Productivity" },
-  { slug: "tools", name: "Tools" },
-];
-
 const Admin = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<"blog" | "support">("blog");
   const [view, setView] = useState<"list" | "edit">("list");
   const [loading, setLoading] = useState(true);
@@ -40,7 +29,6 @@ const Admin = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const { toast } = useToast();
 
-  // Blog Editor State
   const [editId, setEditId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
@@ -48,17 +36,14 @@ const Admin = () => {
   const [content, setContent] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [saving, setSaving] = useState(false);
-  const [preview, setPreview] = useState(false);
-  const contentRef = useRef<HTMLTextAreaElement>(null);
 
-  // Support State
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [adminReply, setAdminReply] = useState("");
 
-  const isOwner = user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
+  const isAdmin = profile?.is_admin === true;
 
   const fetchData = useCallback(async () => {
-    if (!isOwner) return;
+    if (!isAdmin) return;
     
     setLoading(true);
     try {
@@ -70,14 +55,6 @@ const Admin = () => {
         if (data) {
           const now = new Date();
           const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
-          
-          // Auto-delete expired messages from DB
-          const expired = data.filter((m: any) => new Date(m.created_at) < sevenDaysAgo);
-          if (expired.length > 0) {
-            await Promise.all(expired.map((m: any) => deleteSupportMessage(m.id)));
-          }
-          
-          // Show only non-expired messages
           setMessages(data.filter((m: any) => new Date(m.created_at) >= sevenDaysAgo));
         }
       }
@@ -87,11 +64,11 @@ const Admin = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, isOwner, toast]);
+  }, [activeTab, isAdmin, toast]);
 
   useEffect(() => {
-    if (isOwner) fetchData();
-  }, [isOwner, fetchData]);
+    if (isAdmin) fetchData();
+  }, [isAdmin, fetchData]);
 
   const handleEditPost = async (id: string) => {
     setLoading(true);
@@ -154,7 +131,7 @@ const Admin = () => {
   };
 
   if (authLoading) return <Layout><div className="flex py-24 justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
-  if (!isOwner) return <NotFound />;
+  if (!isAdmin) return <NotFound />;
 
   return (
     <Layout>
@@ -184,11 +161,11 @@ const Admin = () => {
                 {loading ? <Loader2 className="mx-auto animate-spin" /> : (
                   <div className="grid gap-3">
                     {posts.map(p => (
-                      <div key={p.id} className="flex items-center justify-between p-4 border rounded-xl bg-card">
-                        <span>{p.title}</span>
+                      <div key={p.id} className="flex items-center justify-between p-4 border rounded-xl bg-card shadow-sm hover:border-primary/50 transition-all">
+                        <span className="font-medium">{p.title}</span>
                         <div className="flex gap-2">
                           <Button variant="ghost" size="icon" onClick={() => handleEditPost(p.id)}><Edit size={18} /></Button>
-                          <Button variant="ghost" size="icon" onClick={async () => { if(confirm("Delete?")) { await deleteBlogPost(p.id); fetchData(); } }}><Trash2 size={18} /></Button>
+                          <Button variant="ghost" size="icon" onClick={async () => { if(confirm("Delete?")) { await deleteBlogPost(p.id); fetchData(); } }} className="text-destructive"><Trash2 size={18} /></Button>
                         </div>
                       </div>
                     ))}
@@ -196,49 +173,65 @@ const Admin = () => {
                 )}
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
                 <Button variant="ghost" onClick={() => setView("list")}><ArrowLeft className="mr-2 h-4 w-4" /> Back</Button>
-                <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Title" />
-                <Textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Content (HTML allowed)" rows={15} />
-                <div className="flex gap-2">
-                  <Button onClick={() => handleSavePost(false)} variant="outline">Save Draft</Button>
-                  <Button onClick={() => handleSavePost(true)}>Publish</Button>
+                <div className="grid gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
+                  <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Post Title" className="text-lg font-bold" />
+                  <Input value={slug} onChange={e => setSlug(e.target.value)} placeholder="url-slug" />
+                  <Textarea value={content} onChange={e => setContent(e.target.value)} placeholder="HTML Content..." rows={15} className="font-mono text-sm" />
+                  <div className="flex gap-2">
+                    <Button onClick={() => handleSavePost(false)} variant="outline">Save Draft</Button>
+                    <Button onClick={() => handleSavePost(true)}>Publish</Button>
+                  </div>
                 </div>
               </div>
             )
           ) : (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold">Support Messages</h2>
+                <h2 className="text-xl font-bold">Support Management</h2>
                 <Button variant="ghost" size="sm" onClick={fetchData}><RefreshCw className="h-4 w-4" /></Button>
               </div>
               {loading ? <Loader2 className="mx-auto animate-spin" /> : (
                 <div className="grid gap-4">
                   {messages.map(msg => (
-                    <div key={msg.id} className="p-6 border rounded-2xl bg-card">
-                      <div className="flex justify-between mb-2">
-                        <span className="text-xs font-bold uppercase px-2 py-1 bg-primary/10 text-primary rounded">{msg.status}</span>
-                        <span className="text-xs text-muted-foreground">{new Date(msg.created_at).toLocaleString()}</span>
+                    <div key={msg.id} className="p-6 border rounded-2xl bg-card shadow-sm">
+                      <div className="flex justify-between mb-4">
+                        <div className="flex gap-2">
+                          <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${
+                            msg.status === 'replied' ? 'bg-blue-500 text-white' : 'bg-amber-500 text-white'
+                          }`}>{msg.status}</span>
+                          <span className="text-[10px] text-muted-foreground">{new Date(msg.created_at).toLocaleString()}</span>
+                          {msg.profiles && (
+                            <span className="text-[10px] font-bold text-primary">{msg.profiles.first_name} {msg.profiles.last_name}</span>
+                          )}
+                        </div>
                       </div>
                       <h3 className="font-bold">{msg.subject}</h3>
                       <p className="text-sm text-muted-foreground mt-2">{msg.message}</p>
-                      {msg.admin_reply && <div className="mt-4 p-3 bg-muted rounded-lg text-sm italic">Reply: {msg.admin_reply}</div>}
+                      {msg.admin_reply && (
+                        <div className="mt-4 p-4 bg-muted rounded-xl text-sm italic border border-border/50">
+                          <strong>My Reply:</strong> "{msg.admin_reply}"
+                        </div>
+                      )}
                       <div className="mt-4">
                         {replyingTo === msg.id ? (
-                          <div className="space-y-2">
-                            <Textarea value={adminReply} onChange={e => setAdminReply(e.target.value)} placeholder="Your reply..." />
+                          <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                            <Textarea value={adminReply} onChange={e => setAdminReply(e.target.value)} placeholder="Type reply..." />
                             <div className="flex gap-2">
                               <Button size="sm" onClick={() => handleReply(msg.id)}>Send</Button>
                               <Button size="sm" variant="ghost" onClick={() => setReplyingTo(null)}>Cancel</Button>
                             </div>
                           </div>
                         ) : (
-                          <Button variant="outline" size="sm" onClick={() => setReplyingTo(msg.id)}>Reply</Button>
+                          <Button variant="outline" size="sm" onClick={() => { setReplyingTo(msg.id); setAdminReply(msg.admin_reply || ""); }}>
+                            <Reply className="mr-2 h-4 w-4" /> {msg.admin_reply ? "Edit Reply" : "Reply"}
+                          </Button>
                         )}
                       </div>
                     </div>
                   ))}
-                  {messages.length === 0 && <p className="text-center py-10 text-muted-foreground">No recent messages.</p>}
+                  {messages.length === 0 && <p className="text-center py-20 text-muted-foreground">No recent tickets.</p>}
                 </div>
               )}
             </div>

@@ -5,7 +5,7 @@ import { Link, Navigate } from "react-router-dom";
 import { 
   Plus, FolderOpen, Clock, ChevronRight, Loader2, Search, 
   Lock, AlertCircle, Sparkles, RefreshCw, Archive, 
-  MessageSquare, Reply, CheckCircle2, Trash2
+  MessageSquare, Reply, CheckCircle2, Trash2, User, Edit3
 } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
@@ -50,10 +50,14 @@ const Dashboard = () => {
         const now = new Date();
         const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
         
-        // Filter: Admin sees all recent, Users see only their own recent (RLS handles this, but we double check)
+        // Filter: Admin sees all recent, Users see only their own recent
         const filtered = supportRes.filter((m: any) => {
           const created = new Date(m.created_at);
-          return created >= sevenDaysAgo;
+          const isRecent = created >= sevenDaysAgo;
+          if (!isRecent) return false;
+          
+          if (isAdmin) return true;
+          return m.user_id === user.id;
         });
         
         setSupportMessages(filtered);
@@ -65,20 +69,37 @@ const Dashboard = () => {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [user, toast]);
+  }, [user, isAdmin, toast]);
 
+  // Real-time Subscription for Support Messages
   useEffect(() => {
-    if (user) fetchData();
+    if (!user) return;
+
+    const channel = supabase
+      .channel('support-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_messages' }, () => {
+        fetchData(true); // Refresh data silently when any change occurs
+      })
+      .subscribe();
+
+    fetchData();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, fetchData]);
 
   const handleReply = async (id: string) => {
     if (!adminReply.trim()) return;
     try {
-      await updateSupportMessage(id, { admin_reply: adminReply.trim(), status: 'replied', updated_at: new Date().toISOString() });
-      toast({ title: "Reply sent" });
+      await updateSupportMessage(id, { 
+        admin_reply: adminReply.trim(), 
+        status: 'replied', 
+        updated_at: new Date().toISOString() 
+      });
+      toast({ title: "Reply sent successfully" });
       setReplyingTo(null);
       setAdminReply("");
-      fetchData(true);
     } catch (err: any) {
       toast({ title: "Failed to reply", description: err.message, variant: "destructive" });
     }
@@ -88,9 +109,18 @@ const Dashboard = () => {
     try {
       await updateSupportMessage(id, { status, updated_at: new Date().toISOString() });
       toast({ title: `Status: ${status}` });
-      fetchData(true);
     } catch (err: any) {
       toast({ title: "Update failed", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteMessage = async (id: string) => {
+    if (!confirm("Delete this message?")) return;
+    try {
+      await deleteSupportMessage(id);
+      toast({ title: "Message deleted" });
+    } catch (err: any) {
+      toast({ title: "Delete failed", description: err.message, variant: "destructive" });
     }
   };
 
@@ -119,40 +149,83 @@ const Dashboard = () => {
           {/* Support Section */}
           {supportMessages.length > 0 && (
             <div className="mb-12">
-              <h2 className="font-display text-lg font-bold mb-4 flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-primary" />
-                {isAdmin ? "Support Management" : "My Support Tickets"}
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-display text-lg font-bold flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                  {isAdmin ? "Support Management (Real-time)" : "My Support Tickets"}
+                </h2>
+                <div className="flex items-center gap-2 rounded-full bg-amber-500/10 px-3 py-1 text-[10px] font-bold text-amber-600 uppercase tracking-wider">
+                  <Clock className="h-3 w-3" /> 7-Day Auto-Delete
+                </div>
+              </div>
               <div className="grid gap-4">
                 {supportMessages.map(msg => (
-                  <div key={msg.id} className={`p-5 border rounded-2xl transition-all ${msg.status === 'new' ? 'border-primary/30 bg-primary/5' : 'bg-card'}`}>
-                    <div className="flex justify-between mb-3">
-                      <div className="flex gap-2">
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 bg-primary/10 text-primary rounded">{msg.status}</span>
-                        <span className="text-[10px] text-muted-foreground">{new Date(msg.created_at).toLocaleString()}</span>
+                  <div key={msg.id} className={`p-6 border rounded-2xl transition-all shadow-sm ${msg.status === 'new' ? 'border-primary/30 bg-primary/5' : 'bg-card'}`}>
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${
+                          msg.status === 'new' ? 'bg-amber-500 text-white' : 
+                          msg.status === 'replied' ? 'bg-blue-500 text-white' : 
+                          'bg-gray-500 text-white'
+                        }`}>
+                          {msg.status}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Clock size={12} /> {new Date(msg.created_at).toLocaleString()}
+                        </span>
+                        {isAdmin && msg.profiles && (
+                          <span className="text-[10px] bg-secondary px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
+                            <User size={10} /> {msg.profiles.first_name} {msg.profiles.last_name || ""}
+                          </span>
+                        )}
                       </div>
                       {isAdmin && (
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => handleStatusUpdate(msg.id, 'viewed')}><CheckCircle2 className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="sm" onClick={async () => { if(confirm("Delete?")) { await deleteSupportMessage(msg.id); fetchData(true); } }} className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => handleStatusUpdate(msg.id, 'viewed')} title="Mark Viewed"><CheckCircle2 className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteMessage(msg.id)} className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       )}
                     </div>
-                    <h3 className="font-bold text-sm">{msg.subject}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{msg.message}</p>
-                    {msg.admin_reply && <div className="mt-3 p-3 bg-muted/50 rounded-xl text-xs italic">Reply: {msg.admin_reply}</div>}
+                    
+                    <h3 className="font-bold text-base mb-1">{msg.subject}</h3>
+                    <p className="text-sm text-muted-foreground mb-4 whitespace-pre-wrap">{msg.message}</p>
+                    
+                    {msg.admin_reply && (
+                      <div className="mt-4 p-4 bg-muted/40 rounded-xl border border-border/50 relative group">
+                        <p className="text-[10px] font-bold uppercase text-primary mb-2 flex items-center gap-1">
+                          <Reply size={10} /> {isAdmin ? "Your Reply" : "Giglant Support Reply"}
+                        </p>
+                        <p className="text-sm italic text-foreground/90 leading-relaxed">"{msg.admin_reply}"</p>
+                        {isAdmin && (
+                          <button 
+                            onClick={() => { setReplyingTo(msg.id); setAdminReply(msg.admin_reply); }}
+                            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary"
+                          >
+                            <Edit3 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    )}
+
                     {isAdmin && (
-                      <div className="mt-3">
+                      <div className="mt-4">
                         {replyingTo === msg.id ? (
-                          <div className="space-y-2">
-                            <Textarea value={adminReply} onChange={e => setAdminReply(e.target.value)} placeholder="Reply..." className="text-xs" />
+                          <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                            <Textarea 
+                              value={adminReply} 
+                              onChange={e => setAdminReply(e.target.value)} 
+                              placeholder="Type your reply..." 
+                              className="text-sm min-h-[100px] bg-background" 
+                            />
                             <div className="flex gap-2">
-                              <Button size="sm" onClick={() => handleReply(msg.id)}>Send</Button>
+                              <Button size="sm" onClick={() => handleReply(msg.id)}>Send Reply</Button>
                               <Button size="sm" variant="ghost" onClick={() => setReplyingTo(null)}>Cancel</Button>
                             </div>
                           </div>
                         ) : (
-                          <Button variant="outline" size="sm" onClick={() => { setReplyingTo(msg.id); setAdminReply(msg.admin_reply || ""); }}><Reply className="mr-2 h-3 w-3" /> Reply</Button>
+                          <Button variant="outline" size="sm" onClick={() => { setReplyingTo(msg.id); setAdminReply(msg.admin_reply || ""); }}>
+                            <Reply className="mr-2 h-3 w-3" /> {msg.admin_reply ? "Edit Reply" : "Reply to User"}
+                          </Button>
                         )}
                       </div>
                     )}

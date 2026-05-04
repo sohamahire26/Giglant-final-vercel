@@ -15,7 +15,6 @@ const apiCall = async (endpoint: string, body?: any) => {
   const apikey = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkaXptcGFxbGtxbW12Y2prdndiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NjkzMDIsImV4cCI6MjA5MTA0NTMwMn0.hLk05spyjrzAZa2sHQabfC8yCKhHVTMLWZTJxNHumHM";
   headers["apikey"] = apikey;
 
-  // Add Authorization header if user is logged in
   const { data: { session } } = await supabase.auth.getSession();
   if (session?.access_token) {
     headers["Authorization"] = `Bearer ${session.access_token}`;
@@ -55,10 +54,19 @@ export const deleteBlogPost = (id: string) =>
 /* ── Support ── */
 
 export const getSupportMessages = async () => {
+  // Join with profiles to get user names
   const { data, error } = await supabase
     .from('support_messages')
-    .select('*')
+    .select(`
+      *,
+      profiles:user_id (
+        first_name,
+        last_name,
+        avatar_url
+      )
+    `)
     .order('created_at', { ascending: false });
+    
   if (error) throw error;
   return data;
 };

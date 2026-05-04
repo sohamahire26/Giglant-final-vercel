@@ -40,7 +40,7 @@ const Admin = () => {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [adminReply, setAdminReply] = useState("");
 
-  const isAdmin = profile?.is_admin === true;
+  const isAdmin = profile?.is_admin === true || user?.email?.toLowerCase() === "sohamahire26@gmail.com";
 
   const fetchData = useCallback(async () => {
     if (!isAdmin) return;

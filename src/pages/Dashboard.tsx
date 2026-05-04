@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { 
   Plus, FolderOpen, Clock, ChevronRight, Loader2, Search, 
-  Lock, AlertCircle, Sparkles, RefreshCw, Archive, 
-  MessageSquare, Reply, CheckCircle2, Trash2, User, Edit3
+  RefreshCw, MessageSquare, Reply, CheckCircle2, Trash2, User, Edit3
 } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
@@ -48,7 +47,6 @@ const Dashboard = () => {
         const now = new Date();
         const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
         
-        // Filter logic: Admins see everything from last 7 days, users see only their own
         const filtered = supportRes.filter((m: any) => {
           const created = new Date(m.created_at);
           const isRecent = created >= sevenDaysAgo;
@@ -124,7 +122,6 @@ const Dashboard = () => {
   if (!session) return <Navigate to="/login" replace />;
 
   const filteredProjects = projects.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || (p.client_name && p.client_name.toLowerCase().includes(search.toLowerCase())));
-  const isPro = profile?.plan_type === 'pro';
 
   return (
     <Layout>
@@ -134,7 +131,7 @@ const Dashboard = () => {
           <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="font-display text-3xl font-bold">My Projects</h1>
-              <p className="text-muted-foreground">{isPro ? "Unlimited workspaces." : "Manage your active workspace."}</p>
+              <p className="text-muted-foreground">Manage your active workspace.</p>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={() => fetchData(true)} disabled={isRefreshing}><RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} /></Button>
@@ -142,13 +139,12 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Support Section */}
           {supportMessages.length > 0 && (
             <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-display text-lg font-bold flex items-center gap-2">
                   <MessageSquare className="h-5 w-5 text-primary" />
-                  {isAdmin ? "Admin Support Center" : "My Support Tickets"}
+                  My Support Tickets
                 </h2>
                 <div className="flex items-center gap-2 rounded-full bg-amber-500/10 px-3 py-1 text-[10px] font-bold text-amber-600 uppercase tracking-wider">
                   <Clock className="h-3 w-3" /> 7-Day History Only

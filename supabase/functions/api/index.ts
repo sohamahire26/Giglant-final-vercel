@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const OWNER_EMAIL = "Sohamahire26@gmail.com";
+const OWNER_EMAIL = "sohamahire26@gmail.com";
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -38,12 +38,14 @@ Deno.serve(async (req) => {
       const token = authHeader.replace('Bearer ', '');
       const { data: { user }, error: userError } = await supabase.auth.getUser(token);
       if (!userError && user) {
-        userEmail = user.email;
+        userEmail = user.email.toLowerCase();
       }
     }
 
     const body = await req.json();
     const { action } = body;
+
+    const isOwner = userEmail === OWNER_EMAIL.toLowerCase();
 
     switch (action) {
       case "get_blog_posts": {
@@ -53,7 +55,7 @@ Deno.serve(async (req) => {
           .eq("published", true)
           .order("created_at", { ascending: false });
         if (body.category) query = query.eq("category", body.category);
-        const { data, error } = await query;
+        const { data, error } = query;
         if (error) throw error;
         return json(data || []);
       }
@@ -71,7 +73,7 @@ Deno.serve(async (req) => {
       }
 
       case "get_blog_post_by_id": {
-        if (userEmail !== OWNER_EMAIL) {
+        if (!isOwner) {
           return json({ error: "Unauthorized" }, 401);
         }
         const { data, error } = await supabase
@@ -84,7 +86,7 @@ Deno.serve(async (req) => {
       }
 
       case "save_blog_post": {
-        if (userEmail !== OWNER_EMAIL) {
+        if (!isOwner) {
           return json({ error: "Unauthorized" }, 401);
         }
         const { post } = body;
@@ -100,7 +102,7 @@ Deno.serve(async (req) => {
       }
 
       case "delete_blog_post": {
-        if (userEmail !== OWNER_EMAIL) {
+        if (!isOwner) {
           return json({ error: "Unauthorized" }, 401);
         }
         const { id } = body;

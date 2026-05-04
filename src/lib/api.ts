@@ -54,12 +54,12 @@ export const deleteBlogPost = (id: string) =>
 /* ── Support ── */
 
 export const getSupportMessages = async () => {
-  // Join with profiles to get user names
+  // Use standard join syntax. This requires the FK constraint in the DB.
   const { data, error } = await supabase
     .from('support_messages')
     .select(`
       *,
-      profiles:user_id (
+      profiles (
         first_name,
         last_name,
         avatar_url

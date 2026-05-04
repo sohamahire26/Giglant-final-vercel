@@ -28,7 +28,7 @@ const Dashboard = () => {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [adminReply, setAdminReply] = useState("");
 
-  const isAdmin = profile?.is_admin === true;
+  const isAdmin = profile?.is_admin === true || user?.email?.toLowerCase() === "sohamahire26@gmail.com";
 
   const fetchData = useCallback(async (silent = false) => {
     if (!user) return;
@@ -48,10 +48,12 @@ const Dashboard = () => {
         const now = new Date();
         const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
         
-        // Filter: Only show messages from the last 7 days
+        // Filter logic: Admins see everything from last 7 days, users see only their own
         const filtered = supportRes.filter((m: any) => {
           const created = new Date(m.created_at);
-          return created >= sevenDaysAgo;
+          const isRecent = created >= sevenDaysAgo;
+          if (isAdmin) return isRecent;
+          return m.user_id === user.id && isRecent;
         });
         
         setSupportMessages(filtered);
@@ -63,7 +65,7 @@ const Dashboard = () => {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [user, toast]);
+  }, [user, toast, isAdmin]);
 
   useEffect(() => {
     if (user) fetchData();

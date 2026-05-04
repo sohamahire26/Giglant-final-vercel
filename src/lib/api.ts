@@ -1,8 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * API client for edge functions (blog only).
- * Project CRUD uses Supabase client directly.
+ * API client for edge functions.
  */
 
 const getApiBase = () => {
@@ -51,24 +50,11 @@ export const saveBlogPost = (post: any) =>
 export const deleteBlogPost = (id: string) => 
   apiCall("api", { action: "delete_blog_post", id });
 
-/* ── Support ── */
+/* ── Support (Admin Bypassed Method) ── */
 
 export const getSupportMessages = async () => {
-  // Use standard join syntax. This requires the FK constraint in the DB.
-  const { data, error } = await supabase
-    .from('support_messages')
-    .select(`
-      *,
-      profiles (
-        first_name,
-        last_name,
-        avatar_url
-      )
-    `)
-    .order('created_at', { ascending: false });
-    
-  if (error) throw error;
-  return data;
+  // Call the edge function which uses Service Role to bypass RLS
+  return apiCall("api", { action: "get_admin_support_messages" });
 };
 
 export const submitSupportMessage = async (message: any) => {

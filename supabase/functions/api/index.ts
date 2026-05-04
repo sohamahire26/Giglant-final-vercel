@@ -30,7 +30,6 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Verify JWT for sensitive actions
     const authHeader = req.headers.get('Authorization');
     let userEmail = null;
     
@@ -48,6 +47,20 @@ Deno.serve(async (req) => {
     const isOwner = userEmail === OWNER_EMAIL.toLowerCase();
 
     switch (action) {
+      case "get_admin_support_messages": {
+        if (!isOwner) {
+          return json({ error: "Unauthorized" }, 401);
+        }
+        // Fetch all messages and join profiles using Service Role (Bypasses RLS)
+        const { data, error } = await supabase
+          .from("support_messages")
+          .select("*, profiles(*)")
+          .order("created_at", { ascending: false });
+        
+        if (error) throw error;
+        return json(data || []);
+      }
+
       case "get_blog_posts": {
         let query = supabase
           .from("blog_posts")

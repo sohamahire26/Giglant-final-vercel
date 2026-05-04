@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { 
   Plus, Edit, Trash2, Loader2, ArrowLeft, MessageSquare, Reply, 
-  CheckCircle2, Clock, ShieldCheck, RefreshCw, Search, Filter,
-  User as UserIcon, Mail, AlertCircle, Info
+  CheckCircle2, Clock, ShieldCheck, RefreshCw, Search, FileText,
+  User as UserIcon, AlertCircle, Info
 } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
@@ -52,12 +52,13 @@ const Admin = () => {
         const data = await getBlogPosts();
         setPosts(data || []);
       } else {
+        // This now calls the Edge Function which BYPASSES RLS
         const data = await getSupportMessages();
         setMessages(data || []);
       }
     } catch (err: any) {
       console.error("[Admin] Fetch error:", err);
-      toast({ title: "Error loading data", description: err.message, variant: "destructive" });
+      toast({ title: "Error loading data", description: "The server failed to return data. Check Edge Function logs.", variant: "destructive" });
     } finally {
       setLoading(false);
     }

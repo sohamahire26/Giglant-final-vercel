@@ -35,9 +35,6 @@ const apiCall = async (endpoint: string, body?: any) => {
 export const getBlogPosts = (category?: string) =>
   apiCall("api", { action: "get_blog_posts", category });
 
-export const getAdminPosts = () => 
-  apiCall("api", { action: "get_admin_posts" });
-
 export const getBlogPost = (category: string, slug: string) =>
   apiCall("api", { action: "get_blog_post", category, slug });
 
@@ -50,10 +47,9 @@ export const saveBlogPost = (post: any) =>
 export const deleteBlogPost = (id: string) => 
   apiCall("api", { action: "delete_blog_post", id });
 
-/* ── Support (Admin Bypassed Method) ── */
+/* ── Support (Server-Side Bypassed Method) ── */
 
 export const getSupportMessages = async () => {
-  // Call the edge function which uses Service Role to bypass RLS
   return apiCall("api", { action: "get_admin_support_messages" });
 };
 
@@ -68,20 +64,11 @@ export const submitSupportMessage = async (message: any) => {
 };
 
 export const updateSupportMessage = async (id: string, updates: any) => {
-  const { data, error } = await supabase
-    .from('support_messages')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+  // Use edge function to bypass RLS and avoid "coerce to single json" errors
+  return apiCall("api", { action: "update_support_message", id, updates });
 };
 
 export const deleteSupportMessage = async (id: string) => {
-  const { error } = await supabase
-    .from('support_messages')
-    .delete()
-    .eq('id', id);
-  if (error) throw error;
+  // Use edge function to bypass RLS
+  return apiCall("api", { action: "delete_support_message", id });
 };

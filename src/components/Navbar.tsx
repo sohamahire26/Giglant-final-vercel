@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Menu, X, ChevronDown, User as UserIcon, MessageSquare, ShieldCheck } from "lucide-react";
+import { Menu, X, ChevronDown, User as UserIcon, MessageSquare } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "./AuthProvider";
 import { Button } from "./ui/button";
@@ -15,9 +15,7 @@ const Navbar = () => {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
   const location = useLocation();
-  const { session, user, profile } = useAuth();
-
-  const isAdmin = profile?.is_admin === true || user?.email?.toLowerCase() === "sohamahire26@gmail.com";
+  const { session, user } = useAuth();
 
   useEffect(() => {
     if (session && user) {
@@ -87,20 +85,11 @@ const Navbar = () => {
           )}
           
           <div className="ml-4 flex items-center gap-2 border-l border-border pl-4">
-            {isAdmin && (
-              <Link 
-                to="/admin" 
-                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors hover:bg-secondary ${location.pathname === "/admin" ? "text-primary bg-secondary" : "text-foreground"}`}
-              >
-                <ShieldCheck size={16} />
-                Admin
-              </Link>
-            )}
             <Link 
               to="/contact" 
               className={`relative flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors hover:bg-secondary ${location.pathname === "/contact" ? "text-primary bg-secondary" : "text-foreground"}`}
             >
-              <MessageSquare size={16} />
+              <<MessageSquare size={16} />
               Contact
               {hasUnread && (
                 <span className="absolute right-3 top-2 flex h-2 w-2 rounded-full bg-red-500" />
@@ -169,16 +158,6 @@ const Navbar = () => {
             )
           )}
           <div className="mt-4 border-t border-border pt-4 space-y-2">
-            {isAdmin && (
-              <Link
-                to="/admin"
-                onClick={() => setMobileOpen(false)}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 py-2.5 text-sm font-medium text-foreground"
-              >
-                <ShieldCheck size={16} />
-                Admin
-              </Link>
-            )}
             <Link
               to="/contact"
               onClick={() => setMobileOpen(false)}

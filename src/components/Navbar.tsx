@@ -89,7 +89,7 @@ const Navbar = () => {
               to="/contact" 
               className={`relative flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors hover:bg-secondary ${location.pathname === "/contact" ? "text-primary bg-secondary" : "text-foreground"}`}
             >
-              <<MessageSquare size={16} />
+              <MessageSquare size={16} />
               Contact
               {hasUnread && (
                 <span className="absolute right-3 top-2 flex h-2 w-2 rounded-full bg-red-500" />

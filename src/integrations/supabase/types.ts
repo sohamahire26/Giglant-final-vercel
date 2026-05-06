@@ -64,6 +64,7 @@ export type Database = {
           plan_type: 'free' | 'pro'
           subscription_id: string | null
           is_admin: boolean
+          total_projects_created: number
         }
         Insert: {
           id: string
@@ -74,6 +75,7 @@ export type Database = {
           plan_type?: 'free' | 'pro'
           subscription_id?: string | null
           is_admin?: boolean
+          total_projects_created?: number
         }
         Update: {
           id?: string
@@ -84,6 +86,7 @@ export type Database = {
           plan_type?: 'free' | 'pro'
           subscription_id?: string | null
           is_admin?: boolean
+          total_projects_created?: number
         }
         Relationships: [
           {

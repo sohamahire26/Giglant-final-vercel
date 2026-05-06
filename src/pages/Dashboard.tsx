@@ -68,15 +68,7 @@ const Dashboard = () => {
   );
 
   const isPro = profile?.plan_type === 'pro';
-  // Free users can only have 1 active project. Others are "archived" or "locked"
-  const activeProjectsCount = projects.filter(p => {
-    const created = new Date(p.created_at).getTime();
-    const now = new Date().getTime();
-    const diffDays = (now - created) / (1000 * 60 * 60 * 24);
-    return diffDays <= 30; // Consider projects active for 30 days for the limit check
-  }).length;
-
-  const projectLimitReached = !isPro && activeProjectsCount >= 1;
+  const lifetimeLimitReached = !isPro && (profile?.total_projects_created || 0) >= 1;
 
   return (
     <Layout>
@@ -105,9 +97,9 @@ const Dashboard = () => {
                   <Link to="/pricing"><Sparkles className="mr-2 h-4 w-4" /> Upgrade to Pro</Link>
                 </Button>
               )}
-              <Button asChild size="lg" className="shadow-lg shadow-primary/20" disabled={projectLimitReached}>
-                {projectLimitReached ? (
-                  <Link to="/pricing"><Lock className="mr-2 h-5 w-5" /> Limit Reached</Link>
+              <Button asChild size="lg" className="shadow-lg shadow-primary/20" disabled={lifetimeLimitReached}>
+                {lifetimeLimitReached ? (
+                  <Link to="/projects/new"><Lock className="mr-2 h-5 w-5" /> Limit Reached</Link>
                 ) : (
                   <Link to="/projects/new"><Plus className="mr-2 h-5 w-5" /> New Project</Link>
                 )}
@@ -115,12 +107,12 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {projectLimitReached && (
+          {lifetimeLimitReached && (
             <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-semibold text-amber-800">Free Plan Limit Reached</p>
-                <p className="text-xs text-amber-700">You can only have 1 active project on the Free plan. Upgrade to Pro for unlimited projects and longer storage.</p>
+                <p className="text-sm font-semibold text-amber-800">Lifetime Limit Reached</p>
+                <p className="text-xs text-amber-700">Free accounts are limited to 1 lifetime project creation. Upgrade to Pro for unlimited projects and longer storage.</p>
               </div>
             </div>
           )}
@@ -199,7 +191,7 @@ const Dashboard = () => {
               </div>
               <h2 className="font-display text-xl font-bold text-foreground">No projects found</h2>
               <p className="mt-2 text-muted-foreground">Create your first project to start managing your workflow.</p>
-              <Button asChild className="mt-6" variant="outline" disabled={projectLimitReached}>
+              <Button asChild className="mt-6" variant="outline" disabled={lifetimeLimitReached}>
                 <Link to="/projects/new">Create Project</Link>
               </Button>
             </div>

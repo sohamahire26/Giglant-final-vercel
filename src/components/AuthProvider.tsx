@@ -11,6 +11,7 @@ interface Profile {
   plan_type: 'free' | 'pro';
   subscription_id: string | null;
   is_admin: boolean;
+  total_projects_created: number;
 }
 
 interface AuthContextType {

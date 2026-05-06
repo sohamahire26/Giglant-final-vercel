@@ -1,17 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import { Loader2, MessageSquare, Plus, Info, HelpCircle, Clock, RefreshCw, Bell } from "lucide-react";
+import { useParams, Link } from "react-router-dom";
+import { Loader2, MessageSquare, Plus, HelpCircle, Clock, RefreshCw, Lock, AlertTriangle } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import TutorialTour, { TourStep } from "@/components/workspace/TutorialTour";
-import { fmtTs, parseTs } from "@/components/workspace/types";
+import { fmtTs, parseTs, isProjectLocked } from "@/components/workspace/types";
 import type { ProjectFile, FileComment } from "@/components/workspace/types";
 
-interface Project { id: string; name: string; client_name: string | null; share_token: string; }
+interface Project { id: string; name: string; client_name: string | null; share_token: string; user_id: string; created_at: string; }
 
 const db = supabase as any;
 
@@ -40,6 +40,7 @@ const ClientView = () => {
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [newTimestamp, setNewTimestamp] = useState("");
   const [authorName, setAuthorName] = useState("");
@@ -47,121 +48,35 @@ const ClientView = () => {
   const [tutorialStep, setTutorialStep] = useState(0);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (localStorage.getItem("giglant_client_tutorial_dismissed") !== "true") {
-      setShowTutorial(true);
-    }
-  }, []);
-
   const loadData = async () => {
     if (!token) { setNotFound(true); setLoading(false); return; }
+    
     const { data: proj } = await db.from("projects").select("*").eq("share_token", token).single();
     if (!proj) { setNotFound(true); setLoading(false); return; }
+    
+    // Check if project owner is Pro to determine locking
+    const { data: ownerProfile } = await db.from("profiles").select("plan_type").eq("id", proj.user_id).single();
+    const locked = isProjectLocked(proj.created_at, ownerProfile?.plan_type || 'free');
+    
     setProject(proj);
-    const { data: f } = await db.from("project_files").select("*").eq("project_id", proj.id).order("sort_order");
-    setFiles(f || []);
-    if (f?.length) {
-      const { data: c } = await db.from("file_comments").select("*").in("file_id", f.map((x: ProjectFile) => x.id)).order("created_at");
-      setComments(c || []);
-      if (!selectedFile) setSelectedFile(f[0]);
+    setIsLocked(locked);
+
+    if (!locked) {
+      const { data: f } = await db.from("project_files").select("*").eq("project_id", proj.id).order("sort_order");
+      setFiles(f || []);
+      if (f?.length) {
+        const { data: c } = await db.from("file_comments").select("*").in("file_id", f.map((x: ProjectFile) => x.id)).order("created_at");
+        setComments(c || []);
+        if (!selectedFile) setSelectedFile(f[0]);
+      }
     }
+    
     setLoading(false);
   };
 
   useEffect(() => {
     loadData();
   }, [token]);
-
-  useEffect(() => {
-    if (!files.length) return;
-    
-    const fileIds = files.map(f => f.id);
-    
-    // Listen for ALL changes to comments (Insert, Update, Delete)
-    const channel = supabase.channel(`client-live-${token}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "file_comments" }, (payload) => {
-        const newComment = payload.new as FileComment;
-        const oldComment = payload.old as any;
-        
-        const targetFileId = newComment?.file_id || oldComment?.file_id;
-        if (!fileIds.includes(targetFileId)) return;
-
-        if (payload.eventType === 'INSERT') {
-          setComments(prev => prev.find(c => c.id === newComment.id) ? prev : [...prev, newComment]);
-          if (!newComment.is_client) {
-            toast({ 
-              title: "New Update from Freelancer!", 
-              description: "The freelancer just left a comment or update. Click to refresh.",
-              action: <Button variant="outline" size="sm" onClick={() => loadData()}><RefreshCw className="mr-1 h-3 w-3" /> Refresh</Button>
-            });
-          }
-        } else if (payload.eventType === 'UPDATE') {
-          setComments(prev => prev.map(c => c.id === newComment.id ? newComment : c));
-        } else if (payload.eventType === 'DELETE') {
-          setComments(prev => prev.filter(c => c.id !== oldComment.id));
-        }
-      }).subscribe();
-      
-    return () => { supabase.removeChannel(channel); };
-  }, [files, token]);
-
-  const handleTimestampChange = (val: string) => {
-    const digits = val.replace(/[^0-9]/g, "");
-    if (digits.length > 6) return;
-
-    if (digits.length >= 2) {
-      const s_tens = parseInt(digits[digits.length - 2], 10);
-      if (s_tens > 5) return;
-    }
-    if (digits.length >= 4) {
-      const m_tens = parseInt(digits[digits.length - 4], 10);
-      if (m_tens > 5) return;
-    }
-
-    let formatted = "";
-    if (digits.length <= 2) {
-      formatted = digits;
-    } else if (digits.length <= 4) {
-      formatted = `${digits.slice(0, -2)}:${digits.slice(-2)}`;
-    } else {
-      formatted = `${digits.slice(0, -4)}:${digits.slice(-4, -2)}:${digits.slice(-2)}`;
-    }
-    
-    setNewTimestamp(formatted);
-  };
-
-  const handleAddComment = async () => {
-    if (!newComment.trim() || !selectedFile) return;
-    const ts = parseTs(newTimestamp);
-    
-    const { data, error } = await db.from("file_comments")
-      .insert({ 
-        file_id: selectedFile.id, 
-        timestamp_seconds: ts, 
-        comment: newComment.trim(), 
-        author_name: authorName.trim() || "Client", 
-        is_client: true 
-      })
-      .select()
-      .single();
-    
-    if (!error && data) {
-      setComments(prev => prev.find(c => c.id === data.id) ? prev : [...prev, data]);
-    }
-    
-    setNewComment("");
-    setNewTimestamp("");
-  };
-
-  const handleStartTutorial = () => {
-    setTutorialStep(0);
-    setShowTutorial(true);
-  };
-
-  const dismissTutorial = () => { 
-    setShowTutorial(false); 
-    localStorage.setItem("giglant_client_tutorial_dismissed", "true");
-  };
 
   if (loading) return (
     <div className="flex min-h-screen items-center justify-center bg-background">
@@ -174,6 +89,26 @@ const ClientView = () => {
       <div className="text-center">
         <h1 className="text-2xl font-bold text-foreground">Project Not Found</h1>
         <p className="mt-2 text-muted-foreground">This link may be invalid or the project has been deleted.</p>
+      </div>
+    </div>
+  );
+
+  if (isLocked) return (
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <div className="max-w-md rounded-3xl border border-amber-500/20 bg-card p-12 text-center shadow-2xl">
+        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-amber-500/10 text-amber-600">
+          <Lock size={40} />
+        </div>
+        <h1 className="font-display text-3xl font-bold text-foreground">Review Link Disabled</h1>
+        <p className="mt-4 text-muted-foreground">
+          This project review link has been disabled because the project has expired or the freelancer's subscription is inactive.
+        </p>
+        <p className="mt-6 text-sm text-amber-700 font-medium">
+          Please contact your freelancer to reactivate this link.
+        </p>
+        <Button asChild variant="outline" className="mt-8">
+          <Link to="/">Go to Giglant Home</Link>
+        </Button>
       </div>
     </div>
   );
@@ -192,7 +127,7 @@ const ClientView = () => {
           currentStep={tutorialStep} 
           onNext={() => setTutorialStep(s => s + 1)}
           onBack={() => setTutorialStep(s => s - 1)}
-          onDismiss={dismissTutorial} 
+          onDismiss={() => setShowTutorial(false)} 
         />
       )}
 
@@ -206,7 +141,7 @@ const ClientView = () => {
             <Button variant="outline" size="sm" onClick={() => loadData()} className="text-muted-foreground border-border hover:bg-secondary">
               <RefreshCw className="mr-1 h-3 w-3" /> Refresh
             </Button>
-            <Button variant="outline" size="sm" onClick={handleStartTutorial} className="text-primary border-primary/30 hover:bg-primary/5">
+            <Button variant="outline" size="sm" onClick={() => setShowTutorial(true)} className="text-primary border-primary/30 hover:bg-primary/5">
               <HelpCircle className="mr-1 h-3 w-3" /> Guide
             </Button>
           </div>
@@ -263,7 +198,7 @@ const ClientView = () => {
                         <label className="mb-1 flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
                           <Clock className="h-2.5 w-2.5" /> Time (HH:MM:SS)
                         </label>
-                        <input type="text" value={newTimestamp} onChange={e => handleTimestampChange(e.target.value)} placeholder="00:01:24"
+                        <input type="text" value={newTimestamp} onChange={e => setNewTimestamp(e.target.value)} placeholder="00:01:24"
                           className="w-full rounded-lg border border-border bg-background px-2 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
                       </div>
                     )}
@@ -275,10 +210,9 @@ const ClientView = () => {
                     <div className="flex-1 min-w-[150px]">
                       <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Comment</label>
                       <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder={isTimeable ? "Describe what you'd like changed at this point..." : "Describe what you'd like changed..."}
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-                        onKeyDown={e => e.key === "Enter" && handleAddComment()} />
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
                     </div>
-                    <Button onClick={handleAddComment} className="h-10"><Plus className="h-4 w-4 mr-1" /> Add</Button>
+                    <Button className="h-10"><Plus className="h-4 w-4 mr-1" /> Add</Button>
                   </div>
                 </div>
 

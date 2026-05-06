@@ -16,7 +16,8 @@ import {
   ShieldAlert,
   Edit2,
   Save,
-  X
+  X,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +32,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { Project } from "./types";
-import { getTimeRemaining } from "./types";
+import { getTimeRemaining, isProjectLocked } from "./types";
+import { useAuth } from "@/components/AuthProvider";
+import { Link } from "react-router-dom";
 
 interface Props {
   project: Project;
@@ -39,6 +42,7 @@ interface Props {
 }
 
 const OverviewTab = ({ project, onUpdate }: Props) => {
+  const { profile } = useAuth();
   const { toast } = useToast();
   const [timeLeft, setTimeLeft] = useState(getTimeRemaining(project.created_at));
   const [isEditing, setIsEditing] = useState(false);
@@ -50,6 +54,8 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
   const [saving, setSaving] = useState(false);
 
   const clientLink = `${window.location.origin}/client/${project.share_token}`;
+  const planType = profile?.plan_type || 'free';
+  const isLocked = isProjectLocked(project.created_at, planType);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -89,16 +95,18 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
     <div className="space-y-8">
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          {/* Deletion Policy Card */}
-          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6">
+          {/* Deletion/Locking Policy Card */}
+          <div className={`rounded-2xl border p-6 ${isLocked ? "border-red-500/20 bg-red-500/5" : "border-amber-500/20 bg-amber-500/5"}`}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-amber-600" />
-                <h2 className="font-display text-lg font-semibold text-foreground">Project Expiration</h2>
+                {isLocked ? <AlertTriangle className="h-5 w-5 text-red-600" /> : <Clock className="h-5 w-5 text-amber-600" />}
+                <h2 className="font-display text-lg font-semibold text-foreground">
+                  {isLocked ? "Project Locked" : "Project Status"}
+                </h2>
               </div>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-amber-700 hover:bg-amber-500/10">
+                  <Button variant="ghost" size="sm" className={isLocked ? "text-red-700 hover:bg-red-500/10" : "text-amber-700 hover:bg-amber-500/10"}>
                     <ShieldAlert className="mr-1.5 h-4 w-4" /> Full Policy
                   </Button>
                 </DialogTrigger>
@@ -106,24 +114,26 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                       <AlertTriangle className="h-5 w-5 text-amber-600" />
-                      7-Day Deletion Policy
+                      Project Locking Policy
                     </DialogTitle>
                     <DialogDescription className="pt-4 space-y-4 text-sm leading-relaxed">
                       <p>
-                        To ensure privacy and maintain platform performance, Giglant automatically deletes all project data exactly <strong>7 days after creation</strong>.
+                        To maintain platform performance and privacy, Giglant applies the following rules:
                       </p>
                       <div className="rounded-lg bg-muted p-4 space-y-2">
-                        <p className="font-semibold text-foreground">What gets deleted:</p>
+                        <p className="font-semibold text-foreground">Free Plan:</p>
                         <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                          <li>Project workspace and metadata</li>
-                          <li>All client feedback and comments</li>
-                          <li>Revision checklists and delivery logs</li>
-                          <li>The shareable client review link</li>
+                          <li>Projects are locked after 7 days.</li>
+                          <li>Review links are disabled when locked.</li>
+                          <li>Workspace becomes read-only.</li>
+                        </ul>
+                        <p className="font-semibold text-foreground mt-4">Pro Plan:</p>
+                        <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                          <li>Unlimited projects.</li>
+                          <li>Projects remain active as long as subscription is live.</li>
+                          <li>60-day retention after subscription ends.</li>
                         </ul>
                       </div>
-                      <p className="text-amber-700 font-medium">
-                        Note: Your actual files on Google Drive are NOT affected. Only the Giglant workspace and comments are removed.
-                      </p>
                     </DialogDescription>
                   </DialogHeader>
                 </DialogContent>
@@ -132,12 +142,26 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
             
             <div className="flex flex-col items-center justify-center py-2">
               <div className="text-center">
-                <div className="text-4xl font-bold text-amber-600 font-display">
-                  {timeLeft.days} {timeLeft.days === 1 ? 'Day' : 'Days'} Remaining
-                </div>
-                <p className="mt-2 text-sm text-amber-700/80">
-                  This project and all associated data will be permanently deleted 7 days after creation.
-                </p>
+                {isLocked ? (
+                  <>
+                    <div className="text-4xl font-bold text-red-600 font-display">LOCKED</div>
+                    <p className="mt-2 text-sm text-red-700/80">
+                      This project is locked. Upgrade to Pro to reactivate the review link and editing.
+                    </p>
+                    <Button asChild className="mt-4 bg-red-600 hover:bg-red-700">
+                      <Link to="/pricing"><Sparkles className="mr-2 h-4 w-4" /> Unlock with Pro</Link>
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-4xl font-bold text-amber-600 font-display">
+                      {timeLeft.days} {timeLeft.days === 1 ? 'Day' : 'Days'} Remaining
+                    </div>
+                    <p className="mt-2 text-sm text-amber-700/80">
+                      Free projects are locked 7 days after creation.
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -150,7 +174,7 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
                 <h2 className="font-display text-lg font-semibold text-foreground">Project Overview</h2>
               </div>
               {!isEditing ? (
-                <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+                <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} disabled={isLocked}>
                   <Edit2 className="mr-1.5 h-4 w-4" /> Edit Details
                 </Button>
               ) : (
@@ -236,23 +260,25 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
           </div>
 
           {/* Client Review Link Card */}
-          <div id="ws-share-card" className="rounded-2xl border border-primary/20 bg-primary/5 p-6">
+          <div id="ws-share-card" className={`rounded-2xl border p-6 ${isLocked ? "border-border bg-muted/50 opacity-60" : "border-primary/20 bg-primary/5"}`}>
             <div className="flex items-center gap-2 mb-4">
               <Share2 className="h-5 w-5 text-primary" />
               <h2 className="font-display text-lg font-semibold text-foreground">Client Review Link</h2>
             </div>
             <p className="text-sm text-muted-foreground mb-6">
-              Share this link with your client. They can view files, leave timestamped feedback, and track revision progress without needing an account.
+              {isLocked 
+                ? "This link is currently disabled because the project is locked." 
+                : "Share this link with your client. They can view files, leave timestamped feedback, and track revision progress without needing an account."}
             </p>
             <div className="flex items-center gap-2">
               <div className="flex-1 truncate rounded-lg border border-primary/20 bg-background px-4 py-2.5 text-sm font-mono text-muted-foreground">
                 {clientLink}
               </div>
-              <Button onClick={copyLink} size="icon" variant="outline" className="shrink-0">
+              <Button onClick={copyLink} size="icon" variant="outline" className="shrink-0" disabled={isLocked}>
                 <Copy className="h-4 w-4" />
               </Button>
-              <Button asChild size="icon" variant="outline" className="shrink-0">
-                <a href={clientLink} target="_blank" rel="noopener">
+              <Button asChild size="icon" variant="outline" className="shrink-0" disabled={isLocked}>
+                <a href={isLocked ? "#" : clientLink} target="_blank" rel="noopener">
                   <ExternalLink className="h-4 w-4" />
                 </a>
               </Button>
@@ -287,19 +313,6 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Pro Tip */}
-          <div className="rounded-2xl border border-border bg-card p-6">
-            <h3 className="font-display text-sm font-semibold text-foreground mb-3">Pro Tip</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-              Use the <strong>Delivery Tab</strong> to generate professional messages when sending work to your client. It helps maintain a premium brand image.
-            </p>
-            <Button variant="link" className="h-auto p-0 text-xs text-primary font-semibold" asChild>
-              <span className="flex items-center gap-1 cursor-pointer">
-                Go to Delivery <ArrowRight className="h-3 w-3" />
-              </span>
-            </Button>
           </div>
         </div>
       </div>

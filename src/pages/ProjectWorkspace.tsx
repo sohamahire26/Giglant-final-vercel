@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link, useLocation, Navigate, useNavigate } from "react-router-dom";
-import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle, FileEdit, RefreshCw, Lock, Sparkles, ArrowRight } from "lucide-react";
+import { Trash2, Loader2, FolderOpen, MessageSquare, CheckSquare, Send, Receipt, HelpCircle, FileEdit, RefreshCw, Lock, Sparkles, AlertTriangle, Clock } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Project, ProjectFile, FileComment } from "@/components/workspace/types";
+import { isProjectLocked, getRenewalStatus } from "@/components/workspace/types";
 import OverviewTab from "@/components/workspace/OverviewTab";
 import FilesTab from "@/components/workspace/FilesTab";
 import RevisionsTab from "@/components/workspace/RevisionsTab";
@@ -50,159 +51,68 @@ const ProjectWorkspace = () => {
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
+  const [subscription, setSubscription] = useState<any>(null);
   const { toast } = useToast();
   const pollingInterval = useRef<any>(null);
 
   const loadData = useCallback(async (silent = false) => {
-    if (!id) return;
+    if (!id || !user) return;
     if (!silent) setLoading(true);
     
     try {
-      const [projRes, filesRes, commentsRes] = await Promise.all([
-        supabase
-          .from("projects")
-          .select("*")
-          .eq("id", id)
-          .single(),
-        supabase
-          .from("project_files")
-          .select("*")
-          .eq("project_id", id)
-          .order("sort_order"),
-        supabase
-          .from("file_comments")
-          .select("*, project_files!inner(project_id)")
-          .eq("project_files.project_id", id)
-          .order("created_at")
+      const [projRes, filesRes, commentsRes, subRes] = await Promise.all([
+        supabase.from("projects").select("*").eq("id", id).single(),
+        supabase.from("project_files").select("*").eq("project_id", id).order("sort_order"),
+        supabase.from("file_comments").select("*, project_files!inner(project_id)").eq("project_files.project_id", id).order("created_at"),
+        supabase.from("subscriptions").select("*").eq("user_id", user.id).maybeSingle()
       ]);
       
       if (projRes.error) throw projRes.error;
       if (!projRes.data) { setLoading(false); return; }
       setProject(projRes.data as Project);
-      
       setFiles(filesRes.data || []);
       setComments(commentsRes.data || []);
+      setSubscription(subRes.data);
     } catch (error: any) {
       console.error("[ProjectWorkspace] Error loading data:", error);
-      if (!silent) {
-        toast({
-          title: "Error loading project",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
+      if (!silent) toast({ title: "Error loading project", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [id, toast]);
+  }, [id, user, toast]);
 
   useEffect(() => {
-    if (location.state?.isNew) {
-      setShowTutorial(true);
-    }
+    if (location.state?.isNew) setShowTutorial(true);
   }, [location.state]);
 
   useEffect(() => {
     loadData();
-    
-    pollingInterval.current = setInterval(() => {
-      loadData(true);
-    }, 30000);
-
-    return () => {
-      if (pollingInterval.current) clearInterval(pollingInterval.current);
-    };
+    pollingInterval.current = setInterval(() => loadData(true), 30000);
+    return () => { if (pollingInterval.current) clearInterval(pollingInterval.current); };
   }, [loadData]);
-
-  useEffect(() => {
-    if (!files.length || !id) return;
-    
-    const fileIds = files.map(f => f.id);
-    
-    const channel = supabase.channel(`ws-realtime-${id}`)
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "file_comments"
-      }, (payload) => {
-        const newC = payload.new as FileComment;
-        const oldC = payload.old as any;
-        const targetFileId = newC?.file_id || oldC?.file_id;
-
-        if (!fileIds.includes(targetFileId)) return;
-
-        if (payload.eventType === 'INSERT') {
-          setComments(prev => {
-            if (prev.find(c => c.id === newC.id)) return prev;
-            return [...prev, newC];
-          });
-          
-          if (newC.is_client) {
-            toast({
-              title: "New Feedback Received!",
-              description: `${newC.author_name} left a comment.`,
-              action: <Button variant="outline" size="sm" onClick={() => loadData(true)}><RefreshCw className="mr-1 h-3 w-3" /> Refresh</Button>
-            });
-          }
-        } else if (payload.eventType === 'UPDATE') {
-          setComments(prev => prev.map(c => c.id === newC.id ? newC : c));
-        } else if (payload.eventType === 'DELETE') {
-          setComments(prev => prev.filter(c => c.id !== oldC.id));
-        }
-      })
-      .subscribe();
-      
-    return () => { supabase.removeChannel(channel); };
-  }, [files, id, toast, loadData]);
 
   const handleUpdateProject = async (updates: Partial<Project>) => {
     if (!id || !project) return;
-    
     try {
-      const { error } = await supabase
-        .from("projects")
-        .update(updates)
-        .eq("id", id);
-
+      const { error } = await supabase.from("projects").update(updates).eq("id", id);
       if (error) throw error;
-      
       setProject({ ...project, ...updates });
-      toast({
-        title: "Success",
-        description: "Project updated successfully",
-      });
+      toast({ title: "Success", description: "Project updated successfully" });
     } catch (err: any) {
-      toast({
-        title: "Error",
-        description: err.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: err.message, variant: "destructive" });
       throw err;
     }
   };
 
   const handleDeleteProject = async () => {
-    if (!project || !confirm("Delete this project and all its data? This cannot be undone.")) return;
-    
+    if (!project || !confirm("Delete this project?")) return;
     try {
-      const { error } = await supabase
-        .from("projects")
-        .delete()
-        .eq("id", project.id);
-
+      const { error } = await supabase.from("projects").delete().eq("id", project.id);
       if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Project deleted successfully",
-      });
+      toast({ title: "Success", description: "Project deleted successfully" });
       navigate("/dashboard");
     } catch (err: any) {
-      toast({
-        title: "Error",
-        description: err.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
 
@@ -216,11 +126,9 @@ const ProjectWorkspace = () => {
     </div></Layout>
   );
 
-  const isPro = profile?.plan_type === 'pro';
-  const created = new Date(project.created_at).getTime();
-  const now = new Date().getTime();
-  const diffDays = (now - created) / (1000 * 60 * 60 * 24);
-  const isLocked = !isPro && diffDays > 7;
+  const planType = profile?.plan_type || 'free';
+  const isLocked = isProjectLocked(project.created_at, planType);
+  const renewalStatus = getRenewalStatus(subscription?.renews_at);
 
   return (
     <Layout>
@@ -238,11 +146,33 @@ const ProjectWorkspace = () => {
 
       <section className="section-padding">
         <div className="container-tight">
+          {/* Renewal Disclaimer */}
+          {planType === 'pro' && renewalStatus && (
+            <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+                <div className="text-sm">
+                  <p className="font-bold text-amber-900">Subscription Renewal Notice</p>
+                  <p className="text-amber-800">
+                    {renewalStatus === '3d' && "Your Pro subscription renews in 3 days. Ensure your payment method is up to date."}
+                    {renewalStatus === '2d' && "Your Pro subscription renews in 2 days. Don't lose access to your unlimited projects."}
+                    {renewalStatus === '1d' && "Your Pro subscription renews tomorrow. Renew now to avoid project locking."}
+                    {renewalStatus === '24h' && "CRITICAL: Your Pro subscription renews in less than 24 hours. Renew now!"}
+                    {renewalStatus === 'expired' && "Your subscription has expired. Projects older than 7 days are now locked."}
+                  </p>
+                </div>
+              </div>
+              <Button asChild size="sm" className="bg-amber-600 hover:bg-amber-700 text-white">
+                <Link to="/pricing">Manage Subscription</Link>
+              </Button>
+            </div>
+          )}
+
           <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-display text-2xl font-bold text-foreground">{project.name}</h1>
-                {isLocked && <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">LOCKED</span>}
+                {isLocked && <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white flex items-center gap-1"><Lock size={10} /> LOCKED</span>}
               </div>
               {project.client_name && <p className="text-sm text-muted-foreground">Client: {project.client_name}</p>}
             </div>
@@ -281,12 +211,12 @@ const ProjectWorkspace = () => {
                   </div>
                   <h2 className="font-display text-2xl font-bold text-foreground">Project Locked</h2>
                   <p className="mt-3 text-muted-foreground">
-                    Free projects are locked after 7 days. You can still view the overview, but editing and other tools are disabled.
+                    This project is locked because your free trial period (7 days) has ended or your subscription expired.
                   </p>
                   <div className="mt-8 flex flex-col gap-3">
                     <Button asChild className="w-full py-6 text-lg font-bold shadow-lg shadow-primary/20">
                       <Link to="/pricing">
-                        <Sparkles className="mr-2 h-5 w-5" /> Upgrade to Pro
+                        <Sparkles className="mr-2 h-5 w-5" /> Upgrade to Pro to Unlock
                       </Link>
                     </Button>
                     <Button variant="outline" onClick={() => setActiveTab("overview")} className="w-full">

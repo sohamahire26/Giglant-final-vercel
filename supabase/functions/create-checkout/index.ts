@@ -12,92 +12,61 @@ serve(async (req) => {
   }
 
   try {
-    console.log("[create-checkout] Request received");
+    console.log("[create-checkout] Request received for Dodo Payments");
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-    // Use service role key to verify the user token
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
+    if (!authHeader) throw new Error('No authorization header');
 
-    // Extract the JWT token
     const token = authHeader.replace('Bearer ', '');
-    
-    // Verify the user with the token
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
     if (authError || !user) {
-      console.error("[create-checkout] Auth error:", authError?.message);
-      return new Response(JSON.stringify({ error: 'Authentication failed', details: authError?.message }), {
+      return new Response(JSON.stringify({ error: 'Authentication failed' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    console.log("[create-checkout] Authenticated user:", user.email);
+    const { productId } = await req.json();
+    const apiKey = Dodo.env.get('DODO_PAYMENTS_API_KEY');
 
-    const { variantId, storeId } = await req.json();
-    const apiKey = Deno.env.get('LEMON_SQUEEZY_API_KEY');
+    if (!apiKey) throw new Error('Dodo Payments API key not configured');
 
-    if (!apiKey) {
-      throw new Error('Lemon Squeezy API key not configured');
-    }
-
-    const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
+    // Dodo Payments Checkout API
+    const response = await fetch('https://api.dodopayments.com/v1/checkouts', {
       method: 'POST',
       headers: {
-        'Accept': 'application/vnd.api+json',
-        'Content-Type': 'application/vnd.api+json',
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        data: {
-          type: 'checkouts',
-          attributes: {
-            checkout_data: {
-              custom: {
-                user_id: user.id
-              },
-              email: user.email
-            },
-            product_options: {
-              redirect_url: `${req.headers.get('origin')}/dashboard?payment=success`,
-            }
-          },
-          relationships: {
-            store: {
-              data: {
-                type: 'stores',
-                id: storeId.toString()
-              }
-            },
-            variant: {
-              data: {
-                type: 'variants',
-                id: variantId.toString()
-              }
-            }
-          }
-        }
+        product_id: productId,
+        quantity: 1,
+        customer: {
+          email: user.email
+        },
+        metadata: {
+          user_id: user.id
+        },
+        return_url: `${req.headers.get('origin')}/dashboard?payment=success`
       })
     });
 
     const result = await response.json();
 
     if (!response.ok) {
-      console.error("[create-checkout] Lemon Squeezy error:", result);
+      console.error("[create-checkout] Dodo error:", result);
       return new Response(JSON.stringify(result), {
         status: response.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    return new Response(JSON.stringify({ url: result.data.attributes.url }), {
+    return new Response(JSON.stringify({ url: result.url }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

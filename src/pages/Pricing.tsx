@@ -30,24 +30,16 @@ const PricingPage = () => {
     setLoading(tierName);
     
     try {
-      const STORE_ID = "342733";
-      const VARIANT_ID = "1519635";
+      const PRODUCT_ID = "p_12345"; // Replace with actual Dodo Product ID
 
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
 
-      if (!token) {
-        throw new Error("You must be logged in to subscribe.");
-      }
+      if (!token) throw new Error("You must be logged in to subscribe.");
 
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: {
-          variantId: VARIANT_ID,
-          storeId: STORE_ID
-        },
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        body: { productId: PRODUCT_ID },
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (error) throw error;
@@ -210,30 +202,6 @@ const PricingPage = () => {
                 )}
               </div>
             ))}
-          </div>
-
-          <div className="mt-20 grid gap-8 md:grid-cols-3">
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Zap className="h-6 w-6" />
-              </div>
-              <h4 className="font-display font-bold">Instant Access</h4>
-              <p className="mt-2 text-sm text-muted-foreground">No long forms. Start using tools in seconds.</p>
-            </div>
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <ShieldCheck className="h-6 w-6" />
-              </div>
-              <h4 className="font-display font-bold">Secure Payments</h4>
-              <p className="mt-2 text-sm text-muted-foreground">Processed securely via Lemon Squeezy.</p>
-            </div>
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Sparkles className="h-6 w-6" />
-              </div>
-              <h4 className="font-display font-bold">Professional Tools</h4>
-              <p className="mt-2 text-sm text-muted-foreground">Assistants for every part of your workflow.</p>
-            </div>
           </div>
         </div>
       </section>

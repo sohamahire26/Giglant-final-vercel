@@ -1,3 +1,5 @@
+import { differenceInDays, differenceInHours, parseISO } from "date-fns";
+
 export interface Project {
   id: string;
   name: string;
@@ -100,4 +102,32 @@ export const getTimeRemaining = (createdAt: string) => {
   const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
   return { days, hours, minutes, seconds, expired: false };
+};
+
+export const isProjectLocked = (projectCreatedAt: string, planType: string) => {
+  const created = parseISO(projectCreatedAt);
+  const now = new Date();
+  const daysOld = differenceInDays(now, created);
+  
+  if (planType === 'free') {
+    return daysOld > 7;
+  }
+  
+  return false;
+};
+
+export const getRenewalStatus = (renewsAt: string | null) => {
+  if (!renewsAt) return null;
+  const renewalDate = parseISO(renewsAt);
+  const now = new Date();
+  const daysUntil = differenceInDays(renewalDate, now);
+  const hoursUntil = differenceInHours(renewalDate, now);
+  
+  if (hoursUntil <= 0) return "expired";
+  if (hoursUntil <= 24) return "24h";
+  if (daysUntil <= 1) return "1d";
+  if (daysUntil <= 2) return "2d";
+  if (daysUntil <= 3) return "3d";
+  
+  return null;
 };

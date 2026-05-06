@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Edit, Trash2, Loader2, ArrowLeft, FileText, Eye, MessageSquare, Bug, Lightbulb, User, Clock } from "lucide-react";
+import { Trash2, Loader2, ArrowLeft, FileText, Eye, MessageSquare, Bug, Lightbulb, User, Clock } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
@@ -121,11 +121,6 @@ const BlogAdmin = () => {
 
           {activeTab === "blog" ? (
             <div className="space-y-4">
-              <div className="flex justify-end">
-                <Button asChild>
-                  <Link to="/blog/write"><Plus className="mr-2 h-4 w-4" /> New Post</Link>
-                </Button>
-              </div>
               <div className="grid gap-4">
                 {posts.map(post => (
                   <div key={post.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-sm">
@@ -141,9 +136,6 @@ const BlogAdmin = () => {
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="icon" asChild title="View">
                         <Link to={`/blog/${post.category}/${post.slug}`}><Eye size={18} /></Link>
-                      </Button>
-                      <Button variant="ghost" size="icon" asChild title="Edit">
-                        <Link to={`/blog/write?edit=${post.id}`}><Edit size={18} /></Link>
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleDeletePost(post.id)} className="text-destructive hover:bg-destructive/10" title="Delete">
                         <Trash2 size={18} />

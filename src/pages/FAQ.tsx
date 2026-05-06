@@ -19,7 +19,6 @@ const faqItems = [
   { question: "Are there file size limits?", answer: "Browser-based tools depend on your device's memory. The Timestamp Feedback Tool supports videos up to 500MB for your video export workflow." },
   { question: "Is there a usage limit?", answer: "No. You can use all tools as many times as you want, completely unlimited — perfect for high-volume freelancer workflow." },
   { question: "Will Giglant become paid?", answer: "We plan to keep a generous free tier forever. Premium features may be introduced in the future, but core video editing workflow tools will remain free." },
-  { question: "Can I write blog posts on Giglant?", answer: "Yes! Visit the Blog section and click 'Write a Post' to create and publish articles about video editing workflow, freelancer tips, and more." },
 ];
 
 const FAQPage = () => (

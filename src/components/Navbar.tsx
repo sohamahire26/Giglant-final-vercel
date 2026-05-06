@@ -1,10 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { Menu, X, ChevronDown, User as UserIcon, MessageSquare } from "lucide-react";
+import { useState } from "react";
+import { Menu, X, ChevronDown, User as UserIcon } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "./AuthProvider";
 import { Button } from "./ui/button";
-import { getSupportMessages } from "@/lib/api";
 
 const tools = [
   { name: "File Renamer", href: "/tools/file-renamer" },
@@ -13,26 +12,8 @@ const tools = [
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
-  const [hasUnread, setHasUnread] = useState(false);
   const location = useLocation();
-  const { session, user } = useAuth();
-
-  useEffect(() => {
-    if (session && user) {
-      const checkUnread = async () => {
-        try {
-          const data = await getSupportMessages();
-          const unread = data.some((m: any) => m.user_id === user.id && m.status === 'replied');
-          setHasUnread(unread);
-        } catch (err) {
-          console.error(err);
-        }
-      };
-      checkUnread();
-      const interval = setInterval(checkUnread, 60000); // Check every minute
-      return () => clearInterval(interval);
-    }
-  }, [session, user]);
+  const { session } = useAuth();
 
   const navLinks = [
     { name: "Home", href: "/" },
@@ -85,16 +66,6 @@ const Navbar = () => {
           )}
           
           <div className="ml-4 flex items-center gap-2 border-l border-border pl-4">
-            <Link 
-              to="/contact" 
-              className={`relative flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors hover:bg-secondary ${location.pathname === "/contact" ? "text-primary bg-secondary" : "text-foreground"}`}
-            >
-              <MessageSquare size={16} />
-              Contact
-              {hasUnread && (
-                <span className="absolute right-3 top-2 flex h-2 w-2 rounded-full bg-red-500" />
-              )}
-            </Link>
             {session ? (
               <Link to="/profile" className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary/80">
                 <UserIcon size={16} />
@@ -158,17 +129,6 @@ const Navbar = () => {
             )
           )}
           <div className="mt-4 border-t border-border pt-4 space-y-2">
-            <Link
-              to="/contact"
-              onClick={() => setMobileOpen(false)}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 py-2.5 text-sm font-medium text-foreground"
-            >
-              <MessageSquare size={16} />
-              Contact
-              {hasUnread && (
-                <span className="flex h-2 w-2 rounded-full bg-red-500" />
-              )}
-            </Link>
             {session ? (
               <Link
                 to="/profile"

@@ -26,7 +26,7 @@ export type Database = {
         }
         Insert: {
           category: string
-          content: string
+          content?: string
           cover_image_url?: string | null
           created_at?: string
           excerpt?: string | null
@@ -51,45 +51,6 @@ export type Database = {
           slug?: string
           title?: string
           updated_at?: string
-        }
-        Relationships: []
-      }
-      support_messages: {
-        Row: {
-          id: string
-          user_id: string
-          type: 'bug' | 'feedback' | 'contact'
-          subject: string
-          message: string
-          status: 'new' | 'replied' | 'viewed'
-          admin_reply: string | null
-          created_at: string
-          updated_at: string
-          viewed_at: string | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          type: 'bug' | 'feedback' | 'contact'
-          subject: string
-          message: string
-          status?: 'new' | 'replied' | 'viewed'
-          admin_reply?: string | null
-          created_at?: string
-          updated_at?: string
-          viewed_at?: string | null
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          type?: 'bug' | 'feedback' | 'contact'
-          subject?: string
-          message?: string
-          status?: 'new' | 'replied' | 'viewed'
-          admin_reply?: string | null
-          created_at?: string
-          updated_at?: string
-          viewed_at?: string | null
         }
         Relationships: []
       }
@@ -124,7 +85,15 @@ export type Database = {
           subscription_id?: string | null
           is_admin?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       file_comments: {
         Row: {
@@ -157,7 +126,15 @@ export type Database = {
           is_resolved?: boolean | null
           timestamp_seconds?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "file_comments_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "project_files"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_files: {
         Row: {
@@ -174,8 +151,8 @@ export type Database = {
           created_at?: string
           drive_file_id?: string | null
           drive_url: string
-          file_type: string
-          filename: string
+          file_type?: string
+          filename?: string
           id?: string
           project_id: string
           sort_order?: number | null
@@ -190,7 +167,15 @@ export type Database = {
           project_id?: string
           sort_order?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "project_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       projects: {
         Row: {
@@ -246,3 +231,7 @@ export type Database = {
     }
   }
 }
+
+export type Tables<
+  T extends keyof Database['public']['Tables']
+> = Database['public']['Tables'][T]['Row']

@@ -8,7 +8,7 @@ import { format } from "date-fns";
 
 interface Comment {
   id: string;
-  file_id: string;
+  file_id: string | null;
   comment: string;
   author_name: string | null;
   is_client: boolean;
@@ -35,6 +35,9 @@ export function CommentSection({ projectId, fileId }: CommentSectionProps) {
   const fetchComments = async () => {
     try {
       setLoading(true);
+      // Since file_comments table doesn't have project_id directly (based on schema I saw), 
+      // we might need to join with project_files or just fetch by file_id if provided.
+      // If no fileId, we might want to fetch all comments for all files in this project.
       
       let query = supabase
         .from('file_comments')
@@ -44,6 +47,7 @@ export function CommentSection({ projectId, fileId }: CommentSectionProps) {
       if (fileId) {
         query = query.eq('file_id', fileId);
       } else {
+        // If no fileId, we need to get all files for this project first
         const { data: files } = await supabase
           .from('project_files')
           .select('id')
@@ -62,7 +66,7 @@ export function CommentSection({ projectId, fileId }: CommentSectionProps) {
       const { data, error } = await query;
 
       if (error) throw error;
-      setComments((data || []) as Comment[]);
+      setComments(data || []);
     } catch (error: any) {
       console.error("Error fetching comments:", error);
     } finally {
@@ -75,6 +79,10 @@ export function CommentSection({ projectId, fileId }: CommentSectionProps) {
     if (!newComment.trim()) return;
 
     try {
+      // If no fileId is provided, we need a default file to attach the comment to, 
+      // or the schema needs to support project-level comments.
+      // Based on schema, file_id is NOT NULL.
+      
       let targetFileId = fileId;
       
       if (!targetFileId) {

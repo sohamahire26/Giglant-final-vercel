@@ -216,6 +216,53 @@ export type Database = {
         }
         Relationships: []
       }
+      support_messages: {
+        Row: {
+          id: string
+          user_id: string
+          type: string
+          subject: string
+          message: string
+          status: string
+          admin_reply: string | null
+          created_at: string
+          updated_at: string
+          viewed_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: string
+          subject: string
+          message: string
+          status?: string
+          admin_reply?: string | null
+          created_at?: string
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: string
+          subject?: string
+          message?: string
+          status?: string
+          admin_reply?: string | null
+          created_at?: string
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

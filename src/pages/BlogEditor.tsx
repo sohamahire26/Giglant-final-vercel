@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useNavigate, useSearchParams, Link, Navigate } from "react-router-dom";
 import { ArrowLeft, Save, Eye, Layout, Image as ImageIcon, FileText, Globe, Loader2, CheckCircle2 } from "lucide-react";
 import LayoutComp from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
@@ -89,7 +89,7 @@ const BlogEditor = () => {
     setPost({ ...post, slug });
   };
 
-  if (!isOwner) return <Navigate to="/404" />;
+  if (!isOwner) return <Navigate to="/404" replace />;
   if (fetching) return <LayoutComp><div className="flex py-48 justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div></LayoutComp>;
 
   return (

@@ -249,9 +249,9 @@ const BlogEditor = () => {
                   <CheckCircle2 className="h-4 w-4" /> Pro Tips
                 </h4>
                 <ul className="space-y-2 text-[11px] text-muted-foreground leading-relaxed">
-                  <li>• Use <strong><h2></strong> for main sections.</li>
-                  <li>• Use <strong><strong></strong> for emphasis.</li>
-                  <li>• Use <strong><img src="..." /></strong> for inline images.</li>
+                  <li>• Use <strong>{"<h2>"}</strong> for main sections.</li>
+                  <li>• Use <strong>{"<strong>"}</strong> for emphasis.</li>
+                  <li>• Use <strong>{"<img src=\"...\" />"}</strong> for inline images.</li>
                   <li>• Keep slugs short and keyword-rich.</li>
                 </ul>
               </div>

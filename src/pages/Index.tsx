@@ -1,11 +1,13 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FileEdit, ArrowRight, Send, Receipt } from "lucide-react";
+import { FileEdit, ArrowRight, Send, Receipt, Calendar, Clock } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import FAQSection from "@/components/FAQSection";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider";
+import { getBlogPosts } from "@/lib/api";
 
 const tools = [
   { name: "File Renamer", description: "Professional file renaming with numbering. Organize your editing pipeline instantly.", icon: FileEdit, href: "/tools/file-renamer", color: "bg-primary/10 text-primary" },
@@ -26,6 +28,12 @@ const fadeUp = {
 
 const Index = () => {
   const { session } = useAuth();
+  
+  const { data: recentPosts } = useQuery({
+    queryKey: ["recent-posts"],
+    queryFn: () => getBlogPosts(),
+    select: (data) => data?.slice(0, 3) || [],
+  });
 
   return (
     <Layout>
@@ -80,6 +88,51 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Recent Blog Posts Section */}
+      {recentPosts && recentPosts.length > 0 && (
+        <section className="section-padding bg-muted/30">
+          <div className="container-tight">
+            <div className="mb-12 flex items-end justify-between">
+              <div>
+                <h2 className="font-display text-3xl font-bold text-foreground md:text-4xl">Latest from the Blog</h2>
+                <p className="mt-3 text-lg text-muted-foreground">Workflow tips and industry insights for creators.</p>
+              </div>
+              <Button asChild variant="ghost" className="hidden md:flex">
+                <Link to="/blog">View All Posts <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+            </div>
+            <div className="grid gap-8 md:grid-cols-3">
+              {recentPosts.map((post: any, i: number) => (
+                <motion.div key={post.id} custom={i} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
+                  <Link to={`/blog/${post.category}/${post.slug}`} className="group block overflow-hidden rounded-2xl border border-border bg-card transition-all hover:card-shadow-hover card-shadow">
+                    <div className="aspect-video overflow-hidden">
+                      <img src={post.cover_image_url || "/placeholder.svg"} alt={post.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    </div>
+                    <div className="p-6">
+                      <div className="mb-3 flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-primary">
+                        {post.category.replace(/-/g, " ")}
+                      </div>
+                      <h3 className="font-display text-xl font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                        {post.title}
+                      </h3>
+                      <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {new Date(post.created_at).toLocaleDateString()}</span>
+                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {Math.ceil(post.content.split(" ").length / 200)} min read</span>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+            <div className="mt-10 text-center md:hidden">
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/blog">View All Posts</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
 
       <FAQSection title="Frequently Asked Questions" items={homeFAQ} />
 

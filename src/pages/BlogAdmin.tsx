@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Trash2, Loader2, ArrowLeft, FileText, Eye, MessageSquare, Bug, Lightbulb, User, Clock } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2, ArrowLeft, FileText, Eye, MessageSquare, Bug, Lightbulb, User, Clock } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
@@ -121,6 +121,11 @@ const BlogAdmin = () => {
 
           {activeTab === "blog" ? (
             <div className="space-y-4">
+              <div className="flex justify-end">
+                <Button asChild>
+                  <Link to="/blog/edit"><Plus className="mr-2 h-4 w-4" /> New Post</Link>
+                </Button>
+              </div>
               <div className="grid gap-4">
                 {posts.map(post => (
                   <div key={post.id} className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 shadow-sm">
@@ -130,12 +135,20 @@ const BlogAdmin = () => {
                       </div>
                       <div>
                         <h3 className="font-semibold">{post.title}</h3>
-                        <p className="text-xs text-muted-foreground">{post.category} • {new Date(post.created_at).toLocaleDateString()}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {post.category} • {new Date(post.created_at).toLocaleDateString()} • 
+                          <span className={post.published ? "text-green-600 ml-1" : "text-amber-600 ml-1"}>
+                            {post.published ? "Published" : "Draft"}
+                          </span>
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button variant="ghost" size="icon" asChild title="View">
                         <Link to={`/blog/${post.category}/${post.slug}`}><Eye size={18} /></Link>
+                      </Button>
+                      <Button variant="ghost" size="icon" asChild title="Edit">
+                        <Link to={`/blog/edit?edit=${post.id}`}><Edit size={18} /></Link>
                       </Button>
                       <Button variant="ghost" size="icon" onClick={() => handleDeletePost(post.id)} className="text-destructive hover:bg-destructive/10" title="Delete">
                         <Trash2 size={18} />

@@ -68,6 +68,7 @@ const Dashboard = () => {
   );
 
   const isPro = profile?.plan_type === 'pro';
+  // Strict lifetime limit check
   const lifetimeLimitReached = !isPro && (profile?.total_projects_created || 0) >= 1;
 
   return (
@@ -79,7 +80,7 @@ const Dashboard = () => {
             <div>
               <h1 className="font-display text-3xl font-bold text-foreground">My Projects</h1>
               <p className="text-muted-foreground">
-                {isPro ? "Unlimited workspaces for your business." : "Manage your active workspace."}
+                {isPro ? "Unlimited workspaces for your business." : "Manage your one-time free workspace."}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -112,7 +113,7 @@ const Dashboard = () => {
               <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold text-amber-800">Lifetime Limit Reached</p>
-                <p className="text-xs text-amber-700">Free accounts are limited to 1 lifetime project creation. Upgrade to Pro for unlimited projects and longer storage.</p>
+                <p className="text-xs text-amber-700">Free accounts are limited to 1 lifetime project creation. Upgrade to Pro for unlimited projects and permanent storage.</p>
               </div>
             </div>
           )}

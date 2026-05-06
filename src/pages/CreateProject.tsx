@@ -24,12 +24,13 @@ const CreateProject = () => {
   if (!session) return <Navigate to="/login" replace />;
 
   const isPro = profile?.plan_type === 'pro';
+  // Strict lifetime limit: check if they have EVER created a project
   const lifetimeLimitReached = !isPro && (profile?.total_projects_created || 0) >= 1;
 
   const handleCreate = async () => {
     if (lifetimeLimitReached) {
       toast({ 
-        title: "Limit Reached", 
+        title: "Lifetime Limit Reached", 
         description: "Free accounts are limited to 1 lifetime project creation. Upgrade to Pro for unlimited projects.",
         variant: "destructive" 
       });
@@ -58,7 +59,7 @@ const CreateProject = () => {
       
       if (error) throw error;
 
-      // 2. Increment the lifetime counter in profiles
+      // 2. Increment the lifetime counter in profiles (this never goes down)
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ total_projects_created: (profile?.total_projects_created || 0) + 1 })
@@ -88,7 +89,8 @@ const CreateProject = () => {
               </div>
               <h1 className="font-display text-3xl font-bold text-foreground">Lifetime Limit Reached</h1>
               <p className="mt-4 text-muted-foreground">
-                Free accounts are limited to <strong>1 lifetime project creation</strong>. Even if you delete your project, the limit remains.
+                Free accounts are limited to <strong>1 lifetime project creation</strong>. 
+                Even if you delete your project or it expires, the limit remains.
               </p>
               <div className="mt-10 space-y-4">
                 <Button asChild className="w-full py-8 text-lg font-bold shadow-lg shadow-primary/20">

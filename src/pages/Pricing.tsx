@@ -33,7 +33,6 @@ const PricingPage = () => {
       const STORE_ID = "342733";
       const VARIANT_ID = "1519635";
 
-      // Explicitly get the session to ensure we have the latest token
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
 
@@ -87,9 +86,9 @@ const PricingPage = () => {
     {
       name: "Free",
       price: "$0",
-      description: "Perfect for single active projects.",
+      description: "Perfect for trying out the workspace.",
       features: [
-        "1 Active Project workspace",
+        "1 Lifetime Project creation",
         "7-day project active window",
         "Client review magic link",
         "Timestamped feedback",
@@ -107,7 +106,7 @@ const PricingPage = () => {
       period: "/month",
       description: "Unlimited power for busy freelancers.",
       features: [
-        "Unlimited Project workspaces",
+        "Unlimited Project creations",
         "60-day project active window",
         "Priority processing",
         "Advanced Invoice assistant",

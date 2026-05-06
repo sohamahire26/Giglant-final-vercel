@@ -153,11 +153,11 @@ export type Database = {
         Insert: {
           created_at?: string
           drive_file_id?: string | null
-          drive_url: string
+          drive_url?: string
           file_type?: string
           filename?: string
           id?: string
-          project_id: string
+          project_id?: string
           sort_order?: number | null
         }
         Update: {
@@ -216,6 +216,48 @@ export type Database = {
           updated_at?: string
           work_type?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          dodo_subscription_id: string
+          order_id: string | null
+          customer_id: string | null
+          product_id: string | null
+          status: string | null
+          renews_at: string | null
+          ends_at: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          dodo_subscription_id: string
+          order_id?: string | null
+          customer_id?: string | null
+          product_id?: string | null
+          status?: string | null
+          renews_at?: string | null
+          ends_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          dodo_subscription_id?: string
+          order_id?: string | null
+          customer_id?: string | null
+          product_id?: string | null
+          status?: string | null
+          renews_at?: string | null
+          ends_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }

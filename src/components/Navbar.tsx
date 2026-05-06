@@ -1,12 +1,10 @@
-"use client";
-
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Menu, X, ChevronDown, User as UserIcon, MessageSquare, History } from "lucide-react";
+import { Menu, X, ChevronDown, User as UserIcon, MessageSquare } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "./AuthProvider";
 import { Button } from "./ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { getSupportMessages } from "@/lib/api";
 
 const tools = [
   { name: "File Renamer", href: "/tools/file-renamer" },
@@ -15,7 +13,7 @@ const tools = [
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [hasUnread, setHasUnread] = useState(false);
   const location = useLocation();
   const { session, user } = useAuth();
 
@@ -23,22 +21,15 @@ const Navbar = () => {
     if (session && user) {
       const checkUnread = async () => {
         try {
-          const { count, error } = await supabase
-            .from("support_tickets")
-            .select("*", { count: "exact", head: true })
-            .eq("user_id", user.id)
-            .not("reply", "is", null)
-            .eq("is_read_by_user", false);
-
-          if (!error) {
-            setUnreadCount(count || 0);
-          }
+          const data = await getSupportMessages();
+          const unread = data.some((m: any) => m.user_id === user.id && m.status === 'replied');
+          setHasUnread(unread);
         } catch (err) {
           console.error(err);
         }
       };
       checkUnread();
-      const interval = setInterval(checkUnread, 30000); // Check every 30 seconds
+      const interval = setInterval(checkUnread, 60000); // Check every minute
       return () => clearInterval(interval);
     }
   }, [session, user]);
@@ -94,26 +85,15 @@ const Navbar = () => {
           )}
           
           <div className="ml-4 flex items-center gap-2 border-l border-border pl-4">
-            {session && (
-              <Link 
-                to="/support" 
-                className={`relative flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors hover:bg-secondary ${location.pathname === "/support" ? "text-primary bg-secondary" : "text-foreground"}`}
-                title="Support History"
-              >
-                <History size={16} />
-                {unreadCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                    {unreadCount}
-                  </span>
-                )}
-              </Link>
-            )}
             <Link 
               to="/contact" 
               className={`relative flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors hover:bg-secondary ${location.pathname === "/contact" ? "text-primary bg-secondary" : "text-foreground"}`}
             >
               <MessageSquare size={16} />
               Contact
+              {hasUnread && (
+                <span className="absolute right-3 top-2 flex h-2 w-2 rounded-full bg-red-500" />
+              )}
             </Link>
             {session ? (
               <Link to="/profile" className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary/80">
@@ -178,23 +158,6 @@ const Navbar = () => {
             )
           )}
           <div className="mt-4 border-t border-border pt-4 space-y-2">
-            {session && (
-              <Link
-                to="/support"
-                onClick={() => setMobileOpen(false)}
-                className="flex w-full items-center justify-between rounded-lg bg-secondary px-3 py-2.5 text-sm font-medium text-foreground"
-              >
-                <div className="flex items-center gap-2">
-                  <History size={16} />
-                  Support History
-                </div>
-                {unreadCount > 0 && (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                    {unreadCount}
-                  </span>
-                )}
-              </Link>
-            )}
             <Link
               to="/contact"
               onClick={() => setMobileOpen(false)}
@@ -202,6 +165,9 @@ const Navbar = () => {
             >
               <MessageSquare size={16} />
               Contact
+              {hasUnread && (
+                <span className="flex h-2 w-2 rounded-full bg-red-500" />
+              )}
             </Link>
             {session ? (
               <Link

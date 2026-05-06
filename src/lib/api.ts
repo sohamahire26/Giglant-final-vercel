@@ -1,7 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * API client for edge functions.
+ * API client for edge functions (blog only).
+ * Project CRUD uses Supabase client directly.
  */
 
 const getApiBase = () => {
@@ -14,6 +15,7 @@ const apiCall = async (endpoint: string, body?: any) => {
   const apikey = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkaXptcGFxbGtxbW12Y2prdndiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NjkzMDIsImV4cCI6MjA5MTA0NTMwMn0.hLk05spyjrzAZa2sHQabfC8yCKhHVTMLWZTJxNHumHM";
   headers["apikey"] = apikey;
 
+  // Add Authorization header if user is logged in
   const { data: { session } } = await supabase.auth.getSession();
   if (session?.access_token) {
     headers["Authorization"] = `Bearer ${session.access_token}`;
@@ -35,6 +37,9 @@ const apiCall = async (endpoint: string, body?: any) => {
 export const getBlogPosts = (category?: string) =>
   apiCall("api", { action: "get_blog_posts", category });
 
+export const getAdminPosts = () => 
+  apiCall("api", { action: "get_admin_posts" });
+
 export const getBlogPost = (category: string, slug: string) =>
   apiCall("api", { action: "get_blog_post", category, slug });
 
@@ -47,10 +52,15 @@ export const saveBlogPost = (post: any) =>
 export const deleteBlogPost = (id: string) => 
   apiCall("api", { action: "delete_blog_post", id });
 
-/* ── Support (Server-Side Bypassed Method) ── */
+/* ── Support ── */
 
 export const getSupportMessages = async () => {
-  return apiCall("api", { action: "get_admin_support_messages" });
+  const { data, error } = await supabase
+    .from('support_messages')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
 };
 
 export const submitSupportMessage = async (message: any) => {
@@ -64,11 +74,20 @@ export const submitSupportMessage = async (message: any) => {
 };
 
 export const updateSupportMessage = async (id: string, updates: any) => {
-  // Use edge function to bypass RLS and avoid "coerce to single json" errors
-  return apiCall("api", { action: "update_support_message", id, updates });
+  const { data, error } = await supabase
+    .from('support_messages')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 };
 
 export const deleteSupportMessage = async (id: string) => {
-  // Use edge function to bypass RLS
-  return apiCall("api", { action: "delete_support_message", id });
+  const { error } = await supabase
+    .from('support_messages')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
 };

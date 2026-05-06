@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const OWNER_EMAIL = "sohamahire26@gmail.com";
+const OWNER_EMAIL = "Sohamahire26@gmail.com";
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -30,68 +30,28 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
     
+    // Verify JWT for sensitive actions
     const authHeader = req.headers.get('Authorization');
     let userEmail = null;
-    let userId = null;
     
     if (authHeader) {
       const token = authHeader.replace('Bearer ', '');
       const { data: { user }, error: userError } = await supabase.auth.getUser(token);
       if (!userError && user) {
-        userEmail = user.email.toLowerCase();
-        userId = user.id;
+        userEmail = user.email;
       }
     }
 
     const body = await req.json();
     const { action } = body;
 
-    const isOwner = userEmail === OWNER_EMAIL.toLowerCase();
-
     switch (action) {
-      case "get_admin_support_messages": {
-        if (!isOwner) return json({ error: "Unauthorized" }, 401);
-        const { data, error } = await supabase
-          .from("support_messages")
-          .select("*, profiles(*)")
-          .order("created_at", { ascending: false });
-        if (error) throw error;
-        return json(data || []);
-      }
-
-      case "update_support_message": {
-        const { id, updates } = body;
-        // Verify permission: Only Owner or the message creator can update
-        if (!isOwner) {
-          const { data: msg } = await supabase.from("support_messages").select("user_id").eq("id", id).single();
-          if (msg?.user_id !== userId) return json({ error: "Unauthorized" }, 401);
-        }
-        
-        const { data, error } = await supabase
-          .from("support_messages")
-          .update(updates)
-          .eq("id", id)
-          .select()
-          .single();
-          
-        if (error) throw error;
-        return json(data);
-      }
-
-      case "delete_support_message": {
-        const { id } = body;
-        if (!isOwner) {
-          const { data: msg } = await supabase.from("support_messages").select("user_id").eq("id", id).single();
-          if (msg?.user_id !== userId) return json({ error: "Unauthorized" }, 401);
-        }
-        
-        const { error } = await supabase.from("support_messages").delete().eq("id", id);
-        if (error) throw error;
-        return json({ success: true });
-      }
-
       case "get_blog_posts": {
-        let query = supabase.from("blog_posts").select("*").eq("published", true).order("created_at", { ascending: false });
+        let query = supabase
+          .from("blog_posts")
+          .select("*")
+          .eq("published", true)
+          .order("created_at", { ascending: false });
         if (body.category) query = query.eq("category", body.category);
         const { data, error } = await query;
         if (error) throw error;
@@ -99,13 +59,34 @@ Deno.serve(async (req) => {
       }
 
       case "get_blog_post": {
-        const { data, error } = await supabase.from("blog_posts").select("*").eq("category", body.category).eq("slug", body.slug).eq("published", true).single();
+        const { data, error } = await supabase
+          .from("blog_posts")
+          .select("*")
+          .eq("category", body.category)
+          .eq("slug", body.slug)
+          .eq("published", true)
+          .single();
+        if (error) throw error;
+        return json(data);
+      }
+
+      case "get_blog_post_by_id": {
+        if (userEmail !== OWNER_EMAIL) {
+          return json({ error: "Unauthorized" }, 401);
+        }
+        const { data, error } = await supabase
+          .from("blog_posts")
+          .select("*")
+          .eq("id", body.id)
+          .single();
         if (error) throw error;
         return json(data);
       }
 
       case "save_blog_post": {
-        if (!isOwner) return json({ error: "Unauthorized" }, 401);
+        if (userEmail !== OWNER_EMAIL) {
+          return json({ error: "Unauthorized" }, 401);
+        }
         const { post } = body;
         let result;
         if (post.id) {
@@ -119,7 +100,9 @@ Deno.serve(async (req) => {
       }
 
       case "delete_blog_post": {
-        if (!isOwner) return json({ error: "Unauthorized" }, 401);
+        if (userEmail !== OWNER_EMAIL) {
+          return json({ error: "Unauthorized" }, 401);
+        }
         const { id } = body;
         const { error } = await supabase.from("blog_posts").delete().eq("id", id);
         if (error) throw error;

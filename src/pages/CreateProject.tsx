@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Navigate, Link } from "react-router-dom";
-import { Loader2, FolderPlus, Lock, Sparkles, ArrowRight } from "lucide-react";
+import { Loader2, FolderPlus, Lock, Sparkles, ArrowRight, AlertCircle } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
@@ -20,18 +20,43 @@ const CreateProject = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  if (authLoading) return <Layout><div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
+  // Wait for auth and profile to be fully loaded before showing the form
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
+
   if (!session) return <Navigate to="/login" replace />;
 
-  const isPro = profile?.plan_type === 'pro';
-  // Strict lifetime limit: check if they have EVER created a project
-  const lifetimeLimitReached = !isPro && (profile?.total_projects_created || 0) >= 1;
+  // If profile failed to load for some reason, show an error
+  if (!profile) {
+    return (
+      <Layout>
+        <div className="flex min-h-[60vh] items-center justify-center flex-col gap-4">
+          <AlertCircle className="h-12 w-12 text-destructive" />
+          <h1 className="text-xl font-bold">Profile Error</h1>
+          <p className="text-muted-foreground text-center max-w-xs">We couldn't load your account details. Please try refreshing the page.</p>
+          <Button onClick={() => window.location.reload()}>Refresh Page</Button>
+        </div>
+      </Layout>
+    );
+  }
+
+  const isPro = profile.plan_type === 'pro';
+  const totalCreated = profile.total_projects_created || 0;
+  const lifetimeLimitReached = !isPro && totalCreated >= 1;
 
   const handleCreate = async () => {
+    // Double check limit at the start of the function
     if (lifetimeLimitReached) {
       toast({ 
         title: "Lifetime Limit Reached", 
-        description: "Free accounts are limited to 1 lifetime project creation. Upgrade to Pro for unlimited projects.",
+        description: "Free accounts are limited to 1 lifetime project creation.",
         variant: "destructive" 
       });
       return;
@@ -59,14 +84,20 @@ const CreateProject = () => {
       
       if (error) throw error;
 
-      // 2. Increment the lifetime counter in profiles (this never goes down)
+      // 2. Increment the lifetime counter in profiles
+      // We use the current value from the DB to ensure accuracy
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({ total_projects_created: (profile?.total_projects_created || 0) + 1 })
+        .update({ total_projects_created: totalCreated + 1 })
         .eq("id", user?.id);
 
-      if (profileError) console.error("Failed to update creation counter", profileError);
+      if (profileError) {
+        console.error("Failed to update creation counter:", profileError);
+        // We don't throw here because the project was already created, 
+        // but we log it for debugging.
+      }
 
+      // 3. Force a profile refresh so the UI updates immediately
       await refreshProfile();
       
       navigate(`/project/${data.id}`, { state: { isNew: true } });

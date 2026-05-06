@@ -48,7 +48,6 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/tools" element={<ToolsPage />} />
@@ -57,6 +56,7 @@ const App = () => (
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/write" element={<BlogWriter />} />
             <Route path="/blog/admin" element={<BlogAdmin />} />
+            <Route path="/admin" element={<BlogAdmin />} />
             <Route path="/blog/:category" element={<BlogCategory />} />
             <Route path="/blog/:category/:slug" element={<BlogPost />} />
             <Route path="/about" element={<About />} />

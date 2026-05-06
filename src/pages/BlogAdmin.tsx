@@ -2,22 +2,22 @@
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Edit, Trash2, Loader2, ArrowLeft, LayoutDashboard, FileText, Eye } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2, ArrowLeft, FileText, Eye } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { getBlogPosts, deleteBlogPost } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
+import NotFound from "./NotFound";
 
-const OWNER_EMAIL = "Sohamahire26@gmail.com";
+const OWNER_EMAIL = "sohamahire26@gmail.com";
 
 const BlogAdmin = () => {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, profile, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const isOwner = profile?.is_admin || user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
@@ -49,19 +49,12 @@ const BlogAdmin = () => {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading) {
     return <Layout><div className="flex py-24 justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
   }
 
   if (!isOwner) {
-    return (
-      <Layout>
-        <div className="container-tight max-w-md py-24 text-center">
-          <h1 className="text-2xl font-bold">Access Denied</h1>
-          <Button asChild className="mt-4"><Link to="/blog">Back to Blog</Link></Button>
-        </div>
-      </Layout>
-    );
+    return <NotFound />;
   }
 
   return (
@@ -106,10 +99,13 @@ const BlogAdmin = () => {
                 </div>
               </div>
             ))}
-            {posts.length === 0 && (
+            {posts.length === 0 && !loading && (
               <div className="py-20 text-center border border-dashed rounded-2xl">
                 <p className="text-muted-foreground">No posts found.</p>
               </div>
+            )}
+            {loading && (
+              <div className="flex py-12 justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
             )}
           </div>
         </div>

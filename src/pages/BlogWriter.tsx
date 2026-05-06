@@ -2,15 +2,16 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Save, Eye, ArrowLeft, Loader2, Lock, ImageIcon, Bold, Italic, Heading2, Link2, List, Layout as LayoutIcon, FileText, Search } from "lucide-react";
+import { Save, Eye, ArrowLeft, Loader2, ImageIcon, Bold, Italic, Heading2, Link2, List, Layout as LayoutIcon, FileText, Search } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { saveBlogPost, getBlogPostById } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
+import NotFound from "./NotFound";
 
-const OWNER_EMAIL = "Sohamahire26@gmail.com";
+const OWNER_EMAIL = "sohamahire26@gmail.com";
 
 const categories = [
   { slug: "editing-tips", name: "Editing Tips" },
@@ -129,7 +130,7 @@ const BlogWriter = () => {
     setSaving(false);
   };
 
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center py-24">
@@ -140,24 +141,7 @@ const BlogWriter = () => {
   }
 
   if (!isOwner) {
-    return (
-      <Layout>
-        <SEOHead title="Access Denied — Giglant" description="You do not have permission to access this page." />
-        <section className="section-padding">
-          <div className="container-tight max-md">
-            <div className="rounded-2xl border border-border bg-card p-8 text-center">
-              <Lock className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
-              <h1 className="font-display text-2xl font-bold text-foreground">Access Denied</h1>
-              <p className="mt-2 text-sm text-muted-foreground">Only the site owner can access the blog writer.</p>
-              <div className="mt-4 p-3 bg-muted rounded-lg text-[10px] font-mono text-left overflow-hidden">
-                Logged in as: {user?.email || "Not logged in"}
-              </div>
-              <Button onClick={() => navigate("/login")} className="mt-6 w-full">Sign In as Owner</Button>
-            </div>
-          </div>
-        </section>
-      </Layout>
-    );
+    return <NotFound />;
   }
 
   return (

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FileEdit, ArrowRight, Send, Receipt, Calendar, Clock } from "lucide-react";
+import { FileEdit, ArrowRight, Send, Receipt, Calendar, Clock, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
@@ -95,10 +95,14 @@ const Index = () => {
           <div className="container-tight">
             <div className="mb-12 flex items-end justify-between">
               <div>
+                <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest mb-2">
+                  <Sparkles size={14} />
+                  <span>Insights & Guides</span>
+                </div>
                 <h2 className="font-display text-3xl font-bold text-foreground md:text-4xl">Latest from the Blog</h2>
                 <p className="mt-3 text-lg text-muted-foreground">Workflow tips and industry insights for creators.</p>
               </div>
-              <Button asChild variant="ghost" className="hidden md:flex">
+              <Button asChild variant="ghost" className="hidden md:flex hover:text-primary">
                 <Link to="/blog">View All Posts <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
             </div>

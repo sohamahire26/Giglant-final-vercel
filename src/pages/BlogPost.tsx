@@ -54,12 +54,46 @@ const BlogPost = () => {
     );
   }
 
+  const readTime = Math.ceil(post.content.split(" ").length / 200);
+
+  // JSON-LD for SEO/AISEO
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": post.title,
+    "description": post.excerpt || post.meta_description,
+    "image": post.cover_image_url,
+    "author": {
+      "@type": "Organization",
+      "name": "Giglant Team"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Giglant",
+      "logo": {
+        "@type": "ImageObject",
+        "url": `${window.location.origin}/favicon.ico`
+      }
+    },
+    "datePublished": post.created_at,
+    "dateModified": post.updated_at || post.created_at,
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": window.location.href
+    }
+  };
+
   return (
     <Layout>
       <SEOHead
         title={post.meta_title || `${post.title} — Giglant Blog`}
         description={post.meta_description || post.excerpt || post.content.replace(/<[^>]*>/g, "").substring(0, 160)}
       />
+      
+      {/* Structured Data */}
+      <script type="application/ld+json">
+        {JSON.stringify(jsonLd)}
+      </script>
       
       {/* Hero Header */}
       <section className="relative overflow-hidden bg-card pt-12 pb-24 md:pt-20">
@@ -78,7 +112,7 @@ const BlogPost = () => {
             </div>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Clock className="h-3.5 w-3.5" />
-              {Math.ceil(post.content.split(" ").length / 200)} min read
+              {readTime} min read
             </div>
           </div>
           
@@ -86,7 +120,7 @@ const BlogPost = () => {
             {post.title}
           </h1>
           
-          <p className="mt-6 text-xl text-muted-foreground leading-relaxed">
+          <p className="mt-6 text-xl text-muted-foreground leading-relaxed border-l-4 border-primary/20 pl-6">
             {post.excerpt}
           </p>
           

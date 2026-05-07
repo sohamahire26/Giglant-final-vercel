@@ -10,9 +10,9 @@ const tools = [
 ];
 
 const toolsFAQ = [
-  { question: "Is the File Renamer tool free?", answer: "Yes! The File Renamer is completely free to use with no limits. Built for real video editing workflow and freelancer workflow needs." },
-  { question: "Does the tool work offline?", answer: "The File Renamer works entirely in your browser and doesn't require an internet connection once loaded." },
-  { question: "What workflows does this tool support?", answer: "It supports video editing workflow, freelancer workflow, file management workflow, post production workflow, and content workflow optimization." },
+  { question: "Are these tools really free?", answer: "Yes! Our standalone tools like the File Renamer and Payment Generator are 100% free to use with no limits." },
+  { question: "Do I need to upload my files to use the Renamer?", answer: "No. The File Renamer works entirely in your browser. Your files never leave your computer, ensuring total privacy for your client work." },
+  { question: "What is the difference between these tools and the Workspace?", answer: "These are quick, standalone utilities. The Workspace is a full project management area where you can save these details and collaborate with clients." },
 ];
 
 const ToolsPage = () => (

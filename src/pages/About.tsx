@@ -4,10 +4,10 @@ import FAQSection from "@/components/FAQSection";
 import logo from "@/assets/logo.png";
 
 const aboutFAQ = [
-  { question: "Who built Giglant?", answer: "Giglant is built by creators for creators. We understand the daily challenges in video editing workflow and freelancer workflow because we've been there." },
-  { question: "Is Giglant a company?", answer: "Giglant is a growing platform of free tools built for post production workflow, content workflow, and file management. We're focused on building useful utilities before anything else." },
-  { question: "How can I suggest a tool?", answer: "Visit our Contact page or email feedback@giglant.com! We build tools based on real freelancer workflow needs — from editing pipeline tools to client delivery workflow solutions." },
-  { question: "What workflows does Giglant support?", answer: "Giglant supports video editing workflow, freelancer workflow, file management workflow, post production workflow, client delivery workflow, video export workflow, editing pipeline management, and content workflow optimization." },
+  { question: "Why was Giglant built?", answer: "Giglant was created to solve the 'messy' parts of freelancing—vague feedback, disorganized files, and awkward payment requests. We want to give creators professional tools that just work." },
+  { question: "Who is Giglant for?", answer: "It's built specifically for video editors, graphic designers, and digital freelancers who handle client-based projects and need a better way to manage their pipeline." },
+  { question: "Is Giglant a company?", answer: "Giglant is a platform built by creators for creators. We are focused on building a suite of utilities that solve real-world post-production problems." },
+  { question: "How can I contribute or suggest a tool?", answer: "We love feedback! You can use the Support page to send us suggestions. Many of our features come directly from user requests." },
 ];
 
 const AboutPage = () => (

@@ -3,22 +3,20 @@ import SEOHead from "@/components/SEOHead";
 import FAQSection from "@/components/FAQSection";
 
 const faqItems = [
-  { question: "Does Giglant collect my personal data?", answer: "No. We don't collect personal data. Tools run in your browser and no files or data are sent to our servers — essential for secure client delivery workflow." },
-  { question: "Are my files stored on your servers?", answer: "No. All file processing happens locally in your browser. Files never leave your device. The only exception is the Timestamp Feedback Tool which uploads videos for client review sharing." },
-  { question: "Is it safe to use Giglant with client files?", answer: "Yes. Since most processing is browser-based, your files remain on your device. Perfect for maintaining privacy in your freelancer workflow and post production workflow." },
-  { question: "Do I need to create an account?", answer: "No. All tools are freely accessible without any signup or login — just open and optimize your editing pipeline." },
-  { question: "Is Giglant free?", answer: "Yes! All current tools are completely free to use with no hidden charges. Built for real video editing workflow and content workflow needs." },
-  { question: "Can I use Giglant on mobile?", answer: "Yes, Giglant is fully responsive and works on all devices. Manage your file management workflow from anywhere." },
-  { question: "What tools does Giglant offer for video editing workflow?", answer: "File Renamer (auto-naming with numbering), Timestamp Feedback Tool (video review with clients), Revision Notes Formatter, Delivery Assistant, and Payment Generator — all built for your editing pipeline." },
-  { question: "How does the Delivery Assistant work?", answer: "The Delivery Assistant uses professional templates to help you craft the perfect message when sending work to your clients, ensuring you include all necessary links and notes." },
-  { question: "Is there any AI involved in the process?", answer: "No. Giglant focuses on providing deterministic, reliable tools and templates that you can trust for your professional workflow without the unpredictability of AI." },
-  { question: "How does the File Renamer work?", answer: "The File Renamer uses rule-based logic to clean up filenames, remove special characters, and add sequential numbering based on file categories." },
-  { question: "How does the Timestamp Feedback Tool work?", answer: "Upload your video, get a shareable link, send it to your client. They watch and add timestamped comments. You get an organized feedback report — streamlining your video editing workflow and client delivery workflow." },
-  { question: "Will more tools be added?", answer: "Absolutely. We're continuously building new tools based on real freelancer workflow, post production workflow, and content workflow feedback." },
-  { question: "What technology does Giglant use?", answer: "Giglant is built with modern web technologies (React, TypeScript) and runs primarily in your browser for maximum speed and privacy in your editing pipeline." },
-  { question: "Are there file size limits?", answer: "Browser-based tools depend on your device's memory. The Timestamp Feedback Tool supports videos up to 500MB for your video export workflow." },
-  { question: "Is there a usage limit?", answer: "No. You can use all tools as many times as you want, completely unlimited — perfect for high-volume freelancer workflow." },
-  { question: "Will Giglant become paid?", answer: "We plan to keep a generous free tier forever. Premium features may be introduced in the future, but core video editing workflow tools will remain free." },
+  { question: "What is Giglant?", answer: "Giglant is a suite of professional tools designed for video editors and freelancers to streamline their workflow, from file renaming to client feedback and delivery." },
+  { question: "Is Giglant free?", answer: "Yes! We offer free browser-based tools and a Free tier for project workspaces. For power users, our Pro plan offers unlimited workspaces and extended retention." },
+  { question: "How do project workspaces work?", answer: "A workspace allows you to group files for a specific project, share a review link with your client, collect timestamped feedback, and manage a revision checklist." },
+  { question: "What is the 'Lifetime Project' limit on the Free plan?", answer: "Free accounts can create one project workspace in their lifetime. Once created, it counts toward the limit even if deleted. Pro users have no such limits." },
+  { question: "How long do projects stay active?", answer: "Free projects are locked after 7 days. Pro projects stay active as long as your subscription is live, with a 60-day grace period if it ends." },
+  { question: "Do my clients need an account to leave feedback?", answer: "No. Your clients use a 'Magic Link' to access the review page. They can watch videos and leave comments instantly without signing up." },
+  { question: "Is my data secure?", answer: "Yes. We don't store your actual video or image files. We only store the Google Drive links and the comments. Your content stays on your Drive." },
+  { question: "What file types are supported for timestamps?", answer: "Video and Audio files support frame-accurate timestamped feedback. Images and PDFs support standard comments." },
+  { question: "How does the File Renamer work?", answer: "It's a browser-based tool that cleans up messy filenames, categorizes them (Video, Photo, etc.), and adds sequential numbering for better organization." },
+  { question: "Can I use Giglant on mobile?", answer: "Yes, the entire platform is fully responsive. You can manage your projects and clients can leave feedback from any device." },
+  { question: "What is the Delivery Assistant?", answer: "It's a tool that helps you craft professional emails or messages when sending drafts or final versions to your clients, ensuring a consistent brand voice." },
+  { question: "How do I get paid using Giglant?", answer: "Our Payment Generator helps you create professional payment requests and reminders based on proven templates to help you get paid faster." },
+  { question: "What happens if I upgrade to Pro?", answer: "Upgrading unlocks unlimited project creations, removes the 7-day locking period, and gives you access to advanced features like the Invoice assistant." },
+  { question: "How do I contact support?", answer: "You can reach us through the Support page in the app or by emailing hello@giglant.com. We typically respond within 24-48 hours." },
 ];
 
 const FAQPage = () => (

@@ -1,3 +1,5 @@
+"use client";
+
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FileEdit, ArrowRight, Send, Receipt, Calendar, Clock, Sparkles } from "lucide-react";
@@ -16,9 +18,30 @@ const tools = [
 ];
 
 const homeFAQ = [
-  { question: "Is Giglant free to use?", answer: "Yes! All tools on Giglant are completely free. We build professional tools for video editing workflow, freelancer workflow, and content workflow — no hidden costs." },
-  { question: "Are my files safe?", answer: "Absolutely. Your files are processed directly in your browser. We don't upload, store, or access any of your files — essential for secure client delivery workflow." },
-  { question: "Do I need to create an account?", answer: "You can use basic tools without an account, but creating one allows you to save projects, track revisions, and manage client feedback in a private workspace." },
+  { question: "Is Giglant free to use?", answer: "Yes! Basic tools like the File Renamer are completely free. For project workspaces, we offer a<dyad-write path="src/pages/Index.tsx" description="Updating Home page FAQ with current project details">
+"use client";
+
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { FileEdit, ArrowRight, Send, Receipt, Calendar, Clock, Sparkles } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import Layout from "@/components/Layout";
+import SEOHead from "@/components/SEOHead";
+import FAQSection from "@/components/FAQSection";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/AuthProvider";
+import { getBlogPosts } from "@/lib/api";
+
+const tools = [
+  { name: "File Renamer", description: "Professional file renaming with numbering. Organize your editing pipeline instantly.", icon: FileEdit, href: "/tools/file-renamer", color: "bg-primary/10 text-primary" },
+  { name: "Delivery Assistant", description: "Generate professional hand-off messages for your clients.", icon: Send, href: "/dashboard", color: "bg-primary/10 text-primary" },
+  { name: "Payment Generator", description: "Create polite but firm payment requests and reminders.", icon: Receipt, href: "/tools/payment-generator", color: "bg-primary/10 text-primary" },
+];
+
+const homeFAQ = [
+  { question: "Is Giglant free to use?", answer: "Yes! Basic tools like the File Renamer are completely free. For project workspaces, we offer a generous Free tier with one lifetime project, and a Pro plan for unlimited workspaces." },
+  { question: "How does the 'Magic Link' work?", answer: "When you create a project, you get a unique shareable link. Your client can open this link to view your files and leave timestamped feedback without needing to create an account." },
+  { question: "Are my files stored on your servers?", answer: "For browser-based tools, no. For the workspace, we only store the Google Drive links and comments. Your actual video and image files remain securely on your own Google Drive." },
 ];
 
 const fadeUp = {

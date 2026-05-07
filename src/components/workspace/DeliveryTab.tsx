@@ -294,20 +294,22 @@ const DeliveryTab = ({ project }: Props) => {
         </div>
       </div>
 
-      <FAQSection 
-        title="Delivery FAQ" 
-        items={[
-          { 
-            question: "How does this help my workflow?", 
-            answer: "It ensures you send consistent, professional messages every time you deliver work, which builds trust and reduces back-and-forth." 
-          },
-          { 
-            question: "Can I customize the message?", 
-            answer: "Yes, you can edit the message directly after copying it to your email client or generating it here." 
-          }
-        ]} 
-        className="px-0 py-12"
-      />
+      <div className="mt-16">
+        <FAQSection 
+          title="Delivery FAQ" 
+          items={[
+            { 
+              question: "How does this help my workflow?", 
+              answer: "It ensures you send consistent, professional messages every time you deliver work, which builds trust and reduces back-and-forth." 
+            },
+            { 
+              question: "Can I customize the message?", 
+              answer: "Yes, you can edit the message directly after copying it to your email client or generating it here." 
+            }
+          ]} 
+          plain
+        />
+      </div>
     </div>
   );
 };

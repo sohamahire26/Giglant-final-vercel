@@ -23,7 +23,7 @@ const CookiePolicyPage = () => (
           <h2 className="font-display text-xl font-bold text-foreground">Managing Cookies</h2>
           <p>You can control cookies through your browser settings. Disabling cookies may affect the functionality of our content workflow and file management workflow tools.</p>
           <h2 className="font-display text-xl font-bold text-foreground">Contact</h2>
-          <p>Questions about our cookie policy? Contact us at hello@giglant.com.</p>
+          <p>Questions about our cookie policy? Please contact us through our support page.</p>
         </div>
       </div>
     </section>

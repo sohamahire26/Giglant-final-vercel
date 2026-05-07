@@ -393,7 +393,7 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
         </div>
       </div>
 
-      <FAQSection title="Files & Feedback FAQ — Streamline Your Workflow" items={faq} />
+      <FAQSection title="Files & Feedback FAQ — Streamline Your Workflow" items={faq} className="px-0 py-12" />
     </div>
   );
 };

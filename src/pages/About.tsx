@@ -36,7 +36,7 @@ const AboutPage = () => (
             <li><strong className="text-foreground">Real Workflows</strong> — Every tool solves a real <strong>post production workflow</strong> problem.</li>
             <li><strong className="text-foreground">Creator-Focused</strong> — Built by and for the creative community's <strong>content workflow</strong>.</li>
           </ul>
-          <p className="pt-4">Have questions or suggestions? Reach out to us at <a href="mailto:hello@giglant.com" className="text-primary hover:underline">hello@giglant.com</a>.</p>
+          <p className="pt-4">Have questions or suggestions? Reach out to us through our support page.</p>
         </div>
       </div>
     </section>

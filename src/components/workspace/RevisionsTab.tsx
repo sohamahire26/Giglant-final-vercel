@@ -49,18 +49,15 @@ const RevisionsTab = ({ files, comments, setComments }: Props) => {
 
   return (
     <div className="space-y-8">
-      {/* Heading */}
       <div className="mb-8 text-center">
         <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">Revisions</h1>
       </div>
 
-      {/* Refresh Suggestion */}
       <div className="mb-6 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-primary">
         <Info className="h-4 w-4" />
         <span>Can't see feedback? Try refreshing the page.</span>
       </div>
 
-      {/* How to Use Section */}
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="flex items-center gap-2 mb-6">
           <HelpCircle className="h-5 w-5 text-primary" />
@@ -149,7 +146,6 @@ const RevisionsTab = ({ files, comments, setComments }: Props) => {
         </div>
 
         <div className="lg:col-span-1 space-y-6">
-          {/* Information Section */}
           <div className="rounded-2xl border border-border bg-card p-6">
             <div className="flex items-center gap-2 mb-4">
               <Info className="h-5 w-5 text-primary" />
@@ -173,7 +169,6 @@ const RevisionsTab = ({ files, comments, setComments }: Props) => {
         </div>
       </div>
 
-      {/* Real Examples */}
       <div className="mt-16">
         <h2 className="font-display text-2xl font-bold text-foreground mb-6">Real Examples — Revision Tracking</h2>
         <p className="text-muted-foreground text-sm mb-6">
@@ -194,7 +189,6 @@ const RevisionsTab = ({ files, comments, setComments }: Props) => {
         </div>
       </div>
 
-      {/* How It Works */}
       <div className="mt-16">
         <h2 className="font-display text-2xl font-bold text-foreground mb-6">How It Works — Stay Organized</h2>
         <div className="grid gap-4 md:grid-cols-4">
@@ -213,7 +207,6 @@ const RevisionsTab = ({ files, comments, setComments }: Props) => {
         </div>
       </div>
 
-      {/* About Section */}
       <div className="mt-16">
         <h2 className="font-display text-2xl font-bold text-foreground mb-6">About Revisions — Accountability & Clarity</h2>
         <div className="prose max-w-none text-muted-foreground space-y-3 text-sm leading-relaxed">
@@ -232,8 +225,7 @@ const RevisionsTab = ({ files, comments, setComments }: Props) => {
         </div>
       </div>
 
-      {/* FAQ Section */}
-      <FAQSection title="Revisions FAQ — Manage Your Tasks" items={faq} />
+      <FAQSection title="Revisions FAQ — Manage Your Tasks" items={faq} className="px-0 py-12" />
     </div>
   );
 };

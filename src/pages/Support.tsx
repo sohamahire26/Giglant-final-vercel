@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, MessageCircle, Lightbulb, Bug, Send, Loader2, CheckCircle2 } from "lucide-react";
+import { MessageCircle, Lightbulb, Bug, Send, Loader2, CheckCircle2 } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import FAQSection from "@/components/FAQSection";
@@ -13,7 +13,7 @@ import { Link } from "react-router-dom";
 
 const supportFAQ = [
   { question: "How can I suggest a new tool for my video editing workflow?", answer: "Use the form below! We build tools based on real freelancer workflow and editing pipeline needs." },
-  { question: "How quickly do you respond?", answer: "Our support team aims to respond within 24-48 hours. For urgent matters, please use support@giglant.com." },
+  { question: "How quickly do you respond?", answer: "Our support team aims to respond within 24-48 hours." },
   { question: "Can I request custom tools for my post production workflow?", answer: "We love hearing about specific workflow challenges. Share your use case and we'll consider building tools that help optimize your video editing workflow." },
 ];
 

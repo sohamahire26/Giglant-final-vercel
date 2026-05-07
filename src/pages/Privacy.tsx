@@ -24,7 +24,7 @@ const PrivacyPage = () => (
           <h2 className="font-display text-xl font-bold text-foreground">5. Changes to This Policy</h2>
           <p>We may update this privacy policy as we add new tools to support your editing pipeline and content workflow. Any changes will be posted on this page.</p>
           <h2 className="font-display text-xl font-bold text-foreground">6. Contact</h2>
-          <p>If you have questions about this privacy policy or how our video editing workflow tools handle your data, contact us at hello@giglant.com.</p>
+          <p>If you have questions about this privacy policy or how our video editing workflow tools handle your data, please contact us through our support page.</p>
         </div>
       </div>
     </section>

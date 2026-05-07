@@ -144,7 +144,6 @@ const FileRenamerTab = () => {
         <p className="mt-4 text-base text-muted-foreground max-w-2xl mx-auto">Drop files to get professional names with auto-numbering and clean formatting.</p>
       </div>
 
-      {/* How to Use Section */}
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="flex items-center gap-2 mb-6">
           <Info className="h-5 w-5 text-primary" />
@@ -209,7 +208,6 @@ const FileRenamerTab = () => {
         </div>
       )}
 
-      {/* Real Examples */}
       <div className="mt-16">
         <h2 className="font-display text-2xl font-bold text-foreground mb-6">Real Examples — File Renaming</h2>
         <div className="space-y-3">
@@ -228,7 +226,6 @@ const FileRenamerTab = () => {
         </div>
       </div>
 
-      {/* How It Works */}
       <div className="mt-16">
         <h2 className="font-display text-2xl font-bold text-foreground mb-6">How It Works — Smart Organization</h2>
         <div className="grid gap-4 md:grid-cols-4">
@@ -247,7 +244,6 @@ const FileRenamerTab = () => {
         </div>
       </div>
 
-      {/* About Section */}
       <div className="mt-16">
         <h2 className="font-display text-2xl font-bold text-foreground mb-6">About File Renaming — Clarity & Speed</h2>
         <div className="prose max-w-none text-muted-foreground space-y-3 text-sm leading-relaxed">
@@ -266,7 +262,7 @@ const FileRenamerTab = () => {
         </div>
       </div>
 
-      <FAQSection title="File Renamer FAQ" items={faq} />
+      <FAQSection title="File Renamer FAQ" items={faq} className="px-0 py-12" />
     </div>
   );
 };

@@ -73,7 +73,6 @@ const DeliveryTab = ({ project }: Props) => {
 
     let body = TEMPLATES[formData.delivery_type];
 
-    // Apply Tone Modifiers
     if (formData.tone === "FRIENDLY") {
       body = body.replace("Hi {client_name},", "Hi {client_name},\n\nHope you're doing great!");
     } else if (formData.tone === "PREMIUM") {
@@ -87,14 +86,12 @@ const DeliveryTab = ({ project }: Props) => {
       }
     }
 
-    // Replace Placeholders
     body = body
       .replace(/{client_name}/g, formData.client_name)
       .replace(/{company}/g, formData.company)
       .replace(/{review_link}/g, formData.review_link)
       .replace(/{your_name}/g, formData.your_name || "Me");
 
-    // Clean up extra newlines
     body = body.replace(/\n\n\n/g, "\n\n").trim();
 
     const subject = `${formData.delivery_type === 'FINAL' ? 'Final Delivery' : formData.delivery_type === 'REVISION' ? 'Revised Files' : 'Initial Draft'}: ${formData.company}`;
@@ -309,6 +306,7 @@ const DeliveryTab = ({ project }: Props) => {
             answer: "Yes, you can edit the message directly after copying it to your email client or generating it here." 
           }
         ]} 
+        className="px-0 py-12"
       />
     </div>
   );

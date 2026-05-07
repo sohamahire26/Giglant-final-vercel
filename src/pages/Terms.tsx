@@ -25,7 +25,7 @@ const TermsPage = () => (
           <h2 className="font-display text-xl font-bold text-foreground">6. Changes</h2>
           <p>We may modify these terms at any time as we evolve our editing pipeline tools. Continued use constitutes acceptance.</p>
           <h2 className="font-display text-xl font-bold text-foreground">7. Contact</h2>
-          <p>Questions about these terms? Contact us at hello@giglant.com.</p>
+          <p>Questions about these terms? Please contact us through our support page.</p>
         </div>
       </div>
     </section>

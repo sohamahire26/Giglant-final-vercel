@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface FAQItem {
   question: string;
@@ -11,18 +12,21 @@ interface FAQSectionProps {
   title?: string;
   subtitle?: string;
   items: FAQItem[];
+  className?: string;
 }
 
-const FAQSection = ({ title = "Frequently Asked Questions", subtitle, items }: FAQSectionProps) => {
+const FAQSection = ({ title = "Frequently Asked Questions", subtitle, items, className }: FAQSectionProps) => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section className="section-padding">
+    <section className={cn("section-padding", className)}>
       <div className="container-tight">
-        <div className="mb-12 text-center">
-          <h2 className="font-display text-3xl font-bold text-foreground md:text-4xl">{title}</h2>
-          {subtitle && <p className="mt-3 text-lg text-muted-foreground">{subtitle}</p>}
-        </div>
+        {(title || subtitle) && (
+          <div className="mb-12 text-center">
+            {title && <h2 className="font-display text-3xl font-bold text-foreground md:text-4xl">{title}</h2>}
+            {subtitle && <p className="mt-3 text-lg text-muted-foreground">{subtitle}</p>}
+          </div>
+        )}
         <div className="mx-auto max-w-3xl space-y-3">
           {items.map((item, i) => (
             <div key={i} className="rounded-xl border border-border bg-card overflow-hidden">

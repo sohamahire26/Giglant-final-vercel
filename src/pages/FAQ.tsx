@@ -16,7 +16,7 @@ const faqItems = [
   { question: "What is the Delivery Assistant?", answer: "It's a tool that helps you craft professional emails or messages when sending drafts or final versions to your clients, ensuring a consistent brand voice." },
   { question: "How do I get paid using Giglant?", answer: "Our Payment Generator helps you create professional payment requests and reminders based on proven templates to help you get paid faster." },
   { question: "What happens if I upgrade to Pro?", answer: "Upgrading unlocks unlimited project creations, removes the 7-day locking period, and gives you access to advanced features like the Invoice assistant." },
-  { question: "How do I contact support?", answer: "You can reach us through the Support page in the app or by emailing hello@giglant.com. We typically respond within 24-48 hours." },
+  { question: "How do I contact support?", answer: "Use the support page." },
 ];
 
 const FAQPage = () => (

@@ -76,7 +76,6 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
     const digits = val.replace(/[^0-9]/g, "");
     if (digits.length > 6) return;
 
-    // Validate tens place for minutes and seconds (must be <= 5)
     if (digits.length >= 2) {
       const s_tens = parseInt(digits[digits.length - 2], 10);
       if (s_tens > 5) return;

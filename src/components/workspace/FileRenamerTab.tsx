@@ -49,7 +49,6 @@ const simpleRename = (file: File): { name: string; type: string; category: strin
   const category = getTypeCategory(extClean);
   const typeLabel = FILE_TYPE_LABELS[extClean] || "File";
 
-  // Simple rule-based renaming: clean up the original name
   const baseName = file.name.replace(/\.[^/.]+$/, "")
     .replace(/[^a-z0-9]/gi, "-")
     .replace(/-+/g, "-")
@@ -81,7 +80,6 @@ const FileRenamerTab = () => {
     
     const categoryCounts: Record<string, number> = {};
     
-    // Process files
     const processed = incoming.map((entry) => {
       const result = simpleRename(entry.original);
       const cat = result.category;

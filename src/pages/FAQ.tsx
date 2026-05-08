@@ -19,20 +19,36 @@ const faqItems = [
   { question: "How do I contact support?", answer: "Use the support page." },
 ];
 
-const FAQPage = () => (
-  <Layout>
-    <SEOHead
-      title="FAQ — Video Editing Workflow & Freelancer Tools Questions | Giglant"
-      description="Find answers about Giglant's free video editing workflow tools, freelancer workflow solutions, post production tools, and file management. Privacy, features, and usage."
-    />
-    <section className="section-padding">
-      <div className="container-tight max-w-3xl text-center">
-        <h1 className="font-display text-4xl font-bold text-foreground md:text-5xl">Frequently Asked Questions</h1>
-        <p className="mt-4 text-lg text-muted-foreground">Everything you need to know about Giglant's video editing workflow and freelancer workflow tools.</p>
-      </div>
-    </section>
-    <FAQSection items={faqItems} title="" />
-  </Layout>
-);
+const FAQPage = () => {
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faqItems.map(item => ({
+      "@type": "Question",
+      "name": item.question,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": item.answer
+      }
+    }))
+  };
+
+  return (
+    <Layout>
+      <SEOHead
+        title="FAQ — Video Editing Workflow & Freelancer Tools Questions | Giglant"
+        description="Find answers about Giglant's free video editing workflow tools, freelancer workflow solutions, post production tools, and file management. Privacy, features, and usage."
+        jsonLd={faqJsonLd}
+      />
+      <section className="section-padding">
+        <div className="container-tight max-w-3xl text-center">
+          <h1 className="font-display text-4xl font-bold text-foreground md:text-5xl">Frequently Asked Questions</h1>
+          <p className="mt-4 text-lg text-muted-foreground">Everything you need to know about Giglant's video editing workflow and freelancer workflow tools.</p>
+        </div>
+      </section>
+      <FAQSection items={faqItems} title="" />
+    </Layout>
+  );
+};
 
 export default FAQPage;

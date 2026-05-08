@@ -23,11 +23,23 @@ const BlogIndex = () => {
   const featuredPost = posts?.[0];
   const otherPosts = posts?.slice(1) || [];
 
+  const blogJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "name": "Giglant Blog",
+    "description": "Tips, guides, and resources for your video editing workflow and freelancer workflow.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Giglant"
+    }
+  };
+
   return (
     <Layout>
       <SEOHead
         title="Blog — Video Editing Workflow & Freelancer Tips | Giglant"
         description="Read helpful articles about video editing workflow, freelancer workflow, file management, post production workflow, and productivity tips for creators and freelancers."
+        jsonLd={blogJsonLd}
       />
       <section className="section-padding">
         <div className="container-tight">

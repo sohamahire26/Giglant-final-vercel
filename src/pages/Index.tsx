@@ -64,11 +64,26 @@ const Index = () => {
     select: (data) => data?.slice(0, 3) || [],
   });
 
+  const homeJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Giglant",
+    "description": "Professional tools for video editing workflow, freelancer workflow, and post production pipeline.",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  };
+
   return (
     <Layout>
       <SEOHead
         title="Giglant — Professional Tools for Video Editing Workflow & Freelancers"
-        description="Professional online tools for video editing workflow, freelancer workflow, and post production. File renaming, video review, revision tracking, and client delivery workflow tools. Free and browser-based."
+        description="Optimize your video editing workflow with Giglant. Professional tools for file renaming, video review, revision tracking, and client delivery. Free and browser-based."
+        jsonLd={homeJsonLd}
       />
 
       {/* Hero */}

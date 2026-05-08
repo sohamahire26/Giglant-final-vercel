@@ -32,7 +32,7 @@ serve(async (req) => {
     }
 
     const { productId } = await req.json();
-    const apiKey = Dodo.env.get('DODO_PAYMENTS_API_KEY');
+    const apiKey = Deno.env.get('DODO_PAYMENTS_API_KEY');
 
     if (!apiKey) throw new Error('Dodo Payments API key not configured');
 

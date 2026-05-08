@@ -16,7 +16,7 @@ import RevisionsTab from "@/components/workspace/RevisionsTab";
 import DeliveryTab from "@/components/workspace/DeliveryTab";
 import InvoiceTab from "@/components/workspace/InvoiceTab";
 import FileRenamerTab from "@/components/workspace/FileRenamerTab";
-import TutorialTour, { TourStep } from "@/components/workspace/TutorialTour.tsx";
+import TutorialTour, { TourStep } from "@/components/workspace/TutorialTour";
 import { useAuth } from "@/components/AuthProvider";
 
 const freelancerSteps: TourStep[] = [

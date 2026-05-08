@@ -3,10 +3,10 @@ import { useState } from "react";
 import { Menu, X, ChevronDown, User as UserIcon } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "./AuthProvider";
-import { Button } from "./ui/button";
 
 const tools = [
   { name: "File Renamer", href: "/tools/file-renamer" },
+  { name: "Payment Generator", href: "/tools/payment-generator" },
 ];
 
 const Navbar = () => {

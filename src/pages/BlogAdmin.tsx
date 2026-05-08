@@ -6,7 +6,7 @@ import { Plus, Edit, Trash2, Loader2, ArrowLeft, FileText, Eye, MessageSquare, B
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
-import { getBlogPosts, deleteBlogPost } from "@/lib/api";
+import { getAllBlogPosts, deleteBlogPost } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +34,7 @@ const BlogAdmin = () => {
   const fetchPosts = async () => {
     setLoading(true);
     try {
-      const data = await getBlogPosts();
+      const data = await getAllBlogPosts();
       setPosts(data || []);
     } catch (err) {
       console.error(err);

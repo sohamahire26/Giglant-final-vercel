@@ -37,8 +37,8 @@ const apiCall = async (endpoint: string, body?: any) => {
 export const getBlogPosts = (category?: string) =>
   apiCall("api", { action: "get_blog_posts", category });
 
-export const getAdminPosts = () => 
-  apiCall("api", { action: "get_admin_posts" });
+export const getAllBlogPosts = () => 
+  apiCall("api", { action: "get_all_blog_posts" });
 
 export const getBlogPost = (category: string, slug: string) =>
   apiCall("api", { action: "get_blog_post", category, slug });

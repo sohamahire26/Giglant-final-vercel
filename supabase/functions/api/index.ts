@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const OWNER_EMAIL = "Sohamahire26@gmail.com";
+const OWNER_EMAIL = "sohamahire26@gmail.com";
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -58,6 +58,18 @@ Deno.serve(async (req) => {
         return json(data || []);
       }
 
+      case "get_all_blog_posts": {
+        if (userEmail?.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
+          return json({ error: "Unauthorized" }, 401);
+        }
+        const { data, error } = await supabase
+          .from("blog_posts")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        return json(data || []);
+      }
+
       case "get_blog_post": {
         const { data, error } = await supabase
           .from("blog_posts")
@@ -71,7 +83,7 @@ Deno.serve(async (req) => {
       }
 
       case "get_blog_post_by_id": {
-        if (userEmail !== OWNER_EMAIL) {
+        if (userEmail?.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
           return json({ error: "Unauthorized" }, 401);
         }
         const { data, error } = await supabase
@@ -84,7 +96,7 @@ Deno.serve(async (req) => {
       }
 
       case "save_blog_post": {
-        if (userEmail !== OWNER_EMAIL) {
+        if (userEmail?.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
           return json({ error: "Unauthorized" }, 401);
         }
         const { post } = body;
@@ -100,7 +112,7 @@ Deno.serve(async (req) => {
       }
 
       case "delete_blog_post": {
-        if (userEmail !== OWNER_EMAIL) {
+        if (userEmail?.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
           return json({ error: "Unauthorized" }, 401);
         }
         const { id } = body;

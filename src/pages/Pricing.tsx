@@ -30,7 +30,8 @@ const PricingPage = () => {
     setLoading(tierName);
     
     try {
-      const PRODUCT_ID = "p_12345"; // Replace with actual Dodo Product ID
+      // Real Dodo Product ID provided by user
+      const PRODUCT_ID = "pdt_0NeP4C1Jnt72eudV6ieZk"; 
 
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;

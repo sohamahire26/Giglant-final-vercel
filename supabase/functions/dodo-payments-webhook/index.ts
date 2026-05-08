@@ -25,10 +25,17 @@ serve(async (req) => {
     const userId = data.metadata?.user_id
 
     if (!userId) {
+      console.error("[dodo-payments-webhook] No user_id found in metadata")
       return new Response('No user_id', { status: 400 })
     }
 
-    if (eventType === 'subscription.created' || eventType === 'subscription.updated') {
+    // Handle// Handle subscription status changes
+    if (
+      eventType === 'subscription.created' || 
+      eventType === 'subscription.updated' || 
+      eventType === 'subscription.renewed' ||
+      eventType === 'subscription.active'
+    ) {
       // Update subscriptions table
       const { error: subError } = await supabase
         .from('subscriptions')
@@ -45,14 +52,20 @@ serve(async (req) => {
       if (subError) throw subError
 
       // Update profile plan_type
-      const planType = data.status === 'active' ? 'pro' : 'free'
-      await supabase
+      // If status is active or renewed, set to pro
+      const planType = (data.status === 'active' || data.status === 'renewed') ? 'pro' : 'free'
+      
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
           plan_type: planType,
           subscription_id: data.subscription_id
         })
         .eq('id', userId)
+
+      if (profileError) throw profileError
+      
+      console.log(`[dodo-payments-webhook] Successfully updated user ${userId} to ${planType}`)
     }
 
     if (eventType === 'subscription.cancelled' || eventType === 'subscription.expired') {
@@ -60,6 +73,8 @@ serve(async (req) => {
         .from('profiles')
         .update({ plan_type: 'free' })
         .eq('id', userId)
+       
+       console.log(`[dodo-payments-webhook] Subscription ${eventType} for user ${userId}. Set to free.`)
     }
 
     return new Response(JSON.stringify({ received: true }), {

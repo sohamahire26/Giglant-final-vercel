@@ -105,7 +105,7 @@ const Index = () => {
             >
               {/* WebM for Chrome, Firefox, Edge */}
               <source 
-                src="dyad-media://media/Giglant-final-vercel/.dyad/media/66366666666666666666666666666666.webm" 
+                src="dyad-media://media/Giglant-final-vercel/.dyad/media/fd4c21621ae033b8a35b19ce099fa7eb.webm" 
                 type="video/webm" 
               />
               {/* HEVC for Safari/iOS */}
@@ -242,7 +242,7 @@ const Index = () => {
           </div>
         </div>
       </section>
-    </div>
+    </Layout>
   );
 };
 

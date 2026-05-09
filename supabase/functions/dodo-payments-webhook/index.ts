@@ -24,14 +24,26 @@ serve(async (req) => {
     console.log(`[dodo-payments-webhook] Received ${eventType} for user ${userId}`);
 
     if (!userId) {
+      console.error("[dodo-payments-webhook] Missing user_id in metadata");
       return new Response('Missing user_id', { status: 400 })
     }
 
-    if (
-      eventType === 'subscription.created' || 
-      eventType === 'subscription.updated' || 
-      eventType === 'subscription.active'
-    ) {
+    // List of events that indicate a healthy/active subscription
+    const activeEvents = [
+      'subscription.created', 
+      'subscription.updated', 
+      'subscription.active',
+      'subscription.renewed'
+    ];
+
+    // List of events that indicate an inactive or failed subscription
+    const inactiveEvents = [
+      'subscription.cancelled', 
+      'subscription.expired',
+      'subscription.failed'
+    ];
+
+    if (activeEvents.includes(eventType)) {
       // Upsert subscription record
       await supabase.from('subscriptions').upsert({
         user_id: userId,
@@ -53,10 +65,15 @@ serve(async (req) => {
         .eq('id', userId)
     }
 
-    if (eventType === 'subscription.cancelled' || eventType === 'subscription.expired') {
+    if (inactiveEvents.includes(eventType)) {
       await supabase.from('profiles')
         .update({ plan_type: 'free' })
         .eq('id', userId)
+        
+      // Also update the subscription status in the table if it exists
+      await supabase.from('subscriptions')
+        .update({ status: data.status, updated_at: new Date().toISOString() })
+        .eq('dodo_subscription_id', data.subscription_id)
     }
 
     return new Response(JSON.stringify({ received: true }), {

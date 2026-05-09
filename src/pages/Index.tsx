@@ -95,7 +95,6 @@ const Index = () => {
               autoPlay 
               muted 
               playsInline 
-              loop
               preload="auto"
               className="mx-auto h-48 w-auto md:h-[16.8rem] pointer-events-none" 
             >

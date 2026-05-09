@@ -99,9 +99,9 @@ const Index = () => {
               preload="auto"
               className="mx-auto h-48 w-auto md:h-[16.8rem] pointer-events-none" 
             >
-              {/* Primary: The new transparent WebM you provided */}
+              {/* Primary: The new chroma-keyed transparent WebM */}
               <source 
-                src="dyad-media://media/Giglant-final-vercel/.dyad/media/76d74d002e50728a4262453d1de04e76.webm" 
+                src="dyad-media://media/Giglant-final-vercel/.dyad/media/fd4c21621ae033b8a35b19ce099fa7eb.webm" 
                 type="video/webm" 
               />
               {/* Fallback: The original MP4 */}

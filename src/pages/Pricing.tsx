@@ -48,7 +48,6 @@ const PricingPage = () => {
             errorMessage = errorBody.details || errorBody.error;
           }
         } catch (e) {
-          // Fallback to the default error message
           errorMessage = error.message || errorMessage;
         }
         
@@ -64,7 +63,7 @@ const PricingPage = () => {
       console.error('[Pricing] Checkout error:', error);
       setLoading(null);
       toast({
-        title: "Subscription Error",
+        title: "Checkout Failed",
         description: error.message,
         variant: "destructive",
       });

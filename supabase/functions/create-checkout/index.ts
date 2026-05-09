@@ -6,33 +6,52 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Helper for retrying fetch requests in case of DNS/Network blips
+async function fetchWithRetry(url: string, options: RequestInit, retries = 3): Promise<Response> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url, options);
+      return response;
+    } catch (err: any) {
+      const isNetworkError = err.message?.includes('dns') || err.message?.includes('Connect') || err.name === 'TypeError';
+      if (isNetworkError && i < retries - 1) {
+        console.log(`[create-checkout] Network/DNS error detected. Retrying... (${i + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, 1500 * (i + 1))); // Exponential backoff
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("Failed after multiple retries");
+}
+
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    console.log("[create-checkout] Starting checkout process...");
+    console.log("[create-checkout] Function invoked.");
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const apiKey = Deno.env.get('DODO_PAYMENTS_API_KEY');
 
-    if (!supabaseUrl || !supabaseServiceRoleKey) {
-      console.error("[create-checkout] Missing Supabase environment variables");
-      throw new Error('Server configuration error: Missing Supabase keys');
-    }
-
-    if (!apiKey) {
-      console.error("[create-checkout] Missing DODO_PAYMENTS_API_KEY secret");
-      throw new Error('Missing DODO_PAYMENTS_API_KEY secret. Please add it to Supabase Secrets.');
+    if (!supabaseUrl || !supabaseServiceRoleKey || !apiKey) {
+      console.error("[create-checkout] Missing environment variables", { 
+        hasUrl: !!supabaseUrl, 
+        hasKey: !!supabaseServiceRoleKey, 
+        hasApi: !!apiKey 
+      });
+      throw new Error('Server configuration error: Missing API keys in Supabase Secrets.');
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
+    // Get user from auth header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      console.error("[create-checkout] No Authorization header provided");
       throw new Error('Unauthorized: No session found');
     }
 
@@ -51,72 +70,56 @@ serve(async (req) => {
     const { productId } = body;
 
     if (!productId) {
-      console.error("[create-checkout] No Product ID provided in request body");
       throw new Error('Product ID is required');
     }
 
-    console.log(`[create-checkout] Attempting to reach Dodo Payments for user ${user.id} and product ${productId}`);
+    console.log(`[create-checkout] Creating checkout for user: ${user.id}, product: ${productId}`);
 
-    // Using a standard fetch with a timeout to handle DNS/Connection issues better
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
-    try {
-      const response = await fetch('https://api.dodopayments.com/v1/checkouts', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey.trim()}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+    const response = await fetchWithRetry('https://api.dodopayments.com/v1/checkouts', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey.trim()}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        product_id: productId,
+        quantity: 1,
+        customer: {
+          email: user.email
         },
-        body: JSON.stringify({
-          product_id: productId,
-          quantity: 1,
-          customer: {
-            email: user.email
-          },
-          metadata: {
-            user_id: user.id
-          },
-          return_url: `${req.headers.get('origin') || 'https://giglant.com'}/dashboard?payment=success`
-        }),
-        signal: controller.signal
-      });
+        metadata: {
+          user_id: user.id
+        },
+        return_url: `${req.headers.get('origin') || 'https://giglant.com'}/dashboard?payment=success`
+      })
+    });
 
-      clearTimeout(timeoutId);
-      const result = await response.json();
+    const result = await response.json();
 
-      if (!response.ok) {
-        console.error("[create-checkout] Dodo API Error Response:", result);
-        return new Response(JSON.stringify({ 
-          error: 'Dodo Payments Error', 
-          details: result.message || result.error || 'Unknown error from payment provider' 
-        }), {
-          status: response.status,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
-      console.log("[create-checkout] Checkout created successfully:", result.url);
-      return new Response(JSON.stringify({ url: result.url }), {
-        status: 200,
+    if (!response.ok) {
+      console.error("[create-checkout] Dodo API Error:", result);
+      return new Response(JSON.stringify({ 
+        error: 'Payment Provider Error', 
+        details: result.message || result.error || 'Unknown error' 
+      }), {
+        status: response.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
-
-    } catch (fetchError: any) {
-      clearTimeout(timeoutId);
-      console.error("[create-checkout] Fetch error:", fetchError);
-      throw fetchError;
     }
 
+    console.log("[create-checkout] Success! URL:", result.url);
+    return new Response(JSON.stringify({ url: result.url }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
   } catch (error: any) {
-    console.error("[create-checkout] Critical Error:", error);
+    console.error("[create-checkout] Critical Error:", error.message);
     
     let userMessage = error.message;
-    if (error.name === 'AbortError') {
-      userMessage = "The request to the payment provider timed out. Please try again.";
-    } else if (error.message?.includes('dns') || error.message?.includes('Connect') || error.name === 'TypeError') {
-      userMessage = "The payment provider is currently unreachable from the server. This is often a temporary DNS issue in the Edge Runtime. Please try again in a few minutes.";
+    if (error.message?.includes('dns') || error.message?.includes('Connect') || error.name === 'TypeError') {
+      userMessage = "The payment server is temporarily unreachable. This is a network issue in the Edge Runtime. Please try again in a few seconds.";
     }
 
     return new Response(JSON.stringify({ error: userMessage }), {

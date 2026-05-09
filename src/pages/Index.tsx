@@ -99,12 +99,12 @@ const Index = () => {
               preload="auto"
               className="mx-auto h-48 w-auto md:h-[16.8rem] pointer-events-none" 
             >
-              {/* Primary: Transparent WebM for Chrome/Firefox/Edge */}
+              {/* Primary: The new transparent WebM you provided */}
               <source 
-                src="dyad-media://media/Giglant-final-vercel/.dyad/media/fd4c21621ae033b8a35b19ce099fa7eb.webm" 
+                src="dyad-media://media/Giglant-final-vercel/.dyad/media/76d74d002e50728a4262453d1de04e76.webm" 
                 type="video/webm" 
               />
-              {/* Fallback: MP4 for Safari/iOS */}
+              {/* Fallback: The original MP4 */}
               <source 
                 src="/animated-logo.mp4" 
                 type="video/mp4" 

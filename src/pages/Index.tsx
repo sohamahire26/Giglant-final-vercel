@@ -99,7 +99,17 @@ const Index = () => {
               preload="auto"
               className="mx-auto h-48 w-auto md:h-[16.8rem] pointer-events-none" 
             >
-              <source src="/animated-logo.mp4" type="video/mp4" />
+              {/* Primary: Transparent WebM for Chrome/Firefox/Edge */}
+              <source 
+                src="dyad-media://media/Giglant-final-vercel/.dyad/media/fd4c21621ae033b8a35b19ce099fa7eb.webm" 
+                type="video/webm" 
+              />
+              {/* Fallback: MP4 for Safari/iOS */}
+              <source 
+                src="/animated-logo.mp4" 
+                type="video/mp4" 
+              />
+              {/* Static Fallback */}
               <img src={logo} alt="Giglant Logo" className="mx-auto h-48 w-auto md:h-[16.8rem]" />
             </video>
           </div>

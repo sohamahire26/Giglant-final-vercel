@@ -95,7 +95,14 @@ const Index = () => {
             transition={{ duration: 0.6 }} 
             className="mb-8"
           >
-            <video src="/animated-logo.mp4" autoPlay muted playsInline className="mx-auto h-48 w-auto md:h-[16.8rem]" />
+            <video 
+              src="dyad-media://media/Giglant-final-vercel/.dyad/media/9259f60c60bc134d45861798c57465ed.mp4" 
+              autoPlay 
+              muted 
+              playsInline 
+              loop
+              className="mx-auto h-48 w-auto md:h-[16.8rem]" 
+            />
           </motion.div>
           <motion.h1 
             initial={{ opacity: 0, y: 20 }} 

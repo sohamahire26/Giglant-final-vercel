@@ -30,20 +30,30 @@ const PricingPage = () => {
     setLoading(tierName);
     
     try {
-      // Real Dodo Product ID provided by user
+      // Real Dodo Product ID
       const PRODUCT_ID = "pdt_0NeP4C1Jnt72eudV6ieZk"; 
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-
-      if (!token) throw new Error("You must be logged in to subscribe.");
-
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { productId: PRODUCT_ID },
-        headers: { Authorization: `Bearer ${token}` }
+        body: { productId: PRODUCT_ID }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Handle Supabase function invocation errors
+        let errorMessage = "Could not start checkout. Please try again.";
+        
+        try {
+          // Try to parse the error body if it's a JSON string from the edge function
+          const errorBody = await error.context?.json();
+          if (errorBody?.details || errorBody?.error) {
+            errorMessage = errorBody.details || errorBody.error;
+          }
+        } catch (e) {
+          // Fallback to the default error message
+          errorMessage = error.message || errorMessage;
+        }
+        
+        throw new Error(errorMessage);
+      }
 
       if (data?.url) {
         window.location.href = data.url;
@@ -55,7 +65,7 @@ const PricingPage = () => {
       setLoading(null);
       toast({
         title: "Subscription Error",
-        description: error.message || "Could not start checkout. Please try again.",
+        description: error.message,
         variant: "destructive",
       });
     }

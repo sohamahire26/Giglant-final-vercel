@@ -19,7 +19,6 @@ serve(async (req) => {
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const apiKey = Deno.env.get('DODO_PAYMENTS_API_KEY');
 
-    // 1. Check environment variables
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       console.error("[create-checkout] Missing Supabase environment variables");
       throw new Error('Server configuration error: Missing Supabase keys');
@@ -32,7 +31,7 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    // 2. Verify User Session
+    // Verify User Session
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       console.error("[create-checkout] No Authorization header provided");
@@ -50,7 +49,7 @@ serve(async (req) => {
       });
     }
 
-    // 3. Parse Request Body
+    // Parse Request Body
     const body = await req.json().catch(() => ({}));
     const { productId } = body;
 
@@ -61,11 +60,11 @@ serve(async (req) => {
 
     console.log(`[create-checkout] Creating checkout for user ${user.id} and product ${productId}`);
 
-    // 4. Call Dodo Payments API
+    // Call Dodo Payments API
     const response = await fetch('https://api.dodopayments.com/v1/checkouts', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${apiKey.trim()}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -74,7 +73,7 @@ serve(async (req) => {
         customer: {
           email: user.email
         },
-        metadata: {
+        metadata:{
           user_id: user.id
         },
         return_url: `${req.headers.get('origin') || 'https://giglant.com'}/dashboard?payment=success`

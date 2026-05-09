@@ -7,8 +7,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  console.log(`[dodo-payments-webhook] Received request: ${req.method}`);
-
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -21,73 +19,44 @@ serve(async (req) => {
     const body = await req.json()
     const eventType = body.type
     const data = body.data
-
-    console.log(`[dodo-payments-webhook] Event Type: ${eventType}`, { 
-      subscription_id: data?.subscription_id,
-      status: data?.status,
-      user_id: data?.metadata?.user_id 
-    });
-
     const userId = data.metadata?.user_id
 
+    console.log(`[dodo-payments-webhook] Received ${eventType} for user ${userId}`);
+
     if (!userId) {
-      console.error("[dodo-payments-webhook] No user_id found in metadata. Data:", JSON.stringify(data));
-      return new Response('No user_id', { status: 400 })
+      return new Response('Missing user_id', { status: 400 })
     }
 
-    // Handle subscription status changes
     if (
       eventType === 'subscription.created' || 
       eventType === 'subscription.updated' || 
-      eventType === 'subscription.renewed' ||
       eventType === 'subscription.active'
     ) {
-      console.log(`[dodo-payments-webhook] Processing active/updated subscription for user: ${userId}`);
-      
-      const { error: subError } = await supabase
-        .from('subscriptions')
-        .upsert({
-          user_id: userId,
-          dodo_subscription_id: data.subscription_id,
-          product_id: data.product_id,
-          status: data.status,
-          renews_at: data.next_billing_date,
-          ends_at: data.period_end,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'dodo_subscription_id' })
+      // Upsert subscription record
+      await supabase.from('subscriptions').upsert({
+        user_id: userId,
+        dodo_subscription_id: data.subscription_id,
+        product_id: data.product_id,
+        status: data.status,
+        renews_at: data.next_billing_date,
+        ends_at: data.period_end,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'dodo_subscription_id' })
 
-      if (subError) {
-        console.error("[dodo-payments-webhook] Subscription upsert error:", subError);
-        throw subError;
-      }
-
-      const planType = (data.status === 'active' || data.status === 'renewed') ? 'pro' : 'free'
-      
-      const { error: profileError } = await supabase
-        .from('profiles')
+      // Update profile to Pro
+      const isActive = data.status === 'active';
+      await supabase.from('profiles')
         .update({ 
-          plan_type: planType,
+          plan_type: isActive ? 'pro' : 'free',
           subscription_id: data.subscription_id
         })
         .eq('id', userId)
-
-      if (profileError) {
-        console.error("[dodo-payments-webhook] Profile update error:", profileError);
-        throw profileError;
-      }
-      
-      console.log(`[dodo-payments-webhook] Successfully updated user ${userId} to ${planType}`)
     }
 
     if (eventType === 'subscription.cancelled' || eventType === 'subscription.expired') {
-       console.log(`[dodo-payments-webhook] Processing cancellation/expiry for user: ${userId}`);
-       const { error } = await supabase
-        .from('profiles')
+      await supabase.from('profiles')
         .update({ plan_type: 'free' })
         .eq('id', userId)
-       
-       if (error) console.error("[dodo-payments-webhook] Expiry update error:", error);
-       console.log(`[dodo-payments-webhook] Subscription ${eventType} for user ${userId}. Set to free.`)
     }
 
     return new Response(JSON.stringify({ received: true }), {
@@ -95,10 +64,7 @@ serve(async (req) => {
       status: 200,
     })
   } catch (error: any) {
-    console.error('[dodo-payments-webhook] Critical Error:', error.message)
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    })
+    console.error('[dodo-payments-webhook] Error:', error.message)
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 })
   }
 })

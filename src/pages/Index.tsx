@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FileEdit, ArrowRight, Send, Receipt, Calendar, Clock, Sparkles } from "lucide-react";
@@ -58,6 +59,7 @@ const fadeUp = {
 
 const Index = () => {
   const { session } = useAuth();
+  const [videoError, setVideoError] = useState(false);
   
   const { data: recentPosts } = useQuery({
     queryKey: ["recent-posts"],
@@ -94,32 +96,36 @@ const Index = () => {
             initial={{ opacity: 0, scale: 0.9 }} 
             animate={{ opacity: 1, scale: 1 }} 
             transition={{ duration: 0.6 }} 
-            className="mb-8 relative"
+            className="mb-8 relative min-h-[12rem] md:min-h-[16.8rem] flex items-center justify-center"
           >
-            <video 
-              autoPlay 
-              muted 
-              playsInline 
-              preload="auto"
-              className="mx-auto h-48 w-auto md:h-[16.8rem] pointer-events-none relative z-10" 
-            >
-              {/* WebM for Chrome, Firefox, Edge */}
-              <source 
-                src="dyad-media://media/Giglant-final-vercel/.dyad/media/fd4c21621ae033b8a35b19ce099fa7eb.webm" 
-                type="video/webm" 
-              />
-              {/* HEVC for Safari/iOS */}
-              <source 
-                src="dyad-media://media/Giglant-final-vercel/.dyad/media/9259f60c60bc134d45861798c57465ed.mp4" 
-                type="video/mp4; codecs='hvc1'" 
-              />
-              {/* Final static fallback */}
+            {!videoError ? (
+              <video 
+                autoPlay 
+                muted 
+                playsInline 
+                loop
+                preload="auto"
+                onError={() => setVideoError(true)}
+                className="mx-auto h-48 w-auto md:h-[16.8rem] pointer-events-none relative z-10" 
+              >
+                {/* WebM for Chrome, Firefox, Edge */}
+                <source 
+                  src="dyad-media://media/Giglant-final-vercel/.dyad/media/fd4c21621ae033b8a35b19ce099fa7eb.webm" 
+                  type="video/webm" 
+                />
+                {/* HEVC for Safari/iOS */}
+                <source 
+                  src="dyad-media://media/Giglant-final-vercel/.dyad/media/9259f60c60bc134d45861798c57465ed.mp4" 
+                  type="video/mp4; codecs='hvc1'" 
+                />
+              </video>
+            ) : (
               <img 
                 src={logo} 
                 alt="Giglant Logo" 
                 className="mx-auto h-48 w-auto md:h-[16.8rem]" 
               />
-            </video>
+            )}
           </motion.div>
           <motion.h1 
             initial={{ opacity: 0, y: 20 }} 

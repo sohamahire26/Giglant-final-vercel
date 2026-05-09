@@ -69,7 +69,7 @@ serve(async (req) => {
       throw new Error('Product ID is required');
     }
 
-    console.log(`[create-checkout] Creating checkout for user ${user.id} andproduct ${productId}`);
+    console.log(`[create-checkout] Creating checkout for user ${user.id} and product ${productId}`);
 
     // Use the retry helper to handle transient DNS/Connection issues
     const response = await fetchWithRetry('https://api.dodopayments.com/v1/checkouts', {

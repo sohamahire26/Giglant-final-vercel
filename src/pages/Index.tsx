@@ -100,7 +100,6 @@ const Index = () => {
               autoPlay 
               muted 
               playsInline 
-              loop
               className="mx-auto h-48 w-auto md:h-[16.8rem]" 
             />
           </motion.div>

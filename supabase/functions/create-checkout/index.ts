@@ -57,50 +57,66 @@ serve(async (req) => {
 
     console.log(`[create-checkout] Attempting to reach Dodo Payments for user ${user.id} and product ${productId}`);
 
-    const response = await fetch('https://api.dodopayments.com/v1/checkouts', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey.trim()}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        product_id: productId,
-        quantity: 1,
-        customer: {
-          email: user.email
-        },
-        metadata: {
-          user_id: user.id
-        },
-        return_url: `${req.headers.get('origin') || 'https://giglant.com'}/dashboard?payment=success`
-      })
-    });
+    // Using a standard fetch with a timeout to handle DNS/Connection issues better
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-    const result = await response.json();
+    try {
+      const response = await fetch('https://api.dodopayments.com/v1/checkouts', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey.trim()}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          product_id: productId,
+          quantity: 1,
+          customer: {
+            email: user.email
+          },
+          metadata: {
+            user_id: user.id
+          },
+          return_url: `${req.headers.get('origin') || 'https://giglant.com'}/dashboard?payment=success`
+        }),
+        signal: controller.signal
+      });
 
-    if (!response.ok) {
-      console.error("[create-checkout] Dodo API Error Response:", result);
-      return new Response(JSON.stringify({ 
-        error: 'Dodo Payments Error', 
-        details: result.message || result.error || 'Unknown error from payment provider' 
-      }), {
-        status: response.status,
+      clearTimeout(timeoutId);
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error("[create-checkout] Dodo API Error Response:", result);
+        return new Response(JSON.stringify({ 
+          error: 'Dodo Payments Error', 
+          details: result.message || result.error || 'Unknown error from payment provider' 
+        }), {
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      console.log("[create-checkout] Checkout created successfully:", result.url);
+      return new Response(JSON.stringify({ url: result.url }), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
-    }
 
-    console.log("[create-checkout] Checkout created successfully:", result.url);
-    return new Response(JSON.stringify({ url: result.url }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      console.error("[create-checkout] Fetch error:", fetchError);
+      throw fetchError;
+    }
 
   } catch (error: any) {
     console.error("[create-checkout] Critical Error:", error);
     
     let userMessage = error.message;
-    if (error.message?.includes('dns') || error.message?.includes('Connect') || error.name === 'TypeError') {
-      userMessage = "The payment provider is currently unreachable from the server. Please ensure your DODO_PAYMENTS_API_KEY is correct in Supabase Secrets.";
+    if (error.name === 'AbortError') {
+      userMessage = "The request to the payment provider timed out. Please try again.";
+    } else if (error.message?.includes('dns') || error.message?.includes('Connect') || error.name === 'TypeError') {
+      userMessage = "The payment provider is currently unreachable from the server. This is often a temporary DNS issue in the Edge Runtime. Please try again in a few minutes.";
     }
 
     return new Response(JSON.stringify({ error: userMessage }), {

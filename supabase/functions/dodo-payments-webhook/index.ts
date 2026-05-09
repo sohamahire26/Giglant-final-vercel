@@ -30,8 +30,6 @@ serve(async (req) => {
 
     // List of events that indicate a healthy/active subscription
     const activeEvents = [
-      'subscription.created', 
-      'subscription.updated', 
       'subscription.active',
       'subscription.renewed'
     ];

@@ -98,9 +98,9 @@ const Index = () => {
               preload="auto"
               className="mx-auto h-48 w-auto md:h-[16.8rem] pointer-events-none" 
             >
-              {/* Primary: The specific chroma-keyed WebM you provided */}
+              {/* Standard relative path for GitHub/Production */}
               <source 
-                src="dyad-media://media/Giglant-final-vercel/.dyad/media/b5d013dc20f7bac5c1816a77a9d6b7e0.webm" 
+                src="/animated-logo.webm" 
                 type="video/webm" 
               />
               {/* Fallback: The original MP4 */}

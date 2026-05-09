@@ -6,25 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Helper for retrying fetch requests on network/DNS errors
-async function fetchWithRetry(url: string, options: RequestInit, retries = 3, backoff = 1000) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await fetch(url, options);
-      return response;
-    } catch (err) {
-      const isNetworkError = err instanceof TypeError || err.message?.includes('dns') || err.message?.includes('Connect');
-      if (isNetworkError && i < retries - 1) {
-        console.warn(`[create-checkout] Network/DNS error on attempt ${i + 1}. Retrying in ${backoff}ms...`, err.message);
-        await new Promise(resolve => setTimeout(resolve, backoff));
-        backoff *= 2; // Exponential backoff
-        continue;
-      }
-      throw err;
-    }
-  }
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -38,10 +19,12 @@ serve(async (req) => {
     const apiKey = Deno.env.get('DODO_PAYMENTS_API_KEY');
 
     if (!supabaseUrl || !supabaseServiceRoleKey) {
+      console.error("[create-checkout] Missing Supabase environment variables");
       throw new Error('Server configuration error: Missing Supabase keys');
     }
 
     if (!apiKey) {
+      console.error("[create-checkout] Missing DODO_PAYMENTS_API_KEY secret");
       throw new Error('Missing DODO_PAYMENTS_API_KEY secret. Please add it to Supabase Secrets.');
     }
 
@@ -49,6 +32,7 @@ serve(async (req) => {
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error("[create-checkout] No Authorization header provided");
       throw new Error('Unauthorized: No session found');
     }
 
@@ -56,6 +40,7 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
     if (authError || !user) {
+      console.error("[create-checkout] Auth error:", authError);
       return new Response(JSON.stringify({ error: 'Authentication failed' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -66,13 +51,13 @@ serve(async (req) => {
     const { productId } = body;
 
     if (!productId) {
+      console.error("[create-checkout] No Product ID provided in request body");
       throw new Error('Product ID is required');
     }
 
-    console.log(`[create-checkout] Creating checkout for user ${user.id} and product ${productId}`);
+    console.log(`[create-checkout] Attempting to reach Dodo Payments for user ${user.id} and product ${productId}`);
 
-    // Use the retry helper to handle transient DNS/Connection issues
-    const response = await fetchWithRetry('https://api.dodopayments.com/v1/checkouts', {
+    const response = await fetch('https://api.dodopayments.com/v1/checkouts', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey.trim()}`,
@@ -91,12 +76,10 @@ serve(async (req) => {
       })
     });
 
-    if (!response) throw new Error("Failed to connect to payment provider after multiple attempts.");
-
     const result = await response.json();
 
     if (!response.ok) {
-      console.error("[create-checkout] Dodo API Error:", result);
+      console.error("[create-checkout] Dodo API Error Response:", result);
       return new Response(JSON.stringify({ 
         error: 'Dodo Payments Error', 
         details: result.message || result.error || 'Unknown error from payment provider' 
@@ -113,12 +96,11 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error("[create-checkout] Critical Error:", error.message);
+    console.error("[create-checkout] Critical Error:", error);
     
-    // Provide a more user-friendly message for DNS/Connection errors
     let userMessage = error.message;
-    if (error.message?.includes('dns') || error.message?.includes('Connect')) {
-      userMessage = "The payment provider is currently unreachable. Please try again in a few moments.";
+    if (error.message?.includes('dns') || error.message?.includes('Connect') || error.name === 'TypeError') {
+      userMessage = "The payment provider is currently unreachable from the server. Please ensure your DODO_PAYMENTS_API_KEY is correct in Supabase Secrets.";
     }
 
     return new Response(JSON.stringify({ error: userMessage }), {

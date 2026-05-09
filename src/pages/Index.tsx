@@ -96,7 +96,6 @@ const Index = () => {
             transition={{ duration: 0.6 }} 
             className="mb-8 relative"
           >
-            {/* Video for Safari/Apple */}
             <video 
               autoPlay 
               muted 
@@ -104,15 +103,21 @@ const Index = () => {
               preload="auto"
               className="mx-auto h-48 w-auto md:h-[16.8rem] pointer-events-none relative z-10" 
             >
+              {/* WebM for Chrome, Firefox, Edge */}
+              <source 
+                src="dyad-media://media/Giglant-final-vercel/.dyad/media/66366666666666666666666666666666.webm" 
+                type="video/webm" 
+              />
+              {/* HEVC for Safari/iOS */}
               <source 
                 src="dyad-media://media/Giglant-final-vercel/.dyad/media/9259f60c60bc134d45861798c57465ed.mp4" 
                 type="video/mp4; codecs='hvc1'" 
               />
-              {/* Fallback Image for Chrome/Firefox */}
+              {/* Final static fallback */}
               <img 
                 src={logo} 
                 alt="Giglant Logo" 
-                className="mx-auto h-48 w-auto md:h-[16.8rem] animate-pulse" 
+                className="mx-auto h-48 w-auto md:h-[16.8rem]" 
               />
             </video>
           </motion.div>

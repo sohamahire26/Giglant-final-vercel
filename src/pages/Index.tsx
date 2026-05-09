@@ -96,12 +96,17 @@ const Index = () => {
             className="mb-8"
           >
             <video 
-              src="dyad-media://media/Giglant-final-vercel/.dyad/media/9259f60c60bc134d45861798c57465ed.mp4" 
               autoPlay 
               muted 
               playsInline 
-              className="mx-auto h-48 w-auto md:h-[16.8rem]" 
-            />
+              preload="auto"
+              className="mx-auto h-48 w-auto md:h-[16.8rem] pointer-events-none" 
+            >
+              <source 
+                src="dyad-media://media/Giglant-final-vercel/.dyad/media/9259f60c60bc134d45861798c57465ed.mp4" 
+                type="video/mp4; codecs='hvc1'" 
+              />
+            </video>
           </motion.div>
           <motion.h1 
             initial={{ opacity: 0, y: 20 }} 

@@ -10,6 +10,7 @@ import FAQSection from "@/components/FAQSection";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider";
 import { getBlogPosts } from "@/lib/api";
+import logo from "@/assets/logo.png";
 
 const tools = [
   { 
@@ -93,15 +94,27 @@ const Index = () => {
             initial={{ opacity: 0, scale: 0.9 }} 
             animate={{ opacity: 1, scale: 1 }} 
             transition={{ duration: 0.6 }} 
-            className="mb-8"
+            className="mb-8 relative"
           >
+            {/* Video for Safari/Apple */}
             <video 
-              src="dyad-media://media/Giglant-final-vercel/.dyad/media/9259f60c60bc134d45861798c57465ed.mp4"
               autoPlay 
               muted 
               playsInline 
-              className="mx-auto h-48 w-auto md:h-[16.8rem] pointer-events-none" 
-            />
+              preload="auto"
+              className="mx-auto h-48 w-auto md:h-[16.8rem] pointer-events-none relative z-10" 
+            >
+              <source 
+                src="dyad-media://media/Giglant-final-vercel/.dyad/media/9259f60c60bc134d45861798c57465ed.mp4" 
+                type="video/mp4; codecs='hvc1'" 
+              />
+              {/* Fallback Image for Chrome/Firefox */}
+              <img 
+                src={logo} 
+                alt="Giglant Logo" 
+                className="mx-auto h-48 w-auto md:h-[16.8rem] animate-pulse" 
+              />
+            </video>
           </motion.div>
           <motion.h1 
             initial={{ opacity: 0, y: 20 }} 
@@ -224,7 +237,7 @@ const Index = () => {
           </div>
         </div>
       </section>
-    </Layout>
+    </div>
   );
 };
 

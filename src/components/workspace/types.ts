@@ -132,8 +132,8 @@ export const isProjectLocked = (project: Project, planType: string) => {
 export const getRenewalStatus = (subscription: any) => {
   if (!subscription) return null;
   
-  // Prioritize manual expiry if set
-  const targetDateStr = subscription.manual_expiry || subscription.renews_at || subscription.ends_at;
+  // Prioritize manual expiry if set, then use next_billing_date
+  const targetDateStr = subscription.manual_expiry || subscription.next_billing_date;
   if (!targetDateStr) return null;
 
   const targetDate = parseISO(targetDateStr);

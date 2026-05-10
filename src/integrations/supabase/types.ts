@@ -226,43 +226,28 @@ export type Database = {
         Row: {
           id: string
           user_id: string
-          dodo_subscription_id: string
-          order_id: string | null
-          customer_id: string | null
-          product_id: string | null
+          dodo_subscription_id: string | null
           status: string | null
-          renews_at: string | null
-          ends_at: string | null
-          created_at: string | null
-          updated_at: string | null
+          next_billing_date: string | null
+          customer_email: string | null
           manual_expiry: string | null
         }
         Insert: {
           id?: string
           user_id: string
-          dodo_subscription_id: string
-          order_id?: string | null
-          customer_id?: string | null
-          product_id?: string | null
+          dodo_subscription_id?: string | null
           status?: string | null
-          renews_at?: string | null
-          ends_at?: string | null
-          created_at?: string | null
-          updated_at?: string | null
+          next_billing_date?: string | null
+          customer_email?: string | null
           manual_expiry?: string | null
         }
         Update: {
           id?: string
           user_id?: string
-          dodo_subscription_id?: string
-          order_id?: string | null
-          customer_id?: string | null
-          product_id?: string | null
+          dodo_subscription_id?: string | null
           status?: string | null
-          renews_at?: string | null
-          ends_at?: string | null
-          created_at?: string | null
-          updated_at?: string | null
+          next_billing_date?: string | null
+          customer_email?: string | null
           manual_expiry?: string | null
         }
         Relationships: []
@@ -294,7 +279,7 @@ export type Database = {
         }
         Update: {
           id?: string
-          user_id: string
+          user_id?: string
           type?: string
           subject?: string
           message?: string

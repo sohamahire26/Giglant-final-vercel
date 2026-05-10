@@ -1,4 +1,4 @@
-import { differenceInDays, differenceInHours, parseISO } from "date-fns";
+import { differenceInDays, differenceInHours, parseISO, addDays } from "date-fns";
 
 export interface Project {
   id: string;
@@ -114,9 +114,18 @@ export const getTimeRemaining = (project: Project, planType: string = 'free') =>
 };
 
 export const getDeletionRemaining = (project: Project, planType: string = 'free') => {
-  const created = new Date(project.created_at).getTime();
-  const deletionDays = planType === 'pro' ? 90 : 14;
-  const deletionTime = created + (deletionDays * 24 * 60 * 60 * 1000);
+  let deletionTime: number;
+  
+  if (project.expires_at) {
+    // If manually extended, deletion happens 7 (Free) or 30 (Pro) days after the extension expires
+    const extensionExpiry = new Date(project.expires_at).getTime();
+    const gracePeriod = planType === 'pro' ? 30 : 7;
+    deletionTime = extensionExpiry + (gracePeriod * 24 * 60 * 60 * 1000);
+  } else {
+    const created = new Date(project.created_at).getTime();
+    const deletionDays = planType === 'pro' ? 90 : 14;
+    deletionTime = created + (deletionDays * 24 * 60 * 60 * 1000);
+  }
   
   const now = new Date().getTime();
   const diff = deletionTime - now;
@@ -139,6 +148,14 @@ export const isProjectLocked = (project: Project, planType: string) => {
   }
   
   return daysOld > 60;
+};
+
+/**
+ * Returns true if the project has exceeded its deletion grace period.
+ */
+export const isProjectDeleted = (project: Project, planType: string) => {
+  const status = getDeletionRemaining(project, planType);
+  return status.expired;
 };
 
 export const getRenewalStatus = (subscription: any) => {

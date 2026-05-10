@@ -8,7 +8,7 @@ import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
-import { isProjectLocked } from "@/components/workspace/types";
+import { isProjectLocked, isProjectDeleted } from "@/components/workspace/types";
 
 const Dashboard = () => {
   const { user, session, profile, loading: authLoading } = useAuth();
@@ -33,7 +33,10 @@ const Dashboard = () => {
       if (error) throw error;
 
       if (data) {
-        setProjects(data);
+        // Filter out projects that should be deleted
+        const isPro = profile?.plan_type === 'pro';
+        const activeProjects = data.filter(p => !isProjectDeleted(p, isPro ? 'pro' : 'free'));
+        setProjects(activeProjects);
       }
     } catch (err) {
       console.error("[Dashboard] Error fetching projects:", err);
@@ -41,7 +44,7 @@ const Dashboard = () => {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [user]);
+  }, [user, profile]);
 
   useEffect(() => {
     if (user) {

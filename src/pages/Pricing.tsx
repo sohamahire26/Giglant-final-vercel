@@ -15,6 +15,12 @@ const PricingPage = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState<string | null>(null);
 
+  // --- CONFIGURATION ---
+  // Replace this with your TEST Product ID from Dodo Payments Test Dashboard
+  // When you go live, you will replace this with your LIVE Product ID
+  const DODO_PRODUCT_ID = "pdt_0NeP4C1Jnt72eudV6ieZk"; 
+  // ---------------------
+
   const handleSubscribe = async (tierName: string) => {
     if (!session) {
       window.location.href = "/login";
@@ -30,27 +36,20 @@ const PricingPage = () => {
     setLoading(tierName);
     
     try {
-      // Real Dodo Product ID
-      const PRODUCT_ID = "pdt_0NeP4C1Jnt72eudV6ieZk"; 
-
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { productId: PRODUCT_ID }
+        body: { productId: DODO_PRODUCT_ID }
       });
 
       if (error) {
-        // Extract the most descriptive error message possible
         let errorMessage = error.message;
-        
-        // If the error has a context with a JSON body (common for Supabase Edge Functions)
         if (error.context && typeof error.context.json === 'function') {
           try {
             const errorBody = await error.context.json();
             errorMessage = errorBody.error || errorBody.message || errorMessage;
           } catch (e) {
-            // Fallback to original error message
+            // Fallback
           }
         }
-        
         throw new Error(errorMessage);
       }
 

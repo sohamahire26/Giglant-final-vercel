@@ -157,7 +157,7 @@ const ProjectWorkspace = () => {
                     {renewalStatus === '3d' && "Your Pro subscription renews in 3 days. Ensure your payment method is up to date."}
                     {renewalStatus === '2d' && "Your Pro subscription renews in 2 days. Don't lose access to your unlimited projects."}
                     {renewalStatus === '1d' && "Your Pro subscription renews tomorrow. Renew now to avoid project locking."}
-                    {renewalStatus === '24h' && "CRITICAL: Your Pro subscription renews in less than 24 hours. Renew now!"}
+                    {renewalStatus.startsWith('h-') && `CRITICAL: Your Pro subscription renews in ${renewalStatus.split('-')[1]} hours. Renew now!`}
                     {renewalStatus === 'expired' && "Your subscription has expired. Projects older than 7 days are now locked."}
                   </p>
                 </div>

@@ -88,9 +88,10 @@ export const parseTs = (input: string): number | null => {
   return null;
 };
 
-export const getTimeRemaining = (createdAt: string) => {
+export const getTimeRemaining = (createdAt: string, planType: string = 'free') => {
   const created = new Date(createdAt).getTime();
-  const expires = created + (7 * 24 * 60 * 60 * 1000);
+  const windowDays = planType === 'pro' ? 60 : 7;
+  const expires = created + (windowDays * 24 * 60 * 60 * 1000);
   const now = new Date().getTime();
   const diff = expires - now;
 
@@ -113,7 +114,8 @@ export const isProjectLocked = (projectCreatedAt: string, planType: string) => {
     return daysOld > 7;
   }
   
-  return false;
+  // Pro users have a 60 day window
+  return daysOld > 60;
 };
 
 export const getRenewalStatus = (nextBillingDate: string | null) => {
@@ -124,7 +126,7 @@ export const getRenewalStatus = (nextBillingDate: string | null) => {
   const hoursUntil = differenceInHours(renewalDate, now);
   
   if (hoursUntil <= 0) return "expired";
-  if (hoursUntil <= 24) return "24h";
+  if (hoursUntil <= 24) return `h-${hoursUntil}`; // Hourly countdown
   if (daysUntil <= 1) return "1d";
   if (daysUntil <= 2) return "2d";
   if (daysUntil <= 3) return "3d";

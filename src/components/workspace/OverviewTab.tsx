@@ -18,7 +18,8 @@ import {
   Save,
   X,
   Sparkles,
-  Infinity
+  Infinity,
+  MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +46,8 @@ interface Props {
 const OverviewTab = ({ project, onUpdate }: Props) => {
   const { profile } = useAuth();
   const { toast } = useToast();
-  const [timeLeft, setTimeLeft] = useState(getTimeRemaining(project.created_at));
+  const planType = profile?.plan_type || 'free';
+  const [timeLeft, setTimeLeft] = useState(getTimeRemaining(project.created_at, planType));
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     name: project.name,
@@ -55,16 +57,15 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
   const [saving, setSaving] = useState(false);
 
   const clientLink = `${window.location.origin}/client/${project.share_token}`;
-  const planType = profile?.plan_type || 'free';
   const isPro = planType === 'pro';
   const isLocked = isProjectLocked(project.created_at, planType);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft(getTimeRemaining(project.created_at));
+      setTimeLeft(getTimeRemaining(project.created_at, planType));
     }, 60000);
     return () => clearInterval(timer);
-  }, [project.created_at]);
+  }, [project.created_at, planType]);
 
   const copyLink = () => {
     navigator.clipboard.writeText(clientLink);
@@ -92,6 +93,9 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
       setSaving(false);
     }
   };
+
+  // Pro countdown logic: show timer only if less than 7 days remain (after 53 days)
+  const showProCountdown = isPro && timeLeft.days < 7 && !timeLeft.expired;
 
   return (
     <div className="space-y-8">
@@ -138,8 +142,9 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
                         <p className="font-semibold text-foreground mt-4">Pro Plan:</p>
                         <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                           <li>Unlimited projects.</li>
-                          <li>Projects remain active as long as subscription is live.</li>
-                          <li>60-day retention after subscription ends.</li>
+                          <li>Projects remain active for 60 days.</li>
+                          <li>Review links are disabled when locked.</li>
+                          <li>Workspace becomes read-only.</li>
                         </ul>
                       </div>
                     </DialogDescription>
@@ -154,20 +159,37 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
                   <>
                     <div className="text-4xl font-bold text-red-600 font-display">LOCKED</div>
                     <p className="mt-2 text-sm text-red-700/80">
-                      This project is locked. Upgrade to Pro to reactivate the review link and editing.
+                      This project is locked. {isPro ? "The 60-day window has ended." : "The 7-day free window has ended."}
                     </p>
                     <Button asChild className="mt-4 bg-red-600 hover:bg-red-700">
-                      <Link to="/pricing"><Sparkles className="mr-2 h-4 w-4" /> Unlock with Pro</Link>
+                      <Link to="/pricing"><Sparkles className="mr-2 h-4 w-4" /> {isPro ? "Manage Subscription" : "Unlock with Pro"}</Link>
                     </Button>
                   </>
                 ) : isPro ? (
                   <>
-                    <div className="flex items-center justify-center gap-3 text-4xl font-bold text-primary font-display">
-                      <Infinity size={40} /> UNLIMITED
-                    </div>
-                    <p className="mt-2 text-sm text-primary/80">
-                      Your Pro subscription is active. This project will never expire.
-                    </p>
+                    {showProCountdown ? (
+                      <>
+                        <div className="text-4xl font-bold text-primary font-display">
+                          {timeLeft.days} {timeLeft.days === 1 ? 'Day' : 'Days'} Remaining
+                        </div>
+                        <p className="mt-2 text-sm text-primary/80">
+                          Pro projects have a 60-day window.
+                        </p>
+                        <div className="mt-4 rounded-lg bg-primary/10 p-3 text-[11px] text-primary font-medium flex items-center gap-2">
+                          <MessageCircle className="h-3 w-3" />
+                          Need more time? Contact support to request an extension.
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-center gap-3 text-4xl font-bold text-primary font-display">
+                          <Infinity size={40} /> ACTIVE
+                        </div>
+                        <p className="mt-2 text-sm text-primary/80">
+                          Your Pro project is active. (60-day window)
+                        </p>
+                      </>
+                    )}
                   </>
                 ) : (
                   <>

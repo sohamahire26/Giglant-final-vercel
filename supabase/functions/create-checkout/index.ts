@@ -42,7 +42,7 @@ serve(async (req) => {
 
     console.log(`[create-checkout] Creating checkout for ${user.email} (Product: ${productId})`);
 
-    // Using the live Dodo Payments API endpoint as requested
+    // Updated request body to include product_cart as required by the API
     const response = await fetch('https://live.dodopayments.com/checkouts', {
       method: 'POST',
       headers: {
@@ -50,10 +50,18 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        product_id: productId,
-        quantity: 1,
-        customer: { email: user.email },
-        metadata: { supabase_user_id: user.id },
+        product_cart: [
+          {
+            product_id: productId,
+            quantity: 1
+          }
+        ],
+        customer: {
+          email: user.email
+        },
+        metadata: {
+          supabase_user_id: user.id
+        },
         return_url: `${req.headers.get('origin') || 'https://giglant.com'}/dashboard?payment=success`
       })
     });

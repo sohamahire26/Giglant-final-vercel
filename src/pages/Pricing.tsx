@@ -16,9 +16,8 @@ const PricingPage = () => {
   const [loading, setLoading] = useState<string | null>(null);
 
   // --- CONFIGURATION ---
-  // Replace this with your TEST Product ID from Dodo Payments Test Dashboard
-  // When you go live, you will replace this with your LIVE Product ID
-  const DODO_PRODUCT_ID = "pdt_0NeP4C1Jnt72eudV6ieZk"; 
+  // Using your provided Test Product ID
+  const DODO_PRODUCT_ID = "pdt_0NeWGGBQ1LHQF9Z4wqf1C"; 
   // ---------------------
 
   const handleSubscribe = async (tierName: string) => {

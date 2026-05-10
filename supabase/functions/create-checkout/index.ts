@@ -43,8 +43,7 @@ serve(async (req) => {
     console.log(`[create-checkout] Creating checkout for ${user.email} (Product: ${productId})`);
 
     // --- TOGGLE THIS URL WHEN GOING LIVE ---
-    // TEST: https://test.dodopayments.com/checkouts
-    // LIVE: https://live.dodopayments.com/checkouts
+    // Currently set to TEST for your verification phase
     const DODO_API_URL = 'https://test.dodopayments.com/checkouts';
     // ---------------------------------------
 

@@ -11,9 +11,7 @@ import TutorialTour, { TourStep } from "@/components/workspace/TutorialTour";
 import { fmtTs, parseTs, isProjectLocked } from "@/components/workspace/types";
 import type { ProjectFile, FileComment } from "@/components/workspace/types";
 
-interface Project { id: string; name: string; client_name: string | null; share_token: string; user_id: string; created_at: string; }
-
-const db = supabase as any;
+interface Project { id: string; name: string; client_name: string | null; share_token: string; user_id: string; created_at: string; expires_at?: string | null; }
 
 const FILE_TYPES = [
   { value: "video", label: "Video", hasTimestamp: true },
@@ -44,39 +42,119 @@ const ClientView = () => {
   const [newComment, setNewComment] = useState("");
   const [newTimestamp, setNewTimestamp] = useState("");
   const [authorName, setAuthorName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
   const { toast } = useToast();
 
-  const loadData = async () => {
+  const loadData = async (silent = false) => {
     if (!token) { setNotFound(true); setLoading(false); return; }
+    if (!silent) setLoading(true);
     
-    const { data: proj } = await db.from("projects").select("*").eq("share_token", token).single();
-    if (!proj) { setNotFound(true); setLoading(false); return; }
-    
-    // Check if project owner is Pro to determine locking
-    const { data: ownerProfile } = await db.from("profiles").select("plan_type").eq("id", proj.user_id).single();
-    const locked = isProjectLocked(proj.created_at, ownerProfile?.plan_type || 'free');
-    
-    setProject(proj);
-    setIsLocked(locked);
+    try {
+      const { data: proj, error: projError } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("share_token", token)
+        .maybeSingle();
 
-    if (!locked) {
-      const { data: f } = await db.from("project_files").select("*").eq("project_id", proj.id).order("sort_order");
-      setFiles(f || []);
-      if (f?.length) {
-        const { data: c } = await db.from("file_comments").select("*").in("file_id", f.map((x: ProjectFile) => x.id)).order("created_at");
-        setComments(c || []);
-        if (!selectedFile) setSelectedFile(f[0]);
+      if (projError || !proj) { 
+        setNotFound(true); 
+        setLoading(false); 
+        return; 
       }
+      
+      // Fetch owner's plan type to determine locking
+      // Note: This requires a public read policy on profiles for plan_type
+      const { data: ownerProfile } = await supabase
+        .from("profiles")
+        .select("plan_type")
+        .eq("id", proj.user_id)
+        .maybeSingle();
+
+      const locked = isProjectLocked(proj as any, ownerProfile?.plan_type || 'free');
+      
+      setProject(proj as Project);
+      setIsLocked(locked);
+
+      if (!locked) {
+        const { data: f } = await supabase
+          .from("project_files")
+          .select("*")
+          .eq("project_id", proj.id)
+          .order("sort_order");
+        
+        setFiles(f || []);
+        
+        if (f && f.length > 0) {
+          const { data: c } = await supabase
+            .from("file_comments")
+            .select("*")
+            .in("file_id", f.map(x => x.id))
+            .order("created_at", { ascending: true });
+          
+          setComments(c || []);
+          if (!selectedFile) setSelectedFile(f[0]);
+        }
+      }
+    } catch (err) {
+      console.error("[ClientView] Error loading data:", err);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   useEffect(() => {
     loadData();
   }, [token]);
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !selectedFile || !project) return;
+    
+    setSubmitting(true);
+    try {
+      const ts = parseTs(newTimestamp);
+      
+      const { data, error } = await supabase
+        .from("file_comments")
+        .insert({
+          file_id: selectedFile.id,
+          timestamp_seconds: ts,
+          comment: newComment.trim(),
+          author_name: authorName.trim() || "Client",
+          is_client: true,
+          is_resolved: false
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setComments(prev => [...prev, data]);
+      setNewComment("");
+      setNewTimestamp("");
+      toast({ title: "Feedback sent!" });
+    } catch (err: any) {
+      toast({ title: "Failed to send feedback", description: err.message, variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleTimestampChange = (val: string) => {
+    const digits = val.replace(/[^0-9]/g, "");
+    if (digits.length > 6) return;
+
+    let formatted = "";
+    if (digits.length <= 2) {
+      formatted = digits;
+    } else if (digits.length <= 4) {
+      formatted = `${digits.slice(0, -2)}:${digits.slice(-2)}`;
+    } else {
+      formatted = `${digits.slice(0, -4)}:${digits.slice(-4, -2)}:${digits.slice(-2)}`;
+    }
+    setNewTimestamp(formatted);
+  };
 
   if (loading) return (
     <div className="flex min-h-screen items-center justify-center bg-background">
@@ -89,6 +167,9 @@ const ClientView = () => {
       <div className="text-center">
         <h1 className="text-2xl font-bold text-foreground">Project Not Found</h1>
         <p className="mt-2 text-muted-foreground">This link may be invalid or the project has been deleted.</p>
+        <Button asChild variant="outline" className="mt-6">
+          <Link to="/">Go to Giglant Home</Link>
+        </Button>
       </div>
     </div>
   );
@@ -138,7 +219,7 @@ const ClientView = () => {
             {project?.client_name && <p className="text-sm text-muted-foreground">For: {project.client_name}</p>}
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => loadData()} className="text-muted-foreground border-border hover:bg-secondary">
+            <Button variant="outline" size="sm" onClick={() => loadData(true)} className="text-muted-foreground border-border hover:bg-secondary">
               <RefreshCw className="mr-1 h-3 w-3" /> Refresh
             </Button>
             <Button variant="outline" size="sm" onClick={() => setShowTutorial(true)} className="text-primary border-primary/30 hover:bg-primary/5">
@@ -177,11 +258,13 @@ const ClientView = () => {
             {selectedFile ? (
               <>
                 <div id="client-preview-area" className="rounded-xl border border-border bg-card p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <h3 className="font-display text-sm font-semibold text-foreground">{selectedFile.filename}</h3>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${selectedFileType?.hasTimestamp ? "bg-amber-500/10 text-amber-600" : "bg-secondary text-muted-foreground"}`}>
-                      {selectedFileType?.hasTimestamp ? "🎬 Timestamp" : "📄 Standard"}
-                    </span>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-display text-sm font-semibold text-foreground">{selectedFile.filename}</h3>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${selectedFileType?.hasTimestamp ? "bg-amber-500/10 text-amber-600" : "bg-secondary text-muted-foreground"}`}>
+                        {selectedFileType?.hasTimestamp ? "🎬 Timestamp Enabled" : "📄 Standard Feedback"}
+                      </span>
+                    </div>
                   </div>
                   {selectedFile.drive_file_id && (
                     <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-background">
@@ -195,24 +278,28 @@ const ClientView = () => {
                   <div className="flex gap-2 items-end flex-wrap">
                     {isTimeable && (
                       <div className="w-32">
-                        <label className="mb-1 flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+                        <label className="mb-1 flex items-center gap-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                           <Clock className="h-2.5 w-2.5" /> Time (HH:MM:SS)
                         </label>
-                        <input type="text" value={newTimestamp} onChange={e => setNewTimestamp(e.target.value)} placeholder="00:01:24"
+                        <input type="text" value={newTimestamp} onChange={e => handleTimestampChange(e.target.value)} placeholder="00:01:24"
                           className="w-full rounded-lg border border-border bg-background px-2 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
                       </div>
                     )}
                     <div className="w-32">
-                      <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Your Name</label>
+                      <label className="mb-1 block text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Your Name</label>
                       <input type="text" value={authorName} onChange={e => setAuthorName(e.target.value)} placeholder="Client"
                         className="w-full rounded-lg border border-border bg-background px-2 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
                     </div>
                     <div className="flex-1 min-w-[150px]">
-                      <label className="mb-1 block text-[10px] font-medium text-muted-foreground">Comment</label>
+                      <label className="mb-1 block text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Comment</label>
                       <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder={isTimeable ? "Describe what you'd like changed at this point..." : "Describe what you'd like changed..."}
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                        onKeyDown={e => e.key === "Enter" && handleAddComment()} />
                     </div>
-                    <Button className="h-10"><Plus className="h-4 w-4 mr-1" /> Add</Button>
+                    <Button onClick={handleAddComment} disabled={submitting || !newComment.trim()} className="h-10">
+                      {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
+                      Add
+                    </Button>
                   </div>
                 </div>
 
@@ -223,12 +310,20 @@ const ClientView = () => {
                     </h3>
                     <div className="space-y-2">
                       {fileComments.map(c => (
-                        <div key={c.id} className="rounded-lg border border-border bg-background p-3">
+                        <div key={c.id} className={`rounded-lg border p-3 transition-all ${c.is_resolved ? "border-border/50 bg-muted/30 opacity-70" : "border-border bg-background"}`}>
                           <div className="flex items-center gap-2">
-                            {c.timestamp_seconds !== null && <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono font-bold text-primary">{fmtTs(c.timestamp_seconds)}</span>}
-                            <span className="text-[10px] text-muted-foreground font-medium">{c.author_name}</span>
+                            {c.timestamp_seconds !== null && (
+                              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono font-bold text-primary">
+                                {fmtTs(c.timestamp_seconds)}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-tight">
+                              {c.author_name} {c.is_resolved && "• Resolved"}
+                            </span>
                           </div>
-                          <p className="mt-1 text-sm text-foreground">{c.comment}</p>
+                          <p className={`mt-1 text-sm leading-relaxed ${c.is_resolved ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                            {c.comment}
+                          </p>
                         </div>
                       ))}
                     </div>

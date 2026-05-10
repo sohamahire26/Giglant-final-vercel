@@ -19,6 +19,7 @@ serve(async (req) => {
     const dodoApiKey = Deno.env.get('DODO_PAYMENTS_API_KEY')?.trim();
 
     if (!dodoApiKey) {
+      console.error("[create-checkout] DODO_PAYMENTS_API_KEY is missing");
       throw new Error('DODO_PAYMENTS_API_KEY is not set in Supabase secrets.');
     }
 
@@ -31,6 +32,7 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
     if (authError || !user) {
+      console.error("[create-checkout] Auth error:", authError);
       return new Response(JSON.stringify({ error: 'Authentication failed' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -42,10 +44,7 @@ serve(async (req) => {
 
     console.log(`[create-checkout] Creating checkout for ${user.email} (Product: ${productId})`);
 
-    // --- TOGGLE THIS URL WHEN GOING LIVE ---
-    // Currently set to TEST for your verification phase
     const DODO_API_URL = 'https://test.dodopayments.com/checkouts';
-    // ---------------------------------------
 
     const response = await fetch(DODO_API_URL, {
       method: 'POST',
@@ -71,6 +70,7 @@ serve(async (req) => {
     });
 
     const result = await response.json();
+    console.log("[create-checkout] Dodo API Response:", JSON.stringify(result));
 
     if (!response.ok) {
       console.error("[create-checkout] Dodo API Error:", result);
@@ -80,13 +80,21 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ url: result.url }), {
+    // Dodo Payments returns 'checkout_url'
+    const checkoutUrl = result.checkout_url || result.url;
+
+    if (!checkoutUrl) {
+      console.error("[create-checkout] No URL found in response:", result);
+      throw new Error("Payment provider did not return a checkout URL.");
+    }
+
+    return new Response(JSON.stringify({ url: checkoutUrl }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error: any) {
-    console.error("[create-checkout] Error:", error.message);
+    console.error("[create-checkout] Catch Error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

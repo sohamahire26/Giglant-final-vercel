@@ -116,9 +116,9 @@ export const isProjectLocked = (projectCreatedAt: string, planType: string) => {
   return false;
 };
 
-export const getRenewalStatus = (renewsAt: string | null) => {
-  if (!renewsAt) return null;
-  const renewalDate = parseISO(renewsAt);
+export const getRenewalStatus = (nextBillingDate: string | null) => {
+  if (!nextBillingDate) return null;
+  const renewalDate = parseISO(nextBillingDate);
   const now = new Date();
   const daysUntil = differenceInDays(renewalDate, now);
   const hoursUntil = differenceInHours(renewalDate, now);

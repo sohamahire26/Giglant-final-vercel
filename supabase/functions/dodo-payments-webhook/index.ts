@@ -28,58 +28,44 @@ serve(async (req) => {
       return new Response('Missing user_id', { status: 400 })
     }
 
-    // List of events that indicate a healthy/active subscription
-    const activeEvents = [
-      'subscription.active',
-      'subscription.renewed'
-    ];
-
-    // List of events that indicate an inactive or failed subscription
-    const inactiveEvents = [
-      'subscription.cancelled', 
-      'subscription.expired',
-      'subscription.failed'
-    ];
+    const activeEvents = ['subscription.active', 'subscription.renewed'];
+    const inactiveEvents = ['subscription.cancelled', 'subscription.expired', 'subscription.failed'];
 
     if (activeEvents.includes(eventType)) {
-      // Upsert subscription record
+      // Syncing with your manual schema: id, user_id, dodo_subscription_id, status, next_billing_date, customer_email
       await supabase.from('subscriptions').upsert({
         user_id: userId,
         dodo_subscription_id: data.subscription_id,
-        product_id: data.product_id,
         status: data.status,
-        renews_at: data.next_billing_date,
-        ends_at: data.period_end,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'dodo_subscription_id' })
+        next_billing_date: data.next_billing_date,
+        customer_email: data.customer?.email
+      }, { onConflict: 'dodo_subscription_id' });
 
       // Update profile to Pro
-      const isActive = data.status === 'active';
       await supabase.from('profiles')
         .update({ 
-          plan_type: isActive ? 'pro' : 'free',
+          plan_type: 'pro',
           subscription_id: data.subscription_id
         })
-        .eq('id', userId)
+        .eq('id', userId);
     }
 
     if (inactiveEvents.includes(eventType)) {
       await supabase.from('profiles')
         .update({ plan_type: 'free' })
-        .eq('id', userId)
+        .eq('id', userId);
         
-      // Also update the subscription status in the table if it exists
       await supabase.from('subscriptions')
-        .update({ status: data.status, updated_at: new Date().toISOString() })
-        .eq('dodo_subscription_id', data.subscription_id)
+        .update({ status: data.status })
+        .eq('dodo_subscription_id', data.subscription_id);
     }
 
     return new Response(JSON.stringify({ received: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
-    })
+    });
   } catch (error: any) {
-    console.error('[dodo-payments-webhook] Error:', error.message)
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+    console.error('[dodo-payments-webhook] Error:', error.message);
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 })

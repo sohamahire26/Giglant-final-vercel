@@ -42,8 +42,13 @@ serve(async (req) => {
 
     console.log(`[create-checkout] Creating checkout for ${user.email} (Product: ${productId})`);
 
-    // Using the test Dodo Payments API endpoint
-    const response = await fetch('https://test.dodopayments.com/checkouts', {
+    // --- TOGGLE THIS URL WHEN GOING LIVE ---
+    // TEST: https://test.dodopayments.com/checkouts
+    // LIVE: https://live.dodopayments.com/checkouts
+    const DODO_API_URL = 'https://test.dodopayments.com/checkouts';
+    // ---------------------------------------
+
+    const response = await fetch(DODO_API_URL, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${dodoApiKey}`,

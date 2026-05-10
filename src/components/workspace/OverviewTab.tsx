@@ -17,7 +17,8 @@ import {
   Edit2,
   Save,
   X,
-  Sparkles
+  Sparkles,
+  Infinity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,7 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
 
   const clientLink = `${window.location.origin}/client/${project.share_token}`;
   const planType = profile?.plan_type || 'free';
+  const isPro = planType === 'pro';
   const isLocked = isProjectLocked(project.created_at, planType);
 
   useEffect(() => {
@@ -96,17 +98,23 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           {/* Deletion/Locking Policy Card */}
-          <div className={`rounded-2xl border p-6 ${isLocked ? "border-red-500/20 bg-red-500/5" : "border-amber-500/20 bg-amber-500/5"}`}>
+          <div className={`rounded-2xl border p-6 ${isLocked ? "border-red-500/20 bg-red-500/5" : isPro ? "border-primary/20 bg-primary/5" : "border-amber-500/20 bg-amber-500/5"}`}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                {isLocked ? <AlertTriangle className="h-5 w-5 text-red-600" /> : <Clock className="h-5 w-5 text-amber-600" />}
+                {isLocked ? (
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                ) : isPro ? (
+                  <Sparkles className="h-5 w-5 text-primary" />
+                ) : (
+                  <Clock className="h-5 w-5 text-amber-600" />
+                )}
                 <h2 className="font-display text-lg font-semibold text-foreground">
-                  {isLocked ? "Project Locked" : "Project Status"}
+                  {isLocked ? "Project Locked" : isPro ? "Pro Access Active" : "Project Status"}
                 </h2>
               </div>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className={isLocked ? "text-red-700 hover:bg-red-500/10" : "text-amber-700 hover:bg-amber-500/10"}>
+                  <Button variant="ghost" size="sm" className={isLocked ? "text-red-700 hover:bg-red-500/10" : isPro ? "text-primary hover:bg-primary/10" : "text-amber-700 hover:bg-amber-500/10"}>
                     <ShieldAlert className="mr-1.5 h-4 w-4" /> Full Policy
                   </Button>
                 </DialogTrigger>
@@ -151,6 +159,15 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
                     <Button asChild className="mt-4 bg-red-600 hover:bg-red-700">
                       <Link to="/pricing"><Sparkles className="mr-2 h-4 w-4" /> Unlock with Pro</Link>
                     </Button>
+                  </>
+                ) : isPro ? (
+                  <>
+                    <div className="flex items-center justify-center gap-3 text-4xl font-bold text-primary font-display">
+                      <Infinity size={40} /> UNLIMITED
+                    </div>
+                    <p className="mt-2 text-sm text-primary/80">
+                      Your Pro subscription is active. This project will never expire.
+                    </p>
                   </>
                 ) : (
                   <>

@@ -1,6 +1,8 @@
+"use client";
+
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { Menu, X, ChevronDown, User as UserIcon } from "lucide-react";
+import { Menu, X, ChevronDown, User as UserIcon, Sparkles } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useAuth } from "./AuthProvider";
 
@@ -13,7 +15,9 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const location = useLocation();
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
+
+  const isPro = profile?.plan_type === 'pro';
 
   const navLinks = [
     { name: "Home", href: "/" },
@@ -70,7 +74,12 @@ const Navbar = () => {
             {session ? (
               <Link to="/profile" className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary/80">
                 <UserIcon size={16} />
-                Profile
+                <span>Profile</span>
+                {isPro && (
+                  <span className="ml-1 flex items-center gap-0.5 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">
+                    <Sparkles size={10} /> PRO
+                  </span>
+                )}
               </Link>
             ) : (
               <Link to="/login" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
@@ -138,6 +147,11 @@ const Navbar = () => {
               >
                 <UserIcon size={16} />
                 Profile
+                {isPro && (
+                  <span className="ml-1 flex items-center gap-0.5 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-white">
+                    <Sparkles size={10} /> PRO
+                  </span>
+                )}
               </Link>
             ) : (
               <Link

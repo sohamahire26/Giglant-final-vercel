@@ -48,6 +48,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (!error && data) {
         setProfile(data as unknown as Profile);
+      } else if (!error && !data) {
+        // If profile is missing (e.g. trigger delay), try to create it
+        console.log("[AuthProvider] Profile missing, attempting to create...");
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({ id: userId, plan_type: 'free' })
+          .select()
+          .maybeSingle();
+        
+        if (!createError && newProfile) {
+          setProfile(newProfile as unknown as Profile);
+        }
       }
     } catch (err) {
       console.error("[AuthProvider] Error fetching profile:", err);
@@ -104,15 +116,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     try {
       setLoading(true);
-      // Clear session from Supabase
       await supabase.auth.signOut();
-      
-      // Clear local state
       setSession(null);
       setUser(null);
       setProfile(null);
-      
-      // Redirect to home
       window.location.href = '/';
     } catch (error) {
       console.error("[AuthProvider] Error during sign out:", error);

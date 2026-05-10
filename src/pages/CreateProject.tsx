@@ -17,11 +17,19 @@ const CreateProject = () => {
   const [description, setDescription] = useState("");
   const [workType, setWorkType] = useState("general");
   const [loading, setLoading] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Wait for auth and profile to be fully loaded before showing the form
-  if (authLoading) {
+  // If profile is missing but user is logged in, try one automatic refresh
+  useEffect(() => {
+    if (!authLoading && session && !profile && !retrying) {
+      setRetrying(true);
+      refreshProfile().finally(() => setRetrying(false));
+    }
+  }, [authLoading, session, profile, refreshProfile, retrying]);
+
+  if (authLoading || retrying) {
     return (
       <Layout>
         <div className="flex min-h-[60vh] items-center justify-center">
@@ -33,15 +41,14 @@ const CreateProject = () => {
 
   if (!session) return <Navigate to="/login" replace />;
 
-  // If profile failed to load for some reason, show an error
   if (!profile) {
     return (
       <Layout>
         <div className="flex min-h-[60vh] items-center justify-center flex-col gap-4">
           <AlertCircle className="h-12 w-12 text-destructive" />
           <h1 className="text-xl font-bold">Profile Error</h1>
-          <p className="text-muted-foreground text-center max-w-xs">We couldn't load your account details. Please try refreshing the page.</p>
-          <Button onClick={() => window.location.reload()}>Refresh Page</Button>
+          <p className="text-muted-foreground text-center max-w-xs">We couldn't load your account details. This usually happens right after signing up while your profile is being prepared.</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       </Layout>
     );
@@ -52,7 +59,6 @@ const CreateProject = () => {
   const lifetimeLimitReached = !isPro && totalCreated >= 1;
 
   const handleCreate = async () => {
-    // Double check limit at the start of the function
     if (lifetimeLimitReached) {
       toast({ 
         title: "Lifetime Limit Reached", 
@@ -69,7 +75,6 @@ const CreateProject = () => {
 
     setLoading(true);
     try {
-      // 1. Create the project
       const { data, error } = await supabase
         .from("projects")
         .insert({
@@ -84,8 +89,6 @@ const CreateProject = () => {
       
       if (error) throw error;
 
-      // 2. Increment the lifetime counter in profiles
-      // We use the current value from the DB to ensure accuracy
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ total_projects_created: totalCreated + 1 })
@@ -93,13 +96,9 @@ const CreateProject = () => {
 
       if (profileError) {
         console.error("Failed to update creation counter:", profileError);
-        // We don't throw here because the project was already created, 
-        // but we log it for debugging.
       }
 
-      // 3. Force a profile refresh so the UI updates immediately
       await refreshProfile();
-      
       navigate(`/project/${data.id}`, { state: { isNew: true } });
     } catch (err: any) {
       toast({ title: "Failed to create project", description: err.message, variant: "destructive" });

@@ -63,10 +63,13 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
   const isLocked = isProjectLocked(project, planType);
 
   useEffect(() => {
-    const timer = setInterval(() => {
+    const updateTimers = () => {
       setTimeLeft(getTimeRemaining(project, planType));
       setDeletionLeft(getDeletionRemaining(project, planType));
-    }, 60000);
+    };
+
+    updateTimers();
+    const timer = setInterval(updateTimers, 60000);
     return () => clearInterval(timer);
   }, [project, planType]);
 

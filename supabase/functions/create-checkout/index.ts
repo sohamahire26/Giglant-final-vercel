@@ -42,6 +42,7 @@ serve(async (req) => {
 
     console.log(`[create-checkout] Creating checkout for ${user.email} (Product: ${productId})`);
 
+    // Using the correct Dodo Payments API endpoint
     const response = await fetch('https://api.dodopayments.com/v1/checkouts', {
       method: 'POST',
       headers: {

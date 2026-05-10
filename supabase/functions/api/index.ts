@@ -121,6 +121,16 @@ Deno.serve(async (req) => {
         return json({ success: true });
       }
 
+      case "run_project_cleanup": {
+        if (userEmail?.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
+          return json({ error: "Unauthorized" }, 401);
+        }
+        // Call the database function
+        const { error } = await supabase.rpc('cleanup_expired_projects');
+        if (error) throw error;
+        return json({ success: true });
+      }
+
       default:
         return json({ error: `Unknown action: ${action}` }, 400);
     }

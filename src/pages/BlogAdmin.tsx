@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Edit, Trash2, Loader2, ArrowLeft, FileText, Eye, MessageSquare, Bug, Lightbulb, User, Clock } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2, ArrowLeft, FileText, Eye, MessageSquare, Bug, Lightbulb, User, Clock, ShieldAlert, Sparkles, RefreshCw } from "lucide-react";
 import Layout from "@/components/Layout";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
-import { getAllBlogPosts, deleteBlogPost } from "@/lib/api";
+import { getAllBlogPosts, deleteBlogPost, runProjectCleanup } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +18,8 @@ const BlogAdmin = () => {
   const [posts, setPosts] = useState<any[]>([]);
   const [supportMessages, setSupportMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"blog" | "support">("blog");
+  const [activeTab, setActiveTab] = useState<"blog" | "support" | "maintenance">("blog");
+  const [cleanupLoading, setCleanupLoading] = useState(false);
   const { user, profile, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
@@ -27,7 +28,7 @@ const BlogAdmin = () => {
   useEffect(() => {
     if (isOwner) {
       if (activeTab === "blog") fetchPosts();
-      else fetchSupportMessages();
+      else if (activeTab === "support") fetchSupportMessages();
     }
   }, [isOwner, activeTab]);
 
@@ -83,6 +84,19 @@ const BlogAdmin = () => {
     }
   };
 
+  const handleRunCleanup = async () => {
+    if (!confirm("This will permanently delete all projects that have passed their deletion window. Continue?")) return;
+    setCleanupLoading(true);
+    try {
+      await runProjectCleanup();
+      toast({ title: "Cleanup Successful", description: "Expired projects have been removed from the database." });
+    } catch (err: any) {
+      toast({ title: "Cleanup Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setCleanupLoading(false);
+    }
+  };
+
   if (authLoading) {
     return <Layout><div className="flex py-24 justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></Layout>;
   }
@@ -103,23 +117,29 @@ const BlogAdmin = () => {
               </Link>
               <h1 className="font-display text-3xl font-bold">Admin Dashboard</h1>
             </div>
-            <div className="flex gap-2 rounded-xl border border-border bg-card p-1">
+            <div className="flex gap-2 rounded-xl border border-border bg-card p-1 overflow-x-auto">
               <button 
                 onClick={() => setActiveTab("blog")}
-                className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${activeTab === "blog" ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition-all whitespace-nowrap ${activeTab === "blog" ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
               >
                 Blog Posts
               </button>
               <button 
                 onClick={() => setActiveTab("support")}
-                className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${activeTab === "support" ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition-all whitespace-nowrap ${activeTab === "support" ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
               >
                 Support Messages
+              </button>
+              <button 
+                onClick={() => setActiveTab("maintenance")}
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition-all whitespace-nowrap ${activeTab === "maintenance" ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Maintenance
               </button>
             </div>
           </div>
 
-          {activeTab === "blog" ? (
+          {activeTab === "blog" && (
             <div className="space-y-4">
               <div className="flex justify-end">
                 <Button asChild>
@@ -163,7 +183,9 @@ const BlogAdmin = () => {
                 )}
               </div>
             </div>
-          ) : (
+          )}
+
+          {activeTab === "support" && (
             <div className="grid gap-6">
               {supportMessages.map(msg => (
                 <div key={msg.id} className="rounded-2xl border border-border bg-card p-6 shadow-sm">
@@ -213,7 +235,57 @@ const BlogAdmin = () => {
             </div>
           )}
 
-          {loading && (
+          {activeTab === "maintenance" && (
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
+                    <ShieldAlert size={24} />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-xl font-bold text-foreground">Project Lifecycle Maintenance</h2>
+                    <p className="text-sm text-muted-foreground">Manage the permanent deletion of expired projects.</p>
+                  </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="rounded-xl border border-border bg-muted/20 p-6">
+                    <h3 className="font-bold text-foreground mb-2 flex items-center gap-2">
+                      <RefreshCw size={16} className="text-primary" /> Manual Cleanup
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-6 leading-relaxed">
+                      Trigger the database function to permanently delete projects that have exceeded their 14-day (Free) or 90-day (Pro) deletion window.
+                    </p>
+                    <Button 
+                      onClick={handleRunCleanup} 
+                      disabled={cleanupLoading}
+                      className="w-full shadow-lg shadow-primary/20"
+                    >
+                      {cleanupLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                      Run Project Cleanup Now
+                    </Button>
+                  </div>
+
+                  <div className="rounded-xl border border-border bg-muted/20 p-6">
+                    <h3 className="font-bold text-foreground mb-2 flex items-center gap-2">
+                      <Sparkles size={16} className="text-primary" /> Automation Status
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
+                      To automate this, run the SQL command provided in the documentation in your Supabase SQL Editor.
+                    </p>
+                    <div className="rounded-lg bg-background p-3 border border-border">
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
+                        <span className="text-muted-foreground">Daily Cron Job</span>
+                        <span className="text-amber-600">Setup Required</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {loading && activeTab !== "maintenance" && (
             <div className="flex py-12 justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
           )}
         </div>

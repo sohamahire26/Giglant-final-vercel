@@ -51,3 +51,8 @@ export const saveBlogPost = (post: any) =>
 
 export const deleteBlogPost = (id: string) => 
   apiCall("api", { action: "delete_blog_post", id });
+
+/* ── Maintenance ── */
+
+export const runProjectCleanup = () =>
+  apiCall("api", { action: "run_project_cleanup" });

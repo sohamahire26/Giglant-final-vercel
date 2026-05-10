@@ -163,9 +163,6 @@ const ProjectWorkspace = () => {
                   </p>
                 </div>
               </div>
-              <Button asChild size="sm" className="bg-amber-600 hover:bg-amber-700 text-white">
-                <Link to="/pricing">Manage Subscription</Link>
-              </Button>
             </div>
           )}
 

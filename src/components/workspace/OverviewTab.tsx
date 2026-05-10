@@ -47,7 +47,7 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
   const { profile } = useAuth();
   const { toast } = useToast();
   const planType = profile?.plan_type || 'free';
-  const [timeLeft, setTimeLeft] = useState(getTimeRemaining(project.created_at, planType));
+  const [timeLeft, setTimeLeft] = useState(getTimeRemaining(project, planType));
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     name: project.name,
@@ -58,14 +58,14 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
 
   const clientLink = `${window.location.origin}/client/${project.share_token}`;
   const isPro = planType === 'pro';
-  const isLocked = isProjectLocked(project.created_at, planType);
+  const isLocked = isProjectLocked(project, planType);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft(getTimeRemaining(project.created_at, planType));
+      setTimeLeft(getTimeRemaining(project, planType));
     }, 60000);
     return () => clearInterval(timer);
-  }, [project.created_at, planType]);
+  }, [project, planType]);
 
   const copyLink = () => {
     navigator.clipboard.writeText(clientLink);
@@ -183,10 +183,13 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
                     ) : (
                       <>
                         <div className="flex items-center justify-center gap-3 text-4xl font-bold text-primary font-display">
-                          <Infinity size={40} /> ACTIVE
+                          {project.expires_at ? <Clock size={40} /> : <Infinity size={40} />} 
+                          {project.expires_at ? "EXTENDED" : "ACTIVE"}
                         </div>
                         <p className="mt-2 text-sm text-primary/80">
-                          Your Pro project is active. (60-day window)
+                          {project.expires_at 
+                            ? `Manual extension active until ${new Date(project.expires_at).toLocaleDateString()}.`
+                            : "Your Pro project is active. (60-day window)"}
                         </p>
                       </>
                     )}
@@ -197,7 +200,9 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
                       {timeLeft.days} {timeLeft.days === 1 ? 'Day' : 'Days'} Remaining
                     </div>
                     <p className="mt-2 text-sm text-amber-700/80">
-                      Free projects are locked 7 days after creation.
+                      {project.expires_at 
+                        ? `Manual extension active until ${new Date(project.expires_at).toLocaleDateString()}.`
+                        : "Free projects are locked 7 days after creation."}
                     </p>
                   </>
                 )}

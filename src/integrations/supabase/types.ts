@@ -192,6 +192,7 @@ export type Database = {
           updated_at: string
           work_type: string | null
           user_id: string | null
+          expires_at: string | null
         }
         Insert: {
           client_name?: string | null
@@ -204,6 +205,7 @@ export type Database = {
           updated_at?: string
           work_type?: string | null
           user_id?: string | null
+          expires_at?: string | null
         }
         Update: {
           client_name?: string | null
@@ -216,6 +218,7 @@ export type Database = {
           updated_at?: string
           work_type?: string | null
           user_id?: string | null
+          expires_at?: string | null
         }
         Relationships: []
       }
@@ -232,6 +235,7 @@ export type Database = {
           ends_at: string | null
           created_at: string | null
           updated_at: string | null
+          manual_expiry: string | null
         }
         Insert: {
           id?: string
@@ -245,6 +249,7 @@ export type Database = {
           ends_at?: string | null
           created_at?: string | null
           updated_at?: string | null
+          manual_expiry?: string | null
         }
         Update: {
           id?: string
@@ -258,6 +263,7 @@ export type Database = {
           ends_at?: string | null
           created_at?: string | null
           updated_at?: string | null
+          manual_expiry?: string | null
         }
         Relationships: []
       }
@@ -288,7 +294,7 @@ export type Database = {
         }
         Update: {
           id?: string
-          user_id?: string
+          user_id: string
           type?: string
           subject?: string
           message?: string

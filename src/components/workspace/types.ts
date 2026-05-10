@@ -9,6 +9,7 @@ export interface Project {
   share_token: string;
   drive_folder_url: string | null;
   created_at: string;
+  expires_at?: string | null;
 }
 
 export interface ProjectFile {
@@ -88,10 +89,17 @@ export const parseTs = (input: string): number | null => {
   return null;
 };
 
-export const getTimeRemaining = (createdAt: string, planType: string = 'free') => {
-  const created = new Date(createdAt).getTime();
-  const windowDays = planType === 'pro' ? 60 : 7;
-  const expires = created + (windowDays * 24 * 60 * 60 * 1000);
+export const getTimeRemaining = (project: Project, planType: string = 'free') => {
+  let expires: number;
+  
+  if (project.expires_at) {
+    expires = new Date(project.expires_at).getTime();
+  } else {
+    const created = new Date(project.created_at).getTime();
+    const windowDays = planType === 'pro' ? 60 : 7;
+    expires = created + (windowDays * 24 * 60 * 60 * 1000);
+  }
+
   const now = new Date().getTime();
   const diff = expires - now;
 
@@ -105,8 +113,12 @@ export const getTimeRemaining = (createdAt: string, planType: string = 'free') =
   return { days, hours, minutes, seconds, expired: false };
 };
 
-export const isProjectLocked = (projectCreatedAt: string, planType: string) => {
-  const created = parseISO(projectCreatedAt);
+export const isProjectLocked = (project: Project, planType: string) => {
+  if (project.expires_at) {
+    return new Date() > new Date(project.expires_at);
+  }
+
+  const created = parseISO(project.created_at);
   const now = new Date();
   const daysOld = differenceInDays(now, created);
   
@@ -114,19 +126,23 @@ export const isProjectLocked = (projectCreatedAt: string, planType: string) => {
     return daysOld > 7;
   }
   
-  // Pro users have a 60 day window
   return daysOld > 60;
 };
 
-export const getRenewalStatus = (nextBillingDate: string | null) => {
-  if (!nextBillingDate) return null;
-  const renewalDate = parseISO(nextBillingDate);
+export const getRenewalStatus = (subscription: any) => {
+  if (!subscription) return null;
+  
+  // Prioritize manual expiry if set
+  const targetDateStr = subscription.manual_expiry || subscription.renews_at || subscription.ends_at;
+  if (!targetDateStr) return null;
+
+  const targetDate = parseISO(targetDateStr);
   const now = new Date();
-  const daysUntil = differenceInDays(renewalDate, now);
-  const hoursUntil = differenceInHours(renewalDate, now);
+  const daysUntil = differenceInDays(targetDate, now);
+  const hoursUntil = differenceInHours(targetDate, now);
   
   if (hoursUntil <= 0) return "expired";
-  if (hoursUntil <= 24) return `h-${hoursUntil}`; // Hourly countdown
+  if (hoursUntil <= 24) return `h-${hoursUntil}`;
   if (daysUntil <= 1) return "1d";
   if (daysUntil <= 2) return "2d";
   if (daysUntil <= 3) return "3d";

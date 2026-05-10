@@ -19,7 +19,8 @@ import {
   X,
   Sparkles,
   Infinity,
-  MessageCircle
+  MessageCircle,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +35,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { Project } from "./types";
-import { getTimeRemaining, isProjectLocked } from "./types";
+import { getTimeRemaining, isProjectLocked, getDeletionRemaining } from "./types";
 import { useAuth } from "@/components/AuthProvider";
 import { Link } from "react-router-dom";
 
@@ -48,6 +49,7 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
   const { toast } = useToast();
   const planType = profile?.plan_type || 'free';
   const [timeLeft, setTimeLeft] = useState(getTimeRemaining(project, planType));
+  const [deletionLeft, setDeletionLeft] = useState(getDeletionRemaining(project, planType));
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     name: project.name,
@@ -63,6 +65,7 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(getTimeRemaining(project, planType));
+      setDeletionLeft(getDeletionRemaining(project, planType));
     }, 60000);
     return () => clearInterval(timer);
   }, [project, planType]);
@@ -122,31 +125,37 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
                     <ShieldAlert className="mr-1.5 h-4 w-4" /> Full Policy
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-md">
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                       <AlertTriangle className="h-5 w-5 text-amber-600" />
-                      Project Locking Policy
+                      Project Lifecycle Policy
                     </DialogTitle>
                     <DialogDescription className="pt-4 space-y-4 text-sm leading-relaxed">
                       <p>
                         To maintain platform performance and privacy, Giglant applies the following rules:
                       </p>
-                      <div className="rounded-lg bg-muted p-4 space-y-2">
-                        <p className="font-semibold text-foreground">Free Plan:</p>
-                        <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                          <li>Projects are locked after 7 days.</li>
-                          <li>Review links are disabled when locked.</li>
-                          <li>Workspace becomes read-only.</li>
-                        </ul>
-                        <p className="font-semibold text-foreground mt-4">Pro Plan:</p>
-                        <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                          <li>Unlimited projects.</li>
-                          <li>Projects remain active for 60 days.</li>
-                          <li>Review links are disabled when locked.</li>
-                          <li>Workspace becomes read-only.</li>
-                        </ul>
+                      <div className="rounded-lg bg-muted p-4 space-y-3">
+                        <div>
+                          <p className="font-bold text-foreground">Free Plan:</p>
+                          <ul className="list-disc list-inside space-y-1 text-muted-foreground text-xs">
+                            <li>Locked after 7 days.</li>
+                            <li>Permanently deleted after 14 days.</li>
+                            <li className="text-amber-600 font-medium">Limit: 1 lifetime project creation.</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="font-bold text-foreground">Pro Plan:</p>
+                          <ul className="list-disc list-inside space-y-1 text-muted-foreground text-xs">
+                            <li>Locked after 60 days.</li>
+                            <li>Permanently deleted after 90 days.</li>
+                            <li className="text-primary font-medium">Extension: Request more time via support during the 30-day locked window.</li>
+                          </ul>
+                        </div>
                       </div>
+                      <p className="text-[11px] text-muted-foreground italic">
+                        * Deletion is permanent and cannot be undone. All files and comments will be removed.
+                      </p>
                     </DialogDescription>
                   </DialogHeader>
                 </DialogContent>
@@ -158,12 +167,27 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
                 {isLocked ? (
                   <>
                     <div className="text-4xl font-bold text-red-600 font-display">LOCKED</div>
-                    <p className="mt-2 text-sm text-red-700/80">
-                      This project is locked. {isPro ? "The 60-day window has ended." : "The 7-day free window has ended."}
+                    <div className="mt-3 flex items-center justify-center gap-2 text-sm font-bold text-red-700">
+                      <Trash2 size={16} />
+                      DELETION IN {deletionLeft.days} {deletionLeft.days === 1 ? 'DAY' : 'DAYS'}
+                    </div>
+                    <p className="mt-2 text-xs text-red-700/70 max-w-xs mx-auto">
+                      {isPro 
+                        ? "Your 60-day window has ended. You have 30 days to request an extension before permanent deletion." 
+                        : "Your 7-day window has ended. This project will be permanently deleted in 7 days."}
                     </p>
-                    <Button asChild className="mt-4 bg-red-600 hover:bg-red-700">
-                      <Link to="/pricing"><Sparkles className="mr-2 h-4 w-4" /> {isPro ? "Manage Subscription" : "Unlock with Pro"}</Link>
-                    </Button>
+                    <div className="mt-6 flex flex-col gap-2">
+                      {!isPro && (
+                        <Button asChild className="bg-red-600 hover:bg-red-700">
+                          <Link to="/pricing"><Sparkles className="mr-2 h-4 w-4" /> Unlock with Pro</Link>
+                        </Button>
+                      )}
+                      {isPro && (
+                        <Button asChild variant="outline" className="border-red-200 text-red-700 hover:bg-red-50">
+                          <Link to="/support"><MessageCircle className="mr-2 h-4 w-4" /> Request Extension</Link>
+                        </Button>
+                      )}
+                    </div>
                   </>
                 ) : isPro ? (
                   <>
@@ -204,6 +228,9 @@ const OverviewTab = ({ project, onUpdate }: Props) => {
                         ? `Manual extension active until ${new Date(project.expires_at).toLocaleDateString()}.`
                         : "Free projects are locked 7 days after creation."}
                     </p>
+                    <div className="mt-4 rounded-lg bg-amber-500/10 p-3 text-[10px] text-amber-700 font-medium">
+                      Note: Project is permanently deleted 7 days after locking.
+                    </div>
                   </>
                 )}
               </div>

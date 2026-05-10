@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Project, ProjectFile, FileComment } from "@/components/workspace/types";
-import { isProjectLocked, getRenewalStatus } from "@/components/workspace/types";
+import { isProjectLocked, getRenewalStatus, getDeletionRemaining } from "@/components/workspace/types";
 import OverviewTab from "@/components/workspace/OverviewTab";
 import FilesTab from "@/components/workspace/FilesTab";
 import RevisionsTab from "@/components/workspace/RevisionsTab";
@@ -130,6 +130,7 @@ const ProjectWorkspace = () => {
   const isPro = planType === 'pro';
   const isLocked = isProjectLocked(project, planType);
   const renewalStatus = getRenewalStatus(subscription);
+  const deletionLeft = getDeletionRemaining(project, planType);
 
   return (
     <Layout>
@@ -213,16 +214,29 @@ const ProjectWorkspace = () => {
                   </div>
                   <h2 className="font-display text-2xl font-bold text-foreground">Project Locked</h2>
                   <p className="mt-3 text-muted-foreground">
-                    This project is locked because your free trial period (7 days) has ended or your subscription expired.
+                    This project is locked because your {isPro ? "60-day" : "7-day"} window has ended.
                   </p>
+                  <div className="mt-4 flex items-center justify-center gap-2 text-sm font-bold text-red-600">
+                    <Trash2 size={16} />
+                    PERMANENT DELETION IN {deletionLeft.days} {deletionLeft.days === 1 ? 'DAY' : 'DAYS'}
+                  </div>
                   <div className="mt-8 flex flex-col gap-3">
-                    <Button asChild className="w-full py-6 text-lg font-bold shadow-lg shadow-primary/20">
-                      <Link to="/pricing">
-                        <Sparkles className="mr-2 h-5 w-5" /> Upgrade to Pro to Unlock
-                      </Link>
-                    </Button>
+                    {!isPro && (
+                      <Button asChild className="w-full py-6 text-lg font-bold shadow-lg shadow-primary/20">
+                        <Link to="/pricing">
+                          <Sparkles className="mr-2 h-5 w-5" /> Upgrade to Pro to Unlock
+                        </Link>
+                      </Button>
+                    )}
+                    {isPro && (
+                      <Button asChild className="w-full py-6 text-lg font-bold shadow-lg shadow-primary/20">
+                        <Link to="/support">
+                          <MessageCircle className="mr-2 h-5 w-5" /> Request Extension
+                        </Link>
+                      </Button>
+                    )}
                     <Button variant="outline" onClick={() => setActiveTab("overview")} className="w-full">
-                      View Overview
+                      View Overview & Policy
                     </Button>
                   </div>
                 </div>

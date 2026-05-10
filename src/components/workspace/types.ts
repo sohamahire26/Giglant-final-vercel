@@ -113,6 +113,18 @@ export const getTimeRemaining = (project: Project, planType: string = 'free') =>
   return { days, hours, minutes, seconds, expired: false };
 };
 
+export const getDeletionRemaining = (project: Project, planType: string = 'free') => {
+  const created = new Date(project.created_at).getTime();
+  const deletionDays = planType === 'pro' ? 90 : 14;
+  const deletionTime = created + (deletionDays * 24 * 60 * 60 * 1000);
+  
+  const now = new Date().getTime();
+  const diff = deletionTime - now;
+
+  if (diff <= 0) return { days: 0, expired: true };
+  return { days: Math.floor(diff / (1000 * 60 * 60 * 24)), expired: false };
+};
+
 export const isProjectLocked = (project: Project, planType: string) => {
   if (project.expires_at) {
     return new Date() > new Date(project.expires_at);

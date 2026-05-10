@@ -142,7 +142,7 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
           <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold">?</div>
           <h2 className="font-display text-lg font-semibold text-foreground">How to set permissions correctly</h2>
         </div>
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-8 md:grid-cols-2">
           <div className="space-y-4">
             <div className="flex gap-4">
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">1</div>
@@ -160,12 +160,21 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">4</div>
               <p className="text-sm text-muted-foreground">Click <strong>Copy link</strong> and paste it into the form below.</p>
             </div>
+            <div className="mt-4 rounded-xl border border-border bg-primary/5 p-4 flex items-start gap-3">
+              <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <p className="text-xs font-medium text-muted-foreground">
+                Setting permissions to "Anyone with the link" allows Giglant to securely embed the preview for your client without requiring them to sign in to Google.
+              </p>
+            </div>
           </div>
-          <div className="rounded-xl border border-border bg-muted/30 p-4 flex flex-col items-center justify-center text-center">
-            <ShieldCheck className="h-12 w-12 text-primary/40 mb-3" />
-            <p className="text-xs font-medium text-muted-foreground">
-              Setting permissions to "Anyone with the link" allows Giglant to securely embed the preview for your client without requiring them to sign in to Google.
-            </p>
+          <div className="flex flex-col gap-4">
+            <div className="rounded-xl border border-border bg-muted/30 p-2 overflow-hidden shadow-sm">
+              <img 
+                src="dyad-media://media/Giglant-final-vercel/.dyad/media/cecfe0ffb05e43c4f636f462e9d2392a.PNG" 
+                alt="Google Drive Permissions Tutorial" 
+                className="w-full h-auto rounded-lg"
+              />
+            </div>
           </div>
         </div>
       </div>

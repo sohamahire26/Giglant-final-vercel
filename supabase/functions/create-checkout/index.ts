@@ -42,8 +42,8 @@ serve(async (req) => {
 
     console.log(`[create-checkout] Creating checkout for ${user.email} (Product: ${productId})`);
 
-    // Updated request body to include product_cart as required by the API
-    const response = await fetch('https://live.dodopayments.com/checkouts', {
+    // Using the test Dodo Payments API endpoint
+    const response = await fetch('https://test.dodopayments.com/checkouts', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${dodoApiKey}`,

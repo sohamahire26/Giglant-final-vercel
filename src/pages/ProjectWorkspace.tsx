@@ -35,7 +35,7 @@ const tabs = [
   { id: "files", label: "Files & Feedback", icon: MessageSquare },
   { id: "revisions", label: "Revisions", icon: CheckSquare },
   { id: "delivery", label: "Delivery", icon: Send },
-  { id: "invoice", label: "Invoice", icon: Receipt },
+  { id: "invoice", label: "Invoice", icon: Receipt, isPro: true },
 ];
 
 const ProjectWorkspace = () => {
@@ -127,8 +127,9 @@ const ProjectWorkspace = () => {
   );
 
   const planType = profile?.plan_type || 'free';
-  const isLocked = isProjectLocked(project.created_at, planType);
-  const renewalStatus = getRenewalStatus(subscription?.renews_at);
+  const isPro = planType === 'pro';
+  const isLocked = isProjectLocked(project, planType);
+  const renewalStatus = getRenewalStatus(subscription);
 
   return (
     <Layout>
@@ -147,7 +148,7 @@ const ProjectWorkspace = () => {
       <section className="section-padding">
         <div className="container-tight">
           {/* Renewal Disclaimer */}
-          {planType === 'pro' && renewalStatus && (
+          {isPro && renewalStatus && (
             <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
               <div className="flex items-center gap-3">
                 <AlertTriangle className="h-5 w-5 text-amber-600" />
@@ -197,7 +198,11 @@ const ProjectWorkspace = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors ${activeTab === tab.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}
               >
-                <tab.icon className="h-4 w-4" /> {tab.label}
+                <tab.icon className="h-4 w-4" /> 
+                {tab.label}
+                {tab.isPro && !isPro && (
+                  <span className="ml-1.5 rounded bg-primary/10 px-1 py-0.5 text-[8px] font-bold text-primary">PRO</span>
+                )}
               </button>
             ))}
           </div>

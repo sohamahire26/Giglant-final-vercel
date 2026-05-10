@@ -8,6 +8,7 @@ import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { isProjectLocked } from "@/components/workspace/types";
 
 const Dashboard = () => {
   const { user, session, profile, loading: authLoading } = useAuth();
@@ -68,8 +69,8 @@ const Dashboard = () => {
   );
 
   const isPro = profile?.plan_type === 'pro';
-  // Strict lifetime limit check
-  const lifetimeLimitReached = !isPro && (profile?.total_projects_created || 0) >= 1;
+  const totalCreated = profile?.total_projects_created || 0;
+  const lifetimeLimitReached = !isPro && totalCreated >= 1;
 
   return (
     <Layout>
@@ -78,9 +79,18 @@ const Dashboard = () => {
         <div className="container-tight">
           <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="font-display text-3xl font-bold text-foreground">My Projects</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="font-display text-3xl font-bold text-foreground">My Projects</h1>
+                {isPro && (
+                  <span className="flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-[10px] font-bold text-white">
+                    <Sparkles size={10} /> PRO UNLIMITED
+                  </span>
+                )}
+              </div>
               <p className="text-muted-foreground">
-                {isPro ? "Unlimited workspaces for your business." : "Manage your one-time free workspace."}
+                {isPro 
+                  ? "You have unlimited workspaces for your business." 
+                  : `Free Plan: ${totalCreated}/1 lifetime project created.`}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -100,7 +110,7 @@ const Dashboard = () => {
               )}
               <Button asChild size="lg" className="shadow-lg shadow-primary/20" disabled={lifetimeLimitReached}>
                 {lifetimeLimitReached ? (
-                  <Link to="/projects/new"><Lock className="mr-2 h-5 w-5" /> Limit Reached</Link>
+                  <Link to="/pricing"><Lock className="mr-2 h-5 w-5" /> Limit Reached</Link>
                 ) : (
                   <Link to="/projects/new"><Plus className="mr-2 h-5 w-5" /> New Project</Link>
                 )}
@@ -113,7 +123,7 @@ const Dashboard = () => {
               <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold text-amber-800">Lifetime Limit Reached</p>
-                <p className="text-xs text-amber-700">Free accounts are limited to 1 lifetime project creation. Upgrade to Pro for unlimited projects and permanent storage.</p>
+                <p className="text-xs text-amber-700">Free accounts are limited to 1 lifetime project creation. Upgrade to Pro for unlimited projects and 60-day active windows.</p>
               </div>
             </div>
           )}
@@ -134,45 +144,32 @@ const Dashboard = () => {
           ) : filteredProjects.length > 0 ? (
             <div className="grid gap-4">
               {filteredProjects.map((project) => {
-                const created = new Date(project.created_at).getTime();
-                const now = new Date().getTime();
-                const diffDays = (now - created) / (1000 * 60 * 60 * 24);
-                
-                const isPro = profile?.plan_type === 'pro';
-                const expiryDays = isPro ? 90 : 30;
-                const isExpired = diffDays > expiryDays;
-                const isLocked = !isPro && diffDays > 7 && !isExpired;
+                const isLocked = isProjectLocked(project, isPro ? 'pro' : 'free');
 
                 return (
                   <Link
                     key={project.id}
                     to={`/project/${project.id}`}
                     className={`group flex items-center justify-between rounded-2xl border p-5 transition-all ${
-                      isExpired 
-                        ? "border-border bg-muted/50 opacity-60 grayscale" 
-                        : isLocked
-                        ? "border-amber-500/20 bg-amber-500/5"
+                      isLocked
+                        ? "border-amber-500/20 bg-amber-500/5 opacity-80"
                         : "border-border bg-card hover:border-primary/50 hover:shadow-md"
                     }`}
                   >
                     <div className="flex items-center gap-4">
                       <div className={`flex h-12 w-12 items-center justify-center rounded-xl transition-colors ${
-                        isExpired
-                          ? "bg-muted text-muted-foreground"
-                          : isLocked 
+                        isLocked 
                           ? "bg-amber-500/20 text-amber-600" 
                           : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white"
                       }`}>
-                        {isExpired ? <Archive size={24} /> : isLocked ? <Lock size={24} /> : <FolderOpen size={24} />}
+                        {isLocked ? <Lock size={24} /> : <FolderOpen size={24} />}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="font-display font-semibold text-foreground">{project.name}</h3>
-                          {isExpired ? (
-                            <span className="rounded-full bg-muted-foreground/20 px-2 py-0.5 text-[10px] font-bold text-muted-foreground">EXPIRED</span>
-                          ) : isLocked ? (
+                          {isLocked && (
                             <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">LOCKED</span>
-                          ) : null}
+                          )}
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1"><Clock size={12} /> {new Date(project.created_at).toLocaleDateString()}</span>

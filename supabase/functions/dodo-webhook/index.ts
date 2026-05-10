@@ -7,6 +7,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -21,19 +22,19 @@ serve(async (req) => {
     const data = body.data
     const userId = data.metadata?.user_id
 
-    console.log(`[dodo-payments-webhook] Received ${eventType} for user ${userId}`);
+    console.log(`[dodo-webhook] Received ${eventType} for user ${userId}`);
 
     if (!userId) {
-      console.error("[dodo-payments-webhook] Missing user_id in metadata");
-      return new Response('Missing user_id', { status: 400 })
+      console.error("[dodo-webhook] Missing user_id in metadata");
+      return new Response('Missing user_id in metadata', { status: 400 })
     }
 
-    const activeEvents = ['subscription.active', 'subscription.renewed'];
-    const inactiveEvents = ['subscription.cancelled', 'subscription.expired', 'subscription.failed'];
-
-    if (activeEvents.includes(eventType)) {
-      // Syncing with your manual schema: id, user_id, dodo_subscription_id, status, next_billing_date, customer_email
-      await supabase.from('subscriptions').upsert({
+    // Logic for successful subscription (Active or Renewed)
+    if (eventType === 'subscription.active' || eventType === 'subscription.renewed') {
+      console.log(`[dodo-webhook] Activating subscription for user: ${userId}`);
+      
+      // Update or Insert into subscriptions table
+      const { error: subError } = await supabase.from('subscriptions').upsert({
         user_id: userId,
         dodo_subscription_id: data.subscription_id,
         status: data.status,
@@ -41,23 +42,36 @@ serve(async (req) => {
         customer_email: data.customer?.email
       }, { onConflict: 'dodo_subscription_id' });
 
-      // Update profile to Pro
-      await supabase.from('profiles')
+      if (subError) throw subError;
+
+      // Update user profile to Pro
+      const { error: profileError } = await supabase.from('profiles')
         .update({ 
           plan_type: 'pro',
           subscription_id: data.subscription_id
         })
         .eq('id', userId);
+
+      if (profileError) throw profileError;
     }
 
-    if (inactiveEvents.includes(eventType)) {
-      await supabase.from('profiles')
+    // Logic for ending subscription (Cancelled, Expired, or Failed)
+    if (eventType === 'subscription.cancelled' || eventType === 'subscription.expired' || eventType === 'subscription.failed') {
+      console.log(`[dodo-webhook] Deactivating subscription for user: ${userId}`);
+      
+      // Downgrade user profile to Free
+      const { error: profileError } = await supabase.from('profiles')
         .update({ plan_type: 'free' })
         .eq('id', userId);
+
+      if (profileError) throw profileError;
         
-      await supabase.from('subscriptions')
+      // Update status in subscriptions table
+      const { error: subError } = await supabase.from('subscriptions')
         .update({ status: data.status })
         .eq('dodo_subscription_id', data.subscription_id);
+
+      if (subError) throw subError;
     }
 
     return new Response(JSON.stringify({ received: true }), {
@@ -65,7 +79,7 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error: any) {
-    console.error('[dodo-payments-webhook] Error:', error.message);
+    console.error('[dodo-webhook] Error processing webhook:', error.message);
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 })

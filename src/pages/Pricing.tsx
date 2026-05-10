@@ -38,17 +38,17 @@ const PricingPage = () => {
       });
 
       if (error) {
-        // Handle Supabase function invocation errors
-        let errorMessage = "Could not start checkout. Please try again.";
+        // Extract the most descriptive error message possible
+        let errorMessage = error.message;
         
-        try {
-          // Try to parse the error body if it's a JSON string from the edge function
-          const errorBody = await error.context?.json();
-          if (errorBody?.details || errorBody?.error) {
-            errorMessage = errorBody.details || errorBody.error;
+        // If the error has a context with a JSON body (common for Supabase Edge Functions)
+        if (error.context && typeof error.context.json === 'function') {
+          try {
+            const errorBody = await error.context.json();
+            errorMessage = errorBody.error || errorBody.message || errorMessage;
+          } catch (e) {
+            // Fallback to original error message
           }
-        } catch (e) {
-          errorMessage = error.message || errorMessage;
         }
         
         throw new Error(errorMessage);
@@ -64,7 +64,7 @@ const PricingPage = () => {
       setLoading(null);
       toast({
         title: "Checkout Failed",
-        description: error.message,
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     }

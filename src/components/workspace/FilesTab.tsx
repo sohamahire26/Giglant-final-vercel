@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Plus, Trash2, ExternalLink, CheckSquare, Square, Clock, FileEdit, Share2, Video, FileText, ShieldCheck } from "lucide-react";
+import { Plus, Trash2, ExternalLink, CheckSquare, Square, Clock, FileEdit, Share2, Video, FileText, ShieldCheck, AlertCircle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import FAQSection from "@/components/FAQSection";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Project, ProjectFile, FileComment } from "./types";
 import { extractDriveFileId, parseTs, fmtTs } from "./types";
 
@@ -126,36 +127,44 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
         <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">Files and Feedback</h1>
       </div>
 
+      {/* CRITICAL NOTICE: Google Drive Permissions */}
+      <Alert variant="destructive" className="border-red-500/50 bg-red-500/5">
+        <AlertCircle className="h-5 w-5" />
+        <AlertTitle className="font-display font-bold text-red-700">CRITICAL: Google Drive Permissions</AlertTitle>
+        <AlertDescription className="text-red-600/90">
+          For the preview to work, you <strong>MUST</strong> set your Google Drive file to <strong>"Anyone with the link"</strong>. 
+          If it's set to "Restricted", your client won't be able to see the file.
+        </AlertDescription>
+      </Alert>
+
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="flex items-center gap-2 mb-6">
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-bold">i</div>
-          <h2 className="font-display text-lg font-semibold text-foreground">For Freelancers — How to Use</h2>
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold">?</div>
+          <h2 className="font-display text-lg font-semibold text-foreground">How to set permissions correctly</h2>
         </div>
-        <div className="grid gap-4 md:grid-cols-4">
-          {[
-            { step: "1", title: "Upload to Drive", desc: "Upload your video to Google Drive" },
-            { step: "2", title: "Get Link", desc: "Right-click the video -> 'Get link'" },
-            { step: "3", title: "Paste Here", desc: "Copy the link and paste it below" },
-            { step: "4", title: "Copy Magic Link", desc: "Share it to your Client" },
-          ].map(s => (
-            <div key={s.step} className="rounded-xl border border-border bg-background p-4 text-center">
-              <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-600 text-white text-sm font-bold">{s.step}</div>
-              <p className="text-sm font-semibold text-foreground">{s.title}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{s.desc}</p>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">1</div>
+              <p className="text-sm text-muted-foreground">Right-click your file in Google Drive and select <strong>Share</strong>.</p>
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
-        <div className="flex items-start gap-3">
-          <div className="shrink-0 mt-0.5">
-            <FileEdit className="h-4 w-4 text-amber-600" />
+            <div className="flex gap-4">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">2</div>
+              <p className="text-sm text-muted-foreground">Under <strong>General access</strong>, click the dropdown and change "Restricted" to <strong>Anyone with the link</strong>.</p>
+            </div>
+            <div className="flex gap-4">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">3</div>
+              <p className="text-sm text-muted-foreground">Ensure the role is set to <strong>Viewer</strong> (this is the default).</p>
+            </div>
+            <div className="flex gap-4">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">4</div>
+              <p className="text-sm text-muted-foreground">Click <strong>Copy link</strong> and paste it into the form below.</p>
+            </div>
           </div>
-          <div className="flex-1">
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium text-amber-600">Pro tip:</span> Want cleaner file names before uploading?
-              Use the <span className="font-semibold text-amber-600">File Renamer</span> tab in this workspace to automatically rename messy files with meaningful names.
+          <div className="rounded-xl border border-border bg-muted/30 p-4 flex flex-col items-center justify-center text-center">
+            <ShieldCheck className="h-12 w-12 text-primary/40 mb-3" />
+            <p className="text-xs font-medium text-muted-foreground">
+              Setting permissions to "Anyone with the link" allows Giglant to securely embed the preview for your client without requiring them to sign in to Google.
             </p>
           </div>
         </div>

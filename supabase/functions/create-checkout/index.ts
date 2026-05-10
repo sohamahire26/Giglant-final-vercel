@@ -52,7 +52,7 @@ serve(async (req) => {
         product_id: productId,
         quantity: 1,
         customer: { email: user.email },
-        metadata: { user_id: user.id },
+        metadata: { supabase_user_id: user.id },
         return_url: `${req.headers.get('origin') || 'https://giglant.com'}/dashboard?payment=success`
       })
     });

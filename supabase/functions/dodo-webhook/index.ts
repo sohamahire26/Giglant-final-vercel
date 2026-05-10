@@ -20,13 +20,13 @@ serve(async (req) => {
     const body = await req.json()
     const eventType = body.type
     const data = body.data
-    const userId = data.metadata?.user_id
+    const userId = data.metadata?.supabase_user_id
 
     console.log(`[dodo-webhook] Received ${eventType} for user ${userId}`);
 
     if (!userId) {
-      console.error("[dodo-webhook] Missing user_id in metadata");
-      return new Response('Missing user_id in metadata', { status: 400 })
+      console.error("[dodo-webhook] Missing supabase_user_id in metadata");
+      return new Response('Missing supabase_user_id in metadata', { status: 400 })
     }
 
     // Logic for successful subscription (Active or Renewed)

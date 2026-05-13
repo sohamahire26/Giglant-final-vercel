@@ -16,8 +16,8 @@ const PricingPage = () => {
   const [loading, setLoading] = useState<string | null>(null);
 
   // --- CONFIGURATION ---
-  // Using your provided Test Product ID
-  const DODO_PRODUCT_ID = "pdt_0NeWGGBQ1LHQF9Z4wqf1C"; 
+  // Using your provided Live Product ID
+  const DODO_PRODUCT_ID = "pdt_0NeP4C1Jnt72eudV6ieZk"; 
   // ---------------------
 
   const handleSubscribe = async (tierName: string) => {
@@ -133,7 +133,7 @@ const PricingPage = () => {
   return (
     <Layout>
       <SEOHead 
-        title="Pricing — Giglant Video Editing Workflow Tools" 
+        title="Pricing — Giglant" 
         description="Choose the right plan for your freelance workflow. From free tools to unlimited project workspaces." 
       />
       <section className="section-padding hero-bg">

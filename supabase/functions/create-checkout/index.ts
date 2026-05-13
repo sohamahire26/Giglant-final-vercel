@@ -44,7 +44,8 @@ serve(async (req) => {
 
     console.log(`[create-checkout] Creating checkout for ${user.email} (Product: ${productId})`);
 
-    const DODO_API_URL = 'https://test.dodopayments.com/checkouts';
+    // SWITCHED TO LIVE URL
+    const DODO_API_URL = 'https://live.dodopayments.com/checkouts';
 
     const response = await fetch(DODO_API_URL, {
       method: 'POST',

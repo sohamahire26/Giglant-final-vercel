@@ -142,8 +142,7 @@ export type Database = {
       project_files: {
         Row: {
           created_at: string
-          drive_file_id: string | null
-          drive_url: string
+          storage_path: string
           file_type: string
           filename: string
           id: string
@@ -152,18 +151,16 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          drive_file_id?: string | null
-          drive_url?: string
-          file_type?: string
-          filename?: string
+          storage_path: string
+          file_type: string
+          filename: string
           id?: string
-          project_id?: string
+          project_id: string
           sort_order?: number | null
         }
         Update: {
           created_at?: string
-          drive_file_id?: string | null
-          drive_url?: string
+          storage_path?: string
           file_type?: string
           filename?: string
           id?: string

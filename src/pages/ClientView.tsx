@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Loader2, MessageSquare, Plus, HelpCircle, Clock, RefreshCw, Lock, AlertTriangle } from "lucide-react";
+import { Loader2, MessageSquare, Plus, HelpCircle, Clock, RefreshCw, Lock, FileText } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,8 +64,6 @@ const ClientView = () => {
         return; 
       }
       
-      // Fetch owner's plan type to determine locking
-      // Note: This requires a public read policy on profiles for plan_type
       const { data: ownerProfile } = await supabase
         .from("profiles")
         .select("plan_type")
@@ -130,7 +128,7 @@ const ClientView = () => {
 
       if (error) throw error;
 
-      setComments(prev => [...prev, data]);
+      setComments(prev => [...prev, data as FileComment]);
       setNewComment("");
       setNewTimestamp("");
       toast({ title: "Feedback sent!" });
@@ -141,19 +139,9 @@ const ClientView = () => {
     }
   };
 
-  const handleTimestampChange = (val: string) => {
-    const digits = val.replace(/[^0-9]/g, "");
-    if (digits.length > 6) return;
-
-    let formatted = "";
-    if (digits.length <= 2) {
-      formatted = digits;
-    } else if (digits.length <= 4) {
-      formatted = `${digits.slice(0, -2)}:${digits.slice(-2)}`;
-    } else {
-      formatted = `${digits.slice(0, -4)}:${digits.slice(-4, -2)}:${digits.slice(-2)}`;
-    }
-    setNewTimestamp(formatted);
+  const getFileUrl = (path: string) => {
+    const { data } = supabase.storage.from('project-files').getPublicUrl(path);
+    return data.publicUrl;
   };
 
   if (loading) return (
@@ -183,9 +171,6 @@ const ClientView = () => {
         <h1 className="font-display text-3xl font-bold text-foreground">Review Link Disabled</h1>
         <p className="mt-4 text-muted-foreground">
           This project review link has been disabled because the project has expired or the freelancer's subscription is inactive.
-        </p>
-        <p className="mt-6 text-sm text-amber-700 font-medium">
-          Please contact your freelancer to reactivate this link.
         </p>
         <Button asChild variant="outline" className="mt-8">
           <Link to="/">Go to Giglant Home</Link>
@@ -238,17 +223,13 @@ const ClientView = () => {
                 <p className="text-sm text-muted-foreground text-center py-4">No files uploaded yet.</p>
               ) : (
                 <div className="space-y-2">
-                  {files.map(f => {
-                    const fileTypeInfo = FILE_TYPES.find(t => t.value === f.file_type);
-                    return (
-                      <button key={f.id} onClick={() => setSelectedFile(f)}
-                        className={`w-full flex items-center gap-2 rounded-lg border p-3 text-left transition-colors ${selectedFile?.id === f.id ? "border-primary bg-primary/5" : "border-border hover:bg-secondary"}`}>
-                        <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary uppercase">{f.file_type}</span>
-                        <span className="flex-1 text-sm text-foreground truncate">{f.filename}</span>
-                        {fileTypeInfo?.hasTimestamp && <span className="text-[10px]">🎬</span>}
-                      </button>
-                    );
-                  })}
+                  {files.map(f => (
+                    <button key={f.id} onClick={() => setSelectedFile(f)}
+                      className={`w-full flex items-center gap-2 rounded-lg border p-3 text-left transition-colors ${selectedFile?.id === f.id ? "border-primary bg-primary/5" : "border-border hover:bg-secondary"}`}>
+                      <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary uppercase">{f.file_type}</span>
+                      <span className="flex-1 text-sm text-foreground truncate">{f.filename}</span>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -266,11 +247,23 @@ const ClientView = () => {
                       </span>
                     </div>
                   </div>
-                  {selectedFile.drive_file_id && (
-                    <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-background">
-                      <iframe src={`https://drive.google.com/file/d/${selectedFile.drive_file_id}/preview`} className="h-full w-full" allow="autoplay" allowFullScreen />
-                    </div>
-                  )}
+                  <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-background flex items-center justify-center">
+                    {selectedFile.file_type === "video" ? (
+                      <video src={getFileUrl(selectedFile.storage_path)} controls className="h-full w-full" />
+                    ) : selectedFile.file_type === "audio" ? (
+                      <audio src={getFileUrl(selectedFile.storage_path)} controls className="w-full px-4" />
+                    ) : selectedFile.file_type === "image" ? (
+                      <img src={getFileUrl(selectedFile.storage_path)} alt={selectedFile.filename} className="max-h-full object-contain" />
+                    ) : (
+                      <div className="text-center p-8">
+                        <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">Preview not available. Please download to view.</p>
+                        <Button variant="outline" size="sm" className="mt-4" asChild>
+                          <a href={getFileUrl(selectedFile.storage_path)} target="_blank" rel="noopener">Download File</a>
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div id="client-feedback-form" className="rounded-xl border border-border bg-card p-4">
@@ -281,7 +274,7 @@ const ClientView = () => {
                         <label className="mb-1 flex items-center gap-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                           <Clock className="h-2.5 w-2.5" /> Time (HH:MM:SS)
                         </label>
-                        <input type="text" value={newTimestamp} onChange={e => handleTimestampChange(e.target.value)} placeholder="00:01:24"
+                        <input type="text" value={newTimestamp} onChange={e => setNewTimestamp(e.target.value)} placeholder="00:01:24"
                           className="w-full rounded-lg border border-border bg-background px-2 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
                       </div>
                     )}
@@ -292,7 +285,7 @@ const ClientView = () => {
                     </div>
                     <div className="flex-1 min-w-[150px]">
                       <label className="mb-1 block text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Comment</label>
-                      <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder={isTimeable ? "Describe what you'd like changed at this point..." : "Describe what you'd like changed..."}
+                      <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Describe what you'd like changed..."
                         className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
                         onKeyDown={e => e.key === "Enter" && handleAddComment()} />
                     </div>

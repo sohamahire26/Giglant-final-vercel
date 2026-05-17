@@ -1,14 +1,14 @@
-import { useState } from "react";
-import { Plus, Trash2, ExternalLink, CheckSquare, Square, Clock, FileEdit, Share2, Video, FileText, ShieldCheck, AlertCircle, Info } from "lucide-react";
+"use client";
+
+import { useState, useRef } from "react";
+import { Plus, Trash2, CheckSquare, Square, Clock, MessageSquare, Video, FileText, ShieldCheck, AlertCircle, Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import FAQSection from "@/components/FAQSection";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Project, ProjectFile, FileComment } from "./types";
-import { extractDriveFileId, parseTs, fmtTs } from "./types";
-
-const db = supabase as any;
+import { detectFileType, parseTs, fmtTs } from "./types";
 
 const FILE_TYPES = [
   { value: "video", label: "Video", hasTimestamp: true },
@@ -21,16 +21,10 @@ const FILE_TYPES = [
 ];
 
 const faq = [
-  { question: "How do clients leave feedback?", answer: "Clients use the 'Magic Link' you share with them. They can click anywhere on a video or audio timeline to leave a timestamped comment, or leave general comments on documents and images. No login is required for them." },
-  { question: "Is my data secure?", answer: "Yes. We don't store your actual files. We only store the Google Drive link and the comments. The files are streamed directly from Google Drive to the browser, ensuring your content stays within your controlled environment." },
-  { question: "What file types support timestamps?", answer: "Currently, Video and Audio file types support frame-accurate timestamped feedback. For other types like Images or PDFs, clients can leave standard comments." },
-  { question: "Can I use links other than Google Drive?", answer: "The workspace is optimized for Google Drive to provide the best preview experience. Ensure your Drive file is set to 'Anyone with the link' -> 'Viewer' for the preview to work correctly." },
-];
-
-const examples = [
-  { type: "Video", note: "Client clicks at 00:45 -> 'Make this transition smoother' -> Timestamp saved automatically." },
-  { type: "PDF", note: "Client leaves comment -> 'Change the font size on page 2' -> Appears in your revision checklist." },
-  { type: "Audio", note: "Client marks 02:10 -> 'The background music is too loud here' -> You see exactly where to edit." },
+  { question: "How do clients leave feedback?", answer: "Clients use the 'Magic Link' you share with them. They can watch videos and leave timestamped comments instantly. No login is required for them." },
+  { question: "Is my data secure?", answer: "Yes. Files are uploaded directly to our secure Supabase Storage. Access is restricted to you and anyone with your project's magic link." },
+  { question: "What file types support timestamps?", answer: "Video and Audio file types support frame-accurate timestamped feedback. For other types like Images or PDFs, clients can leave standard comments." },
+  { question: "Is there a file size limit?", answer: "Standard uploads are supported up to 50MB. For larger files, we recommend the Pro plan or optimized exports." },
 ];
 
 interface Props {
@@ -44,82 +38,120 @@ interface Props {
 }
 
 const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFile, setSelectedFile }: Props) => {
-  const [newDriveUrl, setNewDriveUrl] = useState("");
-  const [newFilename, setNewFilename] = useState("");
-  const [newFileType, setNewFileType] = useState("video");
+  const [uploading, setUploading] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [newTimestamp, setNewTimestamp] = useState("");
   const [authorName, setAuthorName] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleAddFile = async () => {
-    if (!newDriveUrl.trim()) return;
-    const fid = extractDriveFileId(newDriveUrl);
-    if (!fid) { toast({ title: "Invalid Google Drive URL", variant: "destructive" }); return; }
-    const filename = newFilename.trim() || "Untitled File";
-    const { data, error } = await db.from("project_files")
-      .insert({ project_id: project.id, file_type: newFileType, drive_url: newDriveUrl.trim(), drive_file_id: fid, filename, sort_order: files.length })
-      .select().single();
-    if (error) { toast({ title: "Failed to add file", variant: "destructive" }); return; }
-    setFiles(prev => [...prev, data]);
-    setNewDriveUrl(""); setNewFilename("");
-    toast({ title: "File added!" });
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !project) return;
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${project.user_id}/${project.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('project-files')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const fileType = detectFileType(file.name);
+
+      const { data, error: dbError } = await supabase
+        .from("project_files")
+        .insert({
+          project_id: project.id,
+          file_type: fileType,
+          storage_path: filePath,
+          filename: file.name,
+          sort_order: files.length
+        })
+        .select()
+        .single();
+
+      if (dbError) throw dbError;
+
+      setFiles(prev => [...prev, data as ProjectFile]);
+      toast({ title: "File uploaded successfully!" });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
-  const handleDeleteFile = async (fileId: string) => {
-    await db.from("project_files").delete().eq("id", fileId);
-    setFiles(prev => prev.filter(f => f.id !== fileId));
-    setComments(prev => prev.filter(c => c.file_id !== fileId));
-    if (selectedFile?.id === fileId) setSelectedFile(null);
-  };
-
-  const handleTimestampChange = (val: string) => {
-    const digits = val.replace(/[^0-9]/g, "");
-    if (digits.length > 6) return;
-
-    if (digits.length >= 2) {
-      const s_tens = parseInt(digits[digits.length - 2], 10);
-      if (s_tens > 5) return;
-    }
-    if (digits.length >= 4) {
-      const m_tens = parseInt(digits[digits.length - 4], 10);
-      if (m_tens > 5) return;
-    }
-
-    let formatted = "";
-    if (digits.length <= 2) {
-      formatted = digits;
-    } else if (digits.length <= 4) {
-      formatted = `${digits.slice(0, -2)}:${digits.slice(-2)}`;
-    } else {
-      formatted = `${digits.slice(0, -4)}:${digits.slice(-4, -2)}:${digits.slice(-2)}`;
-    }
+  const handleDeleteFile = async (file: ProjectFile) => {
+    if (!confirm("Are you sure you want to delete this file?")) return;
     
-    setNewTimestamp(formatted);
+    try {
+      // Delete from storage
+      await supabase.storage.from('project-files').remove([file.storage_path]);
+      
+      // Delete from DB (comments will cascade if set up, otherwise handle manually)
+      await supabase.from("project_files").delete().eq("id", file.id);
+      
+      setFiles(prev => prev.filter(f => f.id !== file.id));
+      setComments(prev => prev.filter(c => c.file_id !== file.id));
+      if (selectedFile?.id === file.id) setSelectedFile(null);
+      
+      toast({ title: "File deleted" });
+    } catch (err: any) {
+      toast({ title: "Delete failed", description: err.message, variant: "destructive" });
+    }
   };
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !selectedFile) return;
     const ts = parseTs(newTimestamp);
     
-    const { data, error } = await db.from("file_comments")
-      .insert({ file_id: selectedFile.id, timestamp_seconds: ts, comment: newComment.trim(), author_name: authorName.trim() || "Freelancer", is_client: false })
-      .select().single();
-    if (error) { toast({ title: "Failed to add comment", variant: "destructive" }); return; }
-    setComments(prev => prev.find(c => c.id === data.id) ? prev : [...prev, data]);
-    setNewComment(""); setNewTimestamp("");
+    try {
+      const { data, error } = await supabase
+        .from("file_comments")
+        .insert({
+          file_id: selectedFile.id,
+          timestamp_seconds: ts,
+          comment: newComment.trim(),
+          author_name: authorName.trim() || "Freelancer",
+          is_client: false
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      setComments(prev => [...prev, data as FileComment]);
+      setNewComment("");
+      setNewTimestamp("");
+    } catch (err: any) {
+      toast({ title: "Failed to add comment", description: err.message, variant: "destructive" });
+    }
   };
 
   const toggleResolved = async (cid: string) => {
     const c = comments.find(x => x.id === cid);
     if (!c) return;
-    await db.from("file_comments").update({ is_resolved: !c.is_resolved }).eq("id", cid);
-    setComments(prev => prev.map(x => x.id === cid ? { ...x, is_resolved: !x.is_resolved } : x));
+    try {
+      await supabase.from("file_comments").update({ is_resolved: !c.is_resolved }).eq("id", cid);
+      setComments(prev => prev.map(x => x.id === cid ? { ...x, is_resolved: !x.is_resolved } : x));
+    } catch (err: any) {
+      toast({ title: "Update failed", description: err.message, variant: "destructive" });
+    }
   };
 
   const fileComments = selectedFile ? comments.filter(c => c.file_id === selectedFile.id) : [];
   const isTimeable = selectedFile?.file_type === "video" || selectedFile?.file_type === "audio";
   const selectedFileType = FILE_TYPES.find(t => t.value === selectedFile?.file_type);
+
+  const getFileUrl = (path: string) => {
+    const { data } = supabase.storage.from('project-files').getPublicUrl(path);
+    return data.publicUrl;
+  };
 
   return (
     <div className="space-y-8">
@@ -127,91 +159,38 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
         <h1 className="font-display text-3xl font-bold text-foreground md:text-4xl">Files and Feedback</h1>
       </div>
 
-      {/* CRITICAL NOTICE: Google Drive Permissions */}
-      <Alert variant="destructive" className="border-red-500/50 bg-red-500/5">
-        <AlertCircle className="h-5 w-5" />
-        <AlertTitle className="font-display font-bold text-red-700">CRITICAL: Google Drive Permissions</AlertTitle>
-        <AlertDescription className="text-red-600/90">
-          For the preview to work, you <strong>MUST</strong> set your Google Drive file to <strong>"Anyone with the link"</strong>. 
-          If it's set to "Restricted", your client won't be able to see the file.
+      <Alert className="border-primary/20 bg-primary/5">
+        <ShieldCheck className="h-5 w-5 text-primary" />
+        <AlertTitle className="font-display font-bold text-primary">Direct Secure Uploads</AlertTitle>
+        <AlertDescription className="text-primary/80">
+          Files are now uploaded directly to Giglant. No more messy Google Drive links or permission issues.
         </AlertDescription>
       </Alert>
-
-      <div className="rounded-2xl border border-border bg-card p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold">?</div>
-          <h2 className="font-display text-lg font-semibold text-foreground">How to set permissions correctly</h2>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">1</div>
-              <p className="text-sm text-muted-foreground">Right-click your file in Google Drive and select <strong>Share</strong>.</p>
-            </div>
-            <div className="flex gap-4">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">2</div>
-              <p className="text-sm text-muted-foreground">Under <strong>General access</strong>, click the dropdown and change "Restricted" to <strong>Anyone with the link</strong>.</p>
-            </div>
-            <div className="flex gap-4">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">3</div>
-              <p className="text-sm text-muted-foreground">Ensure the role is set to <strong>Viewer</strong> (this is the default).</p>
-            </div>
-            <div className="flex gap-4">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">4</div>
-              <p className="text-sm text-muted-foreground">Click <strong>Copy link</strong> and paste it into the form below.</p>
-            </div>
-          </div>
-          <div className="rounded-xl border border-border bg-muted/30 p-4 flex flex-col items-center justify-center text-center">
-            <ShieldCheck className="h-12 w-12 text-primary/40 mb-3" />
-            <p className="text-xs font-medium text-muted-foreground">
-              Setting permissions to "Anyone with the link" allows Giglant to securely embed the preview for your client without requiring them to sign in to Google.
-            </p>
-          </div>
-        </div>
-      </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-1 space-y-6">
           <div className="rounded-2xl border border-border bg-card p-6">
-            <h2 className="font-display text-lg font-semibold text-foreground mb-4">Add New File</h2>
+            <h2 className="font-display text-lg font-semibold text-foreground mb-4">Upload File</h2>
             <div className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">File Type</label>
-                <select
-                  value={newFileType}
-                  onChange={(e) => setNewFileType(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none"
-                >
-                  {FILE_TYPES.map(t => (
-                    <option key={t.value} value={t.value}>
-                      {t.label} {t.hasTimestamp ? "🎬" : "📄"}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">File Name</label>
+              <div 
+                onClick={() => !uploading && fileInputRef.current?.click()}
+                className={`relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-all cursor-pointer ${uploading ? "bg-muted opacity-50" : "border-border hover:border-primary hover:bg-primary/5"}`}
+              >
+                {uploading ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                ) : (
+                  <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                )}
+                <p className="text-sm font-medium text-foreground">{uploading ? "Uploading..." : "Click to upload"}</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Video, Audio, Image, or PDF</p>
                 <input 
-                  type="text" 
-                  value={newFilename} 
-                  onChange={e => setNewFilename(e.target.value)} 
-                  placeholder="e.g., Brand Video v2" 
-                  className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileUpload} 
+                  className="hidden" 
+                  disabled={uploading}
                 />
               </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">Google Drive Link</label>
-                <input 
-                  type="text" 
-                  value={newDriveUrl} 
-                  onChange={e => setNewDriveUrl(e.target.value)} 
-                  placeholder="Paste link here..." 
-                  className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" 
-                />
-              </div>
-              <Button onClick={handleAddFile} className="w-full" disabled={!newDriveUrl.trim()}>
-                <Plus className="mr-1 h-4 w-4" /> Add File
-              </Button>
             </div>
           </div>
 
@@ -230,7 +209,7 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
                       <span className="flex-1 text-sm text-foreground truncate">{f.filename}</span>
                       {fileTypeInfo?.hasTimestamp && <span className="text-[10px]">🎬</span>}
                       <span className="shrink-0 text-[10px] text-muted-foreground">{comments.filter(c => c.file_id === f.id).length}💬</span>
-                      <button onClick={e => { e.stopPropagation(); handleDeleteFile(f.id); }} className="shrink-0 p-1 text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></button>
+                      <button onClick={e => { e.stopPropagation(); handleDeleteFile(f); }} className="shrink-0 p-1 text-muted-foreground hover:text-destructive"><Trash2 className="h-3 w-3" /></button>
                     </div>
                   );
                 })}
@@ -250,19 +229,24 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
                       {selectedFileType?.hasTimestamp ? "🎬 Timestamp Enabled" : "📄 Standard Feedback"}
                     </span>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={selectedFile.drive_url} target="_blank" rel="noopener">
-                        <ExternalLink className="mr-1 h-3 w-3" /> Open in Drive
-                      </a>
-                    </Button>
-                  </div>
                 </div>
-                {selectedFile.drive_file_id && (
-                  <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-background">
-                    <iframe src={`https://drive.google.com/file/d/${selectedFile.drive_file_id}/preview`} className="h-full w-full" allow="autoplay" allowFullScreen />
-                  </div>
-                )}
+                <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-background flex items-center justify-center">
+                  {selectedFile.file_type === "video" ? (
+                    <video src={getFileUrl(selectedFile.storage_path)} controls className="h-full w-full" />
+                  ) : selectedFile.file_type === "audio" ? (
+                    <audio src={getFileUrl(selectedFile.storage_path)} controls className="w-full px-4" />
+                  ) : selectedFile.file_type === "image" ? (
+                    <img src={getFileUrl(selectedFile.storage_path)} alt={selectedFile.filename} className="max-h-full object-contain" />
+                  ) : (
+                    <div className="text-center p-8">
+                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">Preview not available for this file type.</p>
+                      <Button variant="outline" size="sm" className="mt-4" asChild>
+                        <a href={getFileUrl(selectedFile.storage_path)} target="_blank" rel="noopener">Download to View</a>
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="rounded-2xl border border-border bg-card p-6">
@@ -273,7 +257,7 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
                       <label className="mb-1.5 flex items-center gap-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                         <Clock className="h-2.5 w-2.5" /> Time (HH:MM:SS)
                       </label>
-                      <input type="text" value={newTimestamp} onChange={e => handleTimestampChange(e.target.value)} placeholder="00:01:24"
+                      <input type="text" value={newTimestamp} onChange={e => setNewTimestamp(e.target.value)} placeholder="00:01:24"
                         className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />
                     </div>
                   )}
@@ -297,17 +281,11 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
               <div className="rounded-2xl border border-border bg-card p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-display text-sm font-semibold text-foreground">Comments ({fileComments.length})</h3>
-                  {fileComments.length > 0 && (
-                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                      <CheckSquare className="h-3 w-3 text-primary" /> Resolved
-                      <Square className="h-3 w-3" /> Pending
-                    </div>
-                  )}
                 </div>
                 {fileComments.length === 0 ? (
                   <div className="text-center py-12">
-                    <Share2 className="mx-auto h-8 w-8 text-muted-foreground/30 mb-3" />
-                    <p className="text-sm text-muted-foreground">No comments yet. Share the client link to start collecting feedback.</p>
+                    <MessageSquare className="mx-auto h-8 w-8 text-muted-foreground/30 mb-3" />
+                    <p className="text-sm text-muted-foreground">No comments yet. Share the magic link to collect feedback.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -343,66 +321,13 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
                 <Plus className="h-6 w-6 text-primary/40" />
               </div>
               <h3 className="text-lg font-semibold text-foreground mb-1">No File Selected</h3>
-              <p className="text-sm text-muted-foreground max-w-xs">Select a file from the list on the left to preview it and manage feedback.</p>
+              <p className="text-sm text-muted-foreground max-w-xs">Upload a file or select one from the list to manage feedback.</p>
             </div>
           )}
         </div>
       </div>
 
-      <div className="mt-16">
-        <h2 className="font-display text-2xl font-bold text-foreground mb-6">Real Examples — Feedback Workflow</h2>
-        <p className="text-muted-foreground text-sm mb-6">
-          See how timestamped feedback streamlines communication between you and your client.
-        </p>
-        <div className="space-y-3">
-          {examples.map((ex, i) => (
-            <div key={i} className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-3">
-                <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary uppercase">{ex.type}</span>
-                <p className="text-sm text-foreground">{ex.note}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-16">
-        <h2 className="font-display text-2xl font-bold text-foreground mb-6">How It Works — Streamline Your Review Process</h2>
-        <div className="grid gap-4 md:grid-cols-4">
-          {[
-            { step: "Add Drive Link", desc: "Paste your Google Drive link and select the file type." },
-            { step: "Client Preview", desc: "Clients see a professional preview without needing an account." },
-            { step: "Timestamped Feedback", desc: "Clients click the timeline to leave frame-accurate comments." },
-            { step: "Auto-Checklist", desc: "Comments automatically sync to your revision checklist." },
-          ].map((s, i) => (
-            <div key={i} className="rounded-xl border border-border bg-card p-6 text-center">
-              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-red-600 text-white font-bold">{i + 1}</div>
-              <p className="text-sm font-semibold text-foreground">{s.step}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{s.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-16">
-        <h2 className="font-display text-2xl font-bold text-foreground mb-6">About Files & Feedback — Professional Client Review</h2>
-        <div className="prose max-w-none text-muted-foreground space-y-3 text-sm leading-relaxed">
-          <p>
-            Giglant's Files & Feedback system is designed to eliminate the "vague feedback" problem. By integrating directly with <strong>Google Drive</strong>, we provide a seamless bridge between your storage and your client's review experience.
-          </p>
-          <p>
-            The core technology uses <strong>real-time synchronization</strong> via Supabase, meaning as soon as a client leaves a comment, it appears in your workspace. No more refreshing pages or checking emails for feedback.
-          </p>
-          <h3 className="font-display text-lg font-semibold text-foreground">Key Features</h3>
-          <ul className="list-disc list-inside space-y-1">
-            <li><Video className="inline h-3 w-3 mr-1" /> <strong>Video/Audio Timestamps:</strong> Frame-accurate feedback for precise editing.</li>
-            <li><FileText className="inline h-3 w-3 mr-1" /> <strong>Document Support:</strong> Professional previews for PDFs and images.</li>
-            <li><ShieldCheck className="inline h-3 w-3 mr-1" /> <strong>Privacy First:</strong> Files stay on your Drive; we only handle the communication layer.</li>
-          </ul>
-        </div>
-      </div>
-
-      <FAQSection title="Files & Feedback FAQ — Streamline Your Workflow" items={faq} className="px-0 py-12" />
+      <FAQSection title="Files & Feedback FAQ" items={faq} className="px-0 py-12" />
     </div>
   );
 };

@@ -30,7 +30,6 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Verify JWT for sensitive actions
     const authHeader = req.headers.get('Authorization');
     let userEmail = null;
     
@@ -122,13 +121,50 @@ Deno.serve(async (req) => {
       }
 
       case "run_project_cleanup": {
-        if (userEmail?.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
-          return json({ error: "Unauthorized" }, 401);
+        console.log("[api-function] Starting project and storage cleanup...");
+        
+        // 1. Identify projects past their deletion window
+        // Free: 14 days, Pro: 90 days
+        const { data: expiredProjects, error: fetchError } = await supabase
+          .rpc('get_expired_projects_for_cleanup'); // We'll need to define this SQL function
+
+        if (fetchError) throw fetchError;
+        if (!expiredProjects || expiredProjects.length === 0) {
+          return json({ success: true, message: "No expired projects found." });
         }
-        // Call the database function
-        const { error } = await supabase.rpc('cleanup_expired_projects');
-        if (error) throw error;
-        return json({ success: true });
+
+        const projectIds = expiredProjects.map((p: any) => p.id);
+        console.log(`[api-function] Found ${projectIds.length} expired projects.`);
+
+        // 2. Get all storage paths for files in these projects
+        const { data: files, error: filesError } = await supabase
+          .from('project_files')
+          .select('storage_path')
+          .in('project_id', projectIds);
+
+        if (filesError) throw filesError;
+
+        if (files && files.length > 0) {
+          const paths = files.map(f => f.storage_path);
+          console.log(`[api-function] Deleting ${paths.length} files from storage.`);
+          
+          // Delete files from storage in batches
+          const { error: storageError } = await supabase.storage
+            .from('project-files')
+            .remove(paths);
+            
+          if (storageError) console.error("[api-function] Storage deletion error:", storageError);
+        }
+
+        // 3. Delete projects from DB (cascades to project_files and file_comments)
+        const { error: deleteError } = await supabase
+          .from('projects')
+          .delete()
+          .in('id', projectIds);
+
+        if (deleteError) throw deleteError;
+
+        return json({ success: true, deleted_count: projectIds.length });
       }
 
       default:

@@ -1,8 +1,7 @@
-import { differenceInDays, differenceInHours, parseISO } from "date-fns";
+import { differenceInDays, differenceInHours, parseISO, addDays } from "date-fns";
 
 export interface Project {
   id: string;
-  user_id: string; // Added this field
   name: string;
   client_name: string | null;
   description: string | null;
@@ -17,7 +16,8 @@ export interface ProjectFile {
   id: string;
   project_id: string;
   file_type: string;
-  storage_path: string;
+  drive_url: string;
+  drive_file_id: string | null;
   filename: string;
   sort_order: number;
   created_at: string;
@@ -34,8 +34,13 @@ export interface FileComment {
   created_at: string;
 }
 
-export const detectFileType = (filename: string): string => {
-  const lower = filename.toLowerCase();
+export const extractDriveFileId = (url: string): string | null => {
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+};
+
+export const detectFileType = (url: string, filename: string): string => {
+  const lower = (filename || url).toLowerCase();
   if (/\.(mp4|mov|avi|mkv|webm|m4v)/.test(lower)) return "video";
   if (/\.(mp3|wav|ogg|m4a|aac|flac)/.test(lower)) return "audio";
   if (/\.(jpg|jpeg|png|gif|webp|svg|bmp)/.test(lower)) return "image";
@@ -112,6 +117,7 @@ export const getDeletionRemaining = (project: Project, planType: string = 'free'
   let deletionTime: number;
   
   if (project.expires_at) {
+    // If manually extended, deletion happens 7 (Free) or 30 (Pro) days after the extension expires
     const extensionExpiry = new Date(project.expires_at).getTime();
     const gracePeriod = planType === 'pro' ? 30 : 7;
     deletionTime = extensionExpiry + (gracePeriod * 24 * 60 * 60 * 1000);
@@ -144,6 +150,9 @@ export const isProjectLocked = (project: Project, planType: string) => {
   return daysOld > 60;
 };
 
+/**
+ * Returns true if the project has exceeded its deletion grace period.
+ */
 export const isProjectDeleted = (project: Project, planType: string) => {
   const status = getDeletionRemaining(project, planType);
   return status.expired;
@@ -152,6 +161,7 @@ export const isProjectDeleted = (project: Project, planType: string) => {
 export const getRenewalStatus = (subscription: any) => {
   if (!subscription) return null;
   
+  // Prioritize manual expiry if set, then use next_billing_date
   const targetDateStr = subscription.manual_expiry || subscription.next_billing_date;
   if (!targetDateStr) return null;
 

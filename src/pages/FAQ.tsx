@@ -3,19 +3,19 @@ import SEOHead from "@/components/SEOHead";
 import FAQSection from "@/components/FAQSection";
 
 const faqItems = [
-  { question: "What is Giglant?", answer: "Giglant is a suite of professional tools designed for video editors and freelancers to streamline their workflow, from file management to client feedback and delivery." },
+  { question: "What is Giglant?", answer: "Giglant is a suite of professional tools designed for video editors and freelancers to streamline their workflow, from file renaming to client feedback and delivery." },
   { question: "Is Giglant free?", answer: "Yes! We offer free browser-based tools and a Free tier for project workspaces. For power users, our Pro plan offers unlimited workspaces and extended retention." },
-  { question: "How do I upload files?", answer: "In your project workspace, go to the 'Files & Feedback' tab. You can upload videos, images, and documents directly from your computer. No more messy Google Drive links." },
-  { question: "How do project workspaces work?", answer: "A workspace allows you to group files for a specific project, share a magic link with your client, collect timestamped feedback, and manage a revision checklist." },
+  { question: "How do project workspaces work?", answer: "A workspace allows you to group files for a specific project, share a review link with your client, collect timestamped feedback, and manage a revision checklist." },
   { question: "What is the 'Lifetime Project' limit on the Free plan?", answer: "Free accounts can create one project workspace in their lifetime. Once created, it counts toward the limit even if deleted. Pro users have no such limits." },
-  { question: "How long do projects stay active?", answer: "Free projects are locked after 7 days and permanently deleted after 14 days. Pro projects stay active for 60 days and are deleted after 90 days. This includes all uploaded files." },
+  { question: "How long do projects stay active?", answer: "Free projects are locked after 7 days. Pro projects stay active as long as your subscription is live, with a 60-day grace period if it ends." },
   { question: "Do my clients need an account to leave feedback?", answer: "No. Your clients use a 'Magic Link' to access the review page. They can watch videos and leave comments instantly without signing up." },
-  { question: "Are my files stored on your servers?", answer: "For browser-based tools, no. For the workspace, files are stored securely in our encrypted cloud storage. This ensures fast previews and reliable access for your clients without the permission issues of external links." },
+  { question: "Is my data secure?", answer: "Yes. We don't store your actual video or image files. We only store the Google Drive links and the comments. Your content stays on your Drive." },
   { question: "What file types are supported for timestamps?", answer: "Video and Audio files support frame-accurate timestamped feedback. Images and PDFs support standard comments." },
+  { question: "How does the File Renamer work?", answer: "It's a browser-based tool that cleans up messy filenames, categorizes them (Video, Photo, etc.), and adds sequential numbering for better organization." },
   { question: "Can I use Giglant on mobile?", answer: "Yes, the entire platform is fully responsive. You can manage your projects and clients can leave feedback from any device." },
   { question: "What is the Delivery Assistant?", answer: "It's a tool that helps you craft professional emails or messages when sending drafts or final versions to your clients, ensuring a consistent brand voice." },
   { question: "How do I get paid using Giglant?", answer: "Our Payment Generator helps you create professional payment requests and reminders based on proven templates to help you get paid faster." },
-  { question: "What happens if I upgrade to Pro?", answer: "Upgrading unlocks unlimited project creations, extends the active window to 60 days, and gives you access to advanced features like the Invoice assistant." },
+  { question: "What happens if I upgrade to Pro?", answer: "Upgrading unlocks unlimited project creations, removes the 7-day locking period, and gives you access to advanced features like the Invoice assistant." },
   { question: "How do I contact support?", answer: "Use the support page." },
 ];
 

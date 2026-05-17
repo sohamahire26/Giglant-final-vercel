@@ -47,7 +47,7 @@ const homeFAQ = [
   },
   { 
     question: "Are my files stored on your servers?", 
-    answer: "For browser-based tools, no. For the workspace, files are stored securely in our encrypted cloud storage. This ensures fast previews and reliable access for your clients without the permission issues of external links." 
+    answer: "For browser-based tools, no. For the workspace, we only store the Google Drive links and comments. Your actual video and image files remain securely on your own Google Drive." 
   },
 ];
 

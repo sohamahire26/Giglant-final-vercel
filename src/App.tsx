@@ -16,7 +16,7 @@ import Blog from "./pages/Blog";
 import BlogCategory from "./pages/BlogCategory";
 import BlogPost from "./pages/BlogPost";
 import BlogEditor from "./pages/BlogEditor";
-import Admin from "./pages/Admin";
+import BlogAdmin from "./pages/BlogAdmin";
 import About from "./pages/About";
 import Support from "./pages/Support";
 import FAQ from "./pages/FAQ";
@@ -57,7 +57,8 @@ const App = () => (
             <Route path="/tools/payment-generator" element={<PaymentGenerator />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/edit" element={<BlogEditor />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/blog/admin" element={<BlogAdmin />} />
+            <Route path="/admin" element={<BlogAdmin />} />
             <Route path="/blog/:category" element={<BlogCategory />} />
             <Route path="/blog/:category/:slug" element={<BlogPost />} />
             <Route path="/about" element={<About />} />

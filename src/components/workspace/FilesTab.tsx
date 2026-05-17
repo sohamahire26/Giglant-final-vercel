@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Plus, Trash2, CheckSquare, Square, Clock, MessageSquare, Video, FileText, ShieldCheck, AlertCircle, Upload, Loader2 } from "lucide-react";
+import { Plus, Trash2, CheckSquare, Square, Clock, MessageSquare, Video, FileText, ShieldCheck, AlertCircle, Upload, Loader2, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +43,7 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
   const [newTimestamp, setNewTimestamp] = useState("");
   const [authorName, setAuthorName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement>(null);
   const { toast } = useToast();
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,10 +92,7 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
     if (!confirm("Are you sure you want to delete this file?")) return;
     
     try {
-      // Delete from storage
       await supabase.storage.from('project-files').remove([file.storage_path]);
-      
-      // Delete from DB (comments will cascade if set up, otherwise handle manually)
       await supabase.from("project_files").delete().eq("id", file.id);
       
       setFiles(prev => prev.filter(f => f.id !== file.id));
@@ -104,6 +102,12 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
       toast({ title: "File deleted" });
     } catch (err: any) {
       toast({ title: "Delete failed", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const grabCurrentTime = () => {
+    if (mediaRef.current) {
+      setNewTimestamp(fmtTs(Math.floor(mediaRef.current.currentTime)));
     }
   };
 
@@ -232,9 +236,9 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
                 </div>
                 <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-background flex items-center justify-center">
                   {selectedFile.file_type === "video" ? (
-                    <video src={getFileUrl(selectedFile.storage_path)} controls className="h-full w-full" />
+                    <video ref={mediaRef as any} src={getFileUrl(selectedFile.storage_path)} controls className="h-full w-full" />
                   ) : selectedFile.file_type === "audio" ? (
-                    <audio src={getFileUrl(selectedFile.storage_path)} controls className="w-full px-4" />
+                    <audio ref={mediaRef as any} src={getFileUrl(selectedFile.storage_path)} controls className="w-full px-4" />
                   ) : selectedFile.file_type === "image" ? (
                     <img src={getFileUrl(selectedFile.storage_path)} alt={selectedFile.filename} className="max-h-full object-contain" />
                   ) : (
@@ -254,8 +258,11 @@ const FilesTab = ({ project, files, setFiles, comments, setComments, selectedFil
                 <div className="flex gap-3 items-end flex-wrap">
                   {isTimeable && (
                     <div className="w-32">
-                      <label className="mb-1.5 flex items-center gap-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                        <Clock className="h-2.5 w-2.5" /> Time (HH:MM:SS)
+                      <label className="mb-1.5 flex items-center justify-between gap-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                        <span className="flex items-center gap-1"><Clock className="h-2.5 w-2.5" /> Time</span>
+                        <button onClick={grabCurrentTime} className="text-primary hover:underline flex items-center gap-0.5">
+                          <Target className="h-2 w-2" /> Sync
+                        </button>
                       </label>
                       <input type="text" value={newTimestamp} onChange={e => setNewTimestamp(e.target.value)} placeholder="00:01:24"
                         className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />

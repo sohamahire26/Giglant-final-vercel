@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Loader2, MessageSquare, Plus, HelpCircle, Clock, RefreshCw, Lock, FileText } from "lucide-react";
+import { Loader2, MessageSquare, Plus, HelpCircle, Clock, RefreshCw, Lock, FileText, Target } from "lucide-react";
 import SEOHead from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +45,7 @@ const ClientView = () => {
   const [submitting, setSubmitting] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
+  const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement>(null);
   const { toast } = useToast();
 
   const loadData = async (silent = false) => {
@@ -105,6 +106,12 @@ const ClientView = () => {
   useEffect(() => {
     loadData();
   }, [token]);
+
+  const grabCurrentTime = () => {
+    if (mediaRef.current) {
+      setNewTimestamp(fmtTs(Math.floor(mediaRef.current.currentTime)));
+    }
+  };
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !selectedFile || !project) return;
@@ -249,9 +256,9 @@ const ClientView = () => {
                   </div>
                   <div className="aspect-video w-full overflow-hidden rounded-xl border border-border bg-background flex items-center justify-center">
                     {selectedFile.file_type === "video" ? (
-                      <video src={getFileUrl(selectedFile.storage_path)} controls className="h-full w-full" />
+                      <video ref={mediaRef as any} src={getFileUrl(selectedFile.storage_path)} controls className="h-full w-full" />
                     ) : selectedFile.file_type === "audio" ? (
-                      <audio src={getFileUrl(selectedFile.storage_path)} controls className="w-full px-4" />
+                      <audio ref={mediaRef as any} src={getFileUrl(selectedFile.storage_path)} controls className="w-full px-4" />
                     ) : selectedFile.file_type === "image" ? (
                       <img src={getFileUrl(selectedFile.storage_path)} alt={selectedFile.filename} className="max-h-full object-contain" />
                     ) : (
@@ -271,8 +278,11 @@ const ClientView = () => {
                   <div className="flex gap-2 items-end flex-wrap">
                     {isTimeable && (
                       <div className="w-32">
-                        <label className="mb-1 flex items-center gap-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                          <Clock className="h-2.5 w-2.5" /> Time (HH:MM:SS)
+                        <label className="mb-1 flex items-center justify-between gap-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                          <span className="flex items-center gap-1"><Clock className="h-2.5 w-2.5" /> Time</span>
+                          <button onClick={grabCurrentTime} className="text-primary hover:underline flex items-center gap-0.5">
+                            <Target className="h-2 w-2" /> Sync
+                          </button>
                         </label>
                         <input type="text" value={newTimestamp} onChange={e => setNewTimestamp(e.target.value)} placeholder="00:01:24"
                           className="w-full rounded-lg border border-border bg-background px-2 py-2.5 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none" />

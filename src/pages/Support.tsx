@@ -30,8 +30,13 @@ const SupportPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!session) {
+    if (!session || !user) {
       toast({ title: "Please sign in", description: "You need to be logged in to send a support message.", variant: "destructive" });
+      return;
+    }
+
+    if (!formData.message.trim()) {
+      toast({ title: "Message required", description: "Please enter a message.", variant: "destructive" });
       return;
     }
 
@@ -40,10 +45,10 @@ const SupportPage = () => {
       const { error } = await supabase
         .from("support_messages")
         .insert({
-          user_id: user?.id,
+          user_id: user.id,
           type: formData.type,
-          subject: formData.subject || `${formData.type.toUpperCase()} from ${user?.email}`,
-          message: formData.message,
+          subject: formData.subject.trim() || `${formData.type.toUpperCase()} from ${user.email}`,
+          message: formData.message.trim(),
           status: "new"
         });
 

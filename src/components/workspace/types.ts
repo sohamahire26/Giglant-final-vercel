@@ -2,6 +2,7 @@ import { differenceInDays, differenceInHours, parseISO } from "date-fns";
 
 export interface Project {
   id: string;
+  user_id: string; // Added this field
   name: string;
   client_name: string | null;
   description: string | null;

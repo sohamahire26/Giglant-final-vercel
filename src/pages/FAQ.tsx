@@ -10,7 +10,7 @@ const faqItems = [
   { question: "What is the 'Lifetime Project' limit on the Free plan?", answer: "Free accounts can create one project workspace in their lifetime. Once created, it counts toward the limit even if deleted. Pro users have no such limits." },
   { question: "How long do projects stay active?", answer: "Free projects are locked after 7 days and permanently deleted after 14 days. Pro projects stay active for 60 days and are deleted after 90 days. This includes all uploaded files." },
   { question: "Do my clients need an account to leave feedback?", answer: "No. Your clients use a 'Magic Link' to access the review page. They can watch videos and leave comments instantly without signing up." },
-  { question: "Is my data secure?", answer: "Yes. Files are stored in secure Supabase Storage buckets. Access is restricted to the project owner and anyone with the unique magic link." },
+  { question: "Are my files stored on your servers?", answer: "For browser-based tools, no. For the workspace, files are stored securely in our encrypted cloud storage. This ensures fast previews and reliable access for your clients without the permission issues of external links." },
   { question: "What file types are supported for timestamps?", answer: "Video and Audio files support frame-accurate timestamped feedback. Images and PDFs support standard comments." },
   { question: "Can I use Giglant on mobile?", answer: "Yes, the entire platform is fully responsive. You can manage your projects and clients can leave feedback from any device." },
   { question: "What is the Delivery Assistant?", answer: "It's a tool that helps you craft professional emails or messages when sending drafts or final versions to your clients, ensuring a consistent brand voice." },
